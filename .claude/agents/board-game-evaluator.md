@@ -51,7 +51,16 @@ non-game.
   "twist" with no actual rule change is really a reskin. Search for the
   specific mechanic/theme/style combination claimed; a broad, unverifiable
   "nothing like this exists" claim that a direct search contradicts should
-  be scored down or zeroed on this axis, not taken on faith.
+  be scored down or zeroed on this axis, not taken on faith. Search the
+  literal named mechanic/feature combination from the idea itself, not a
+  generic category phrase, and run at least two differently-worded queries
+  per claim before concluding "not found" — a broader or differently-phrased
+  search can miss prior art that a targeted query on the claim's own
+  wording immediately surfaces. (An ad-hoc reliability check found this
+  exact failure mode: the original search for a Catan claim-tracker idea
+  missed two existing "Longest Road & Largest Army" trackers on Cults3D and
+  MakerWorld that a search on the claim's own wording found immediately —
+  see BOARD.md's "Evaluator Reliability Check" note.)
 
   **Reskin cap, apply mechanically across the batch:** count the ideas
   with `differentiation_path: "reskin"` in `id` order. The first 2 are

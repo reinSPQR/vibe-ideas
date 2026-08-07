@@ -315,3 +315,36 @@ falsifiable-and-false. Idea 3 (Splendor privacy shield, 75) and idea 4
 single-hinge parts and one explicit critical tolerance — this remains the
 most reliable path to a high producibility score and should stay the
 default shape rather than something only some ideas reach for.
+
+### Evaluator Reliability Check (ad-hoc, post-Turn 4)
+
+**Correction: idea 2's Turn 4 score (Catan Probability Rack, 82) overstated
+differentiation because the original search missed direct prior art.** An
+ad-hoc test re-scored Turn 4 ideas 2 and 8 three times independently, same
+inputs, same rubric, fresh WebSearch each time. All 3 reruns converged on a
+materially lower differentiation score for idea 2 (7-8/15 vs. the recorded
+9/15) because every rerun's search — phrased around the literal claimed
+mechanic ("Longest Road Largest Army tracker") rather than the original
+search's generic phrasing ("Catan harbor tile rack flip lock") — surfaced
+existing prior art the Turn 4 evaluation missed: Cults3D's "Longest Road &
+Largest Army" tracker and MakerWorld's "Compact Catan - Fixed Largest Army
+& Longest Road." Idea 8 also reran 7-10/15 vs. the recorded 13/15, though
+less conclusively contradicted (no single named competitor found, just a
+generally more crowded banker-tray category than the Turn 4 note implied).
+Total scores for both ideas landed 13-18 points *lower* than recorded, in
+every rerun — a consistent, one-directional gap, not random noise.
+
+**The lesson: for this pipeline, search-query phrasing is the dominant
+source of score inconsistency, not sampling randomness in the scoring
+step itself.** Three independent reruns of the same idea, same rubric,
+landed within a tighter band of each other (diff spread ~1-3/15, total
+spread ~5-8/100) than any of them landed versus the original Turn 4 score
+— because they all happened to search the specific named mechanic, while
+the original search used a broader/different phrase and never surfaced
+the counterexample. A single search miss is enough to inflate a
+differentiation score by several points and the total by well over 10.
+Standing rule added to `board-game-evaluator.md`: for every
+differentiation claim, search the literal named mechanic/feature
+combination from the idea itself (not a generic category phrase), and run
+at least two differently-worded queries per claim before concluding "not
+found."
