@@ -6,7 +6,32 @@ This file is the persistent memory of the `/goal` self-improvement loop for
 its own standing "Learned Heuristics" section
 (`.claude/agents/board-game-ideator.md`).
 
+## Pivot (before Turn 5)
+
+The product category changed: this pipeline used to ideate **3D-printed
+accessories for existing games** (organizers, dials, trays), scored on a
+Demand/55 + Differentiation/15 + Margin/15 + Producibility/15 rubric.
+
+As of Turn 5 it ideates **complete, original, manufacturable board games**
+— each idea must be a whole playable game (concept, full rules, full
+component/manufacturing bill), not a part or add-on. Anything that isn't a
+complete playable game now scores a flat zero. The rubric is now
+**Differentiation/40 + Demand/20 + Fun factor/20 + Producibility/20**
+(margin was dropped; producibility no longer scores rulebook production,
+only physical CAD-printable components), with a hard rule capping
+style-only reskins at 2 per batch of 10 (any beyond that score 0/40 on
+differentiation).
+
+Turns 1-4 below are retained for provenance but scored a different product
+category under a different rubric — **their numbers are not comparable to
+Turn 5 onward**, and `board-game-ideator`'s Learned Heuristics section was
+reset accordingly (see the "Pivot note" at the top of its Learned
+Heuristics). The Score History table below starts a fresh block for the
+new rubric.
+
 ## Score History
+
+### Archived — old accessory rubric (Demand/55, Differentiation/15, Margin/15, Producibility/15)
 
 | Turn | Avg Total /100 | Avg Demand /55 | Avg Differentiation /15 | Avg Margin /15 | Avg Producibility /15 |
 |------|-----------------|-----------------|---------------------------|------------------|--------------------------|
@@ -15,7 +40,17 @@ its own standing "Learned Heuristics" section
 | 3 | 61.4 | 30.0 | 8.7 | 10.5 | 12.2 |
 | 4 | 71.3 | 36.4 | 11.5 | 11.1 | 12.3 |
 
+### Current — complete board game rubric (Differentiation/40, Demand/20, Fun/20, Producibility/20)
+
+| Turn | Avg Total /100 | Avg Differentiation /40 | Avg Demand /20 | Avg Fun /20 | Avg Producibility /20 |
+|------|-----------------|----------------------------|------------------|---------------|--------------------------|
+
 ## Lessons Learned
+
+_Turns 1-4 below were written for the retired accessory-product pipeline
+and are kept for provenance only — `board-game-ideator`'s Learned
+Heuristics no longer draw on them (see the Pivot note above). Turn 5
+onward reflects the current complete-board-game rubric._
 
 ### Turn 1
 
