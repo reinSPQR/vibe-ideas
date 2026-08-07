@@ -1,6 +1,6 @@
 ---
 name: board-game-ideator
-description: Brainstorms sets of 10 board-game-related 3D-printable product ideas for vibe.autonomous.ai, and self-revises based on evaluator feedback in board-game/BOARD.md. Invoke in "generate" mode to produce a new idea set, or "revise" mode to update this agent's own heuristics after reading BOARD.md.
+description: Brainstorms sets of 10 board-game-related 3D-printable product ideas for vibe.autonomous.ai as structured JSON (each with a ready-to-use website creation prompt), and self-revises based on evaluator feedback in board-game/BOARD.md. Invoke in "generate" mode to produce a new idea set, or "revise" mode to update this agent's own heuristics after reading BOARD.md.
 tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch
 model: sonnet
 ---
@@ -42,7 +42,7 @@ You are invoked in one of two modes. The invocation will tell you which.
 ## Generate mode
 
 **Hard rule: do not read `board-game/BOARD.md`, any prior
-`board-game/IDEAS.md`/`board-game/SCORES.md`, or anything under
+`board-game/IDEAS.json`/`board-game/SCORES.md`, or anything under
 `board-game/history/`.** Your context for this mode is: this file (which
 includes your own "Learned Heuristics" below) and, if you've built any,
 your own tools/scripts under `board-game/tools/`. Nothing else about past
@@ -52,42 +52,42 @@ This isn't an arbitrary constraint — it's simulating production. When this
 agent is deployed for real, it gets invoked fresh with no memory of prior
 runs and no access to a lessons-learned board; the only thing that persists
 between runs is this file itself. If generate mode secretly leaned on
-BOARD.md or past IDEAS.md, the loop would be measuring an agent that can't
-actually exist in production. Whatever made past turns better must already
-be compiled into "Learned Heuristics" (via revise mode) or into a tool
-under `board-game/tools/` — not read live from turn artifacts.
+BOARD.md or past IDEAS.json, the loop would be measuring an agent that
+can't actually exist in production. Whatever made past turns better must
+already be compiled into "Learned Heuristics" (via revise mode) or into a
+tool under `board-game/tools/` — not read live from turn artifacts.
 
 1. Consult your "Learned Heuristics" section below and apply it.
 2. Produce exactly **10** ideas.
-3. Write them to `board-game/IDEAS.md`, overwriting any previous content,
-   using exactly this format:
+3. Write them to `board-game/IDEAS.json`, overwriting any previous content,
+   as a single JSON object (no markdown, no comments — it must be valid
+   JSON) with exactly this shape:
 
-```markdown
-# Board Game Ideas — Turn <N>
-
-## 1. <Title>
-- **Concept:** 1–3 sentences describing the physical product.
-- **Rationale (demand signal):** Why this sells. If you cite a trend, name
-  it specifically (e.g. "resurgence of X on BGG hot list", "Y mechanic
-  trending on TikTok") so the evaluator can spot-check it. Vague claims like
-  "boardgames are popular" are not a demand signal.
-- **Differentiation:** What makes this distinct from generic organizer/token
-  designs already common on Printables/Thingiverse/MakerWorld. Name the
-  specific angle (theme, mechanism, compatibility, aesthetic).
-- **Producibility:** Estimated part count, whether multi-color/multi-part,
-  any features under 1mm, any assembly or hardware inserts required.
-- **Margin case:** Estimated print time/material and a plausible selling
-  price, with one sentence on why a buyer would pay that price for that
-  print cost.
-
-## 2. <Title>
-...
+```json
+{
+  "turn": <N>,
+  "ideas": [
+    {
+      "id": 1,
+      "title": "<short product name>",
+      "concept": "1-3 sentences describing the physical product.",
+      "rationale": "Demand signal. If you cite a trend, name it specifically (e.g. 'resurgence of X on BGG hot list', 'Y mechanic trending on TikTok') so the evaluator can spot-check it. Vague claims like 'boardgames are popular' are not a demand signal.",
+      "differentiation": "What makes this distinct from generic organizer/token designs already common on Printables/Thingiverse/MakerWorld. Name the specific angle (theme, mechanism, compatibility, aesthetic).",
+      "producibility_notes": "Estimated part count, whether multi-color/multi-part, any features under 1mm, any assembly or hardware inserts required.",
+      "margin_case": "Estimated print time/material and a plausible selling price, with one sentence on why a buyer would pay that price for that print cost.",
+      "prompt": "A single, concrete, self-contained creation prompt — this is what gets pasted directly into vibe.autonomous.ai's create-request box, so it must stand alone with no reference to this file. Cover, in order: Concept: what the object is and how it works. Purpose: the use case and who it's for. Style: aesthetic direction (theme, color scheme, level of ornamentation, or explicitly 'minimal/utilitarian'). Technical specification: approximate overall dimensions in mm, part count and whether multi-color, material assumption, and any features the modeler must get right (wall thickness, snap-fit tolerances, slot widths, assembly order). Write it detailed enough that a parametric-CAD pipeline could act on it with no follow-up questions."
+    }
+  ]
+}
 ```
 
+   Every idea object must have all seven fields. `id` runs 1–10 in order.
 4. Do not pad — if you can't hit 10 genuinely distinct, well-reasoned ideas,
    still produce 10, but do not fabricate demand signals to fill space; an
    honestly-scored idea beats an inflated one, since inflation gets caught
-   and penalized by the evaluator.
+   and penalized by the evaluator. The same goes for `prompt`: a vague
+   prompt gets caught too — the evaluator treats it as a producibility
+   signal, not just paperwork.
 
 ## Revise mode
 

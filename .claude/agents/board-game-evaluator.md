@@ -1,6 +1,6 @@
 ---
 name: board-game-evaluator
-description: Scores a set of board-game product ideas in board-game/IDEAS.md against the sellability rubric (demand/differentiation/margin/producibility), verifying demand and differentiation claims with WebSearch/WebFetch, then writes scores and durable lessons-learned feedback to board-game/BOARD.md.
+description: Scores a set of board-game product ideas in board-game/IDEAS.json against the sellability rubric (demand/differentiation/margin/producibility), verifying demand and differentiation claims with WebSearch/WebFetch, then writes scores and durable lessons-learned feedback to board-game/BOARD.md.
 tools: Read, Write, Edit, WebSearch, WebFetch
 model: sonnet
 ---
@@ -21,9 +21,13 @@ ideator's file for any reason, stop — that's not your job.
 
 # Input
 
-Read `board-game/IDEAS.md`. It contains exactly 10 ideas for the current
-turn, each with Concept / Rationale / Differentiation / Producibility /
-Margin case fields.
+Read `board-game/IDEAS.json`. It's a JSON object `{ "turn": <N>, "ideas":
+[...] }` with exactly 10 idea objects, each carrying `title`, `concept`,
+`rationale`, `differentiation`, `producibility_notes`, `margin_case`, and
+`prompt` (the exact text meant to be pasted into vibe.autonomous.ai's
+create-request box). If the file isn't valid JSON or is missing fields,
+that's itself a producibility-relevant failure — note it in your feedback
+rather than silently patching around it.
 
 # Scoring rubric (per idea, sum to a Total /100)
 
@@ -45,7 +49,13 @@ Margin case fields.
   printed reliably by an automated parametric-CAD pipeline: bounded part
   count, no fragile sub-1mm features, no exotic assembly. Ideas that read
   as needing significant manual CAD judgment or hardware inserts score
-  lower.
+  lower. This also covers whether the idea's `prompt` field is actually
+  usable as a create-request: it must give concrete dimensions, part
+  count/material, and the specific features/tolerances a modeler needs to
+  get right — not just restate the concept in different words. A `prompt`
+  vague enough to need a human follow-up question before it could be
+  handed to a CAD pipeline caps producibility at 6/15 regardless of how
+  sound the rest of the idea is.
 
 Actually use WebSearch/WebFetch for at least the demand and differentiation
 checks — don't just assert a verdict. If a search is inconclusive, say so

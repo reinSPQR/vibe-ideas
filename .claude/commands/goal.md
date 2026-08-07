@@ -31,7 +31,7 @@ For the current turn `N`:
 1. **Ideate.** Invoke the `board-game-ideator` subagent in **generate
    mode**: tell it only that this is turn `N`, generate mode, and to follow
    its own instructions. Do **not** paste, summarize, or reference
-   `board-game/BOARD.md`, past `IDEAS.md`/`SCORES.md`, or any prior turn's
+   `board-game/BOARD.md`, past `IDEAS.json`/`SCORES.md`, or any prior turn's
    content in the prompt you give it — generate mode must run with a clean
    context, by design (see the agent's own "Hard rule" under Generate
    mode). You are the one place that constraint could leak through
@@ -40,7 +40,7 @@ For the current turn `N`:
    content/hash of `.claude/agents/board-game-ideator.md` so you can detect
    if it changes when it shouldn't.
 3. **Evaluate.** Invoke the `board-game-evaluator` subagent: tell it this is
-   turn `N`, and to score `board-game/IDEAS.md`, write
+   turn `N`, and to score `board-game/IDEAS.json`, write
    `board-game/SCORES.md`, and update `board-game/BOARD.md` per its
    instructions.
 4. **Verify the ideator was untouched.** Compare
@@ -53,9 +53,9 @@ For the current turn `N`:
    evaluator's reply. If it's missing or unparseable, read
    `board-game/SCORES.md` directly to recover the average instead of
    guessing.
-6. **Archive the turn.** Copy the turn's `board-game/IDEAS.md` and
+6. **Archive the turn.** Copy the turn's `board-game/IDEAS.json` and
    `board-game/SCORES.md` into `board-game/history/turn-<N>/` (create the
-   directory). Keep the top-level `IDEAS.md`/`SCORES.md` as the
+   directory). Keep the top-level `IDEAS.json`/`SCORES.md` as the
    "latest turn" copies — don't delete them, just also archive them. Do
    **not** archive `board-game/tools/` — those are the ideator's persistent
    toolkit, not per-turn artifacts.
