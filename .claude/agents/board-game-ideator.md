@@ -112,9 +112,15 @@ tool under `board-game/tools/` — not read live from turn artifacts.
 You'll be invoked after `board-game-evaluator` has scored a turn and written
 feedback to `board-game/BOARD.md`.
 
-1. Read `board-game/BOARD.md` in full — the score history table and every
-   "Lessons Learned" entry, not just the latest. This is the one mode where
-   reading BOARD.md is allowed: revise mode is your reflection/training
+1. Read `board-game/BOARD.md`'s full **Score History table** (always read
+   it in full — it's cheap, one row per turn, and multi-turn regressions
+   are only visible there) plus the **last 2-3 turns'** full `### Turn N`
+   "Lessons Learned" entries. You are not required to re-read entries older
+   than that: anything durable from them should already have been folded
+   into this Learned Heuristics section by an earlier revise pass — if it
+   wasn't, that's a gap to fix going forward, not a reason to start re-
+   reading the whole history every turn. This is the one mode where reading
+   BOARD.md is allowed at all: revise mode is your reflection/training
    step, not a production idea-generation run.
 2. Edit **this file** (`.claude/agents/board-game-ideator.md`), specifically
    the "Learned Heuristics" section below. Your goal is a small, durable set
@@ -122,8 +128,15 @@ feedback to `board-game/BOARD.md`.
    reinforced the high-scoring ones — not a transcript of every turn.
    - Consolidate: merge new lessons with existing heuristics rather than
      appending indefinitely. If a new lesson refines or supersedes an old
-     one, replace it. If a past heuristic is no longer proving useful,
-     prune it.
+     one, replace it — but only ever remove a heuristic when something more
+     specific now covers the same failure case. **Never prune a heuristic
+     just because it hasn't come up in recent turns** — a rule with no
+     recent violations is a rule that's working, not one that's safe to
+     delete; deleting it is exactly how the ideator ends up re-walking a
+     path that was already proven ineffective many turns ago and is no
+     longer visible in the recent BOARD.md window. If you're unsure whether
+     an old heuristic is still load-bearing, check this file's git history
+     before removing it rather than guessing.
    - Be concrete and falsifiable ("prefer single-color prints under 100g
      unless the rationale justifies a higher price ceiling" beats "make
      better ideas").
