@@ -127,5 +127,83 @@ feedback to `board-game/BOARD.md`.
 
 <!-- REVISE-MODE EDITS BELOW THIS LINE. Empty until the first revise pass. -->
 
-_(none yet — this section is populated by revise mode after the first
-evaluated turn)_
+**Root-cause note (written at Turn 3→4 revision):** total score fell three
+turns straight (67.2 → 64.8 → 61.4) even as differentiation improved
+(7.6 → 5.6 → 8.7/15), because **demand fell even faster (36.7 → 35.4 →
+30.0/55).** The prior heuristics below were being followed — ideas kept
+getting rescoped to survive differentiation search — but the rescoping
+routinely shrank the *buyer segment* (blind/low-vision players, library
+institutions, con-badge collectors, legacy-game owners with locked boxes)
+to dodge a search collision. Turn 3's data showed those niche-buyer ideas
+capping at 22-35/55 on demand even with a fully verified fact behind them,
+while Turn 1's mainstream-game-accessory ideas (Catan dial tray, Wingspan
+birdhouse) scored far higher overall. Demand is worth 55 points,
+differentiation only 15 — trading demand size for differentiation safety is
+a net loss even when it "works." The #1 rule below exists to stop that
+trade; everything after it is unchanged in substance from prior turns.
+
+- **Never fix a differentiation collision by shrinking the buyer segment —
+  narrow the mechanism/feature instead, keep the buyer mainstream.** If a
+  search shows your mechanism is already claimed, the fix is a narrower or
+  more specific *feature/combination* aimed at the SAME broad buyer (owners
+  of a specific popular game, or the general hobbyist market for that
+  accessory type) — not a pivot to a smaller demographic (accessibility
+  niche, institutional/library buyers, a small fan-culture subgroup, a
+  single legacy game's completionists) just because that segment happens to
+  be under-served. Under-served niches are usually under-served *because
+  they're small* — verify the segment is large before leaning on it, and
+  across a batch of 10, keep niche/institutional/small-demographic ideas to
+  at most 2; anchor the rest to a well-known game's existing fanbase or a
+  broad, general hobbyist accessory category.
+
+- **Differentiation-search discipline (still required, now step two, not
+  step one).** For every idea, run `board-game/tools/diff_search_queries.sh
+  "<feature phrase, no game name>"` and actually open/read the top 2-3
+  results per query before finalizing. If a close match exists (even a free
+  hobbyist listing), do not write an absolute claim ("no existing design
+  does X," "every existing product requires Y") — either drop the idea, or
+  rescope `differentiation` to the specific narrower sub-feature/combination
+  the results did NOT contradict, per the rule above (narrow the feature,
+  not the audience). This step alone raised differentiation from 5.6 to
+  8.7/15 — keep doing it, but never let it be the reason an idea's buyer
+  segment gets narrower.
+
+- **Demand rationale must pass two independent checks, not one: the fact
+  must be verifiable, AND the fact must directly support wanting THIS
+  product.** Verifiable = traces via search to one specific named source (an
+  active marketplace search category with real listing counts, a BGG
+  hot-list/geeklist, a documented fan/aftermarket community for that exact
+  title, a publisher/sales stat) — vague "trend/coverage/frequently-cited"
+  claims that don't trace to a real source are the lowest-scoring pattern
+  seen every turn so far. Non-inferential = a person who knows the cited
+  fact becomes more likely to buy *this specific object*, not just more
+  aware of the game/genre — an award for a game's theme, or general category
+  popularity, does not by itself create demand for an unrelated generic
+  accessory; that link has to be direct or the fact is weak evidence even
+  when true.
+
+- **Favor narrow, checkable feature gaps over reinventing a whole product
+  category.** Aim each idea at one specific, nameable feature a buyer would
+  recognize as missing from an already-popular accessory type (one closable
+  lid, one added divider, one rotating indicator) rather than a sweeping new
+  system or an implicit "nobody has done this category" claim.
+
+- **For any print estimated over ~3 hours, `margin_case` must show the
+  arithmetic against THIS object's own print time/grams-to-price ratio, not
+  against the base game's price point or general category willingness to
+  pay.** If the buyer is institutional/bulk (libraries, game cafes, event
+  organizers), account for expected volume-discount pressure explicitly
+  rather than pricing at hobbyist per-unit rates — this has been the
+  concrete cause of margin loss in every epic that scored low on margin.
+
+- **Producibility template that reliably scores 12-13/15: many small
+  identical parts, OR a single flex/snap joint, with exactly one or two
+  named critical tolerances in `producibility_notes` — not an elaborate
+  multi-mechanism build.** When a design repeats the same risky joint N
+  times (hinges, friction pivots, print-in-place springs), state N
+  explicitly and justify why it still works at that count, or cut to fewer
+  instances — failure probability compounds with each repeated joint.
+  Printed-only mechanisms replacing hardware (springs, bearings,
+  large-diameter pivots) need either a cheap hardware insert (magnet,
+  spring, bearing, elastic band) or an explicit wide safety margin — not
+  just a bare critical-dimension flag.

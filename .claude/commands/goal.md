@@ -36,32 +36,42 @@ For the current turn `N`:
    context, by design (see the agent's own "Hard rule" under Generate
    mode). You are the one place that constraint could leak through
    accidentally, so keep this prompt minimal.
-2. **Snapshot the ideator file.** Before evaluating, note the current
+2. **Visualize (best-effort, non-blocking).** Run
+   `python3 board-game/tools/generate_images.py --turn <N>` via Bash. This
+   renders each idea's `prompt` field to a PNG with `openai/gpt-image-2`
+   (via OpenRouter) purely so the user can eyeball the set — it is not part
+   of scoring and must never gate or fail the turn. Read the script's
+   summary line (`IMAGES: x/10 generated`) and mention it in your progress
+   report; if it exits non-zero (e.g. `OPENROUTER_API_KEY` isn't set), note
+   that previews were skipped and continue the loop exactly as if this step
+   didn't exist. Images land in `board-game/history/turn-<N>/images/`, with
+   a "latest turn" convenience copy mirrored into `board-game/images/`.
+3. **Snapshot the ideator file.** Before evaluating, note the current
    content/hash of `.claude/agents/board-game-ideator.md` so you can detect
    if it changes when it shouldn't.
-3. **Evaluate.** Invoke the `board-game-evaluator` subagent: tell it this is
+4. **Evaluate.** Invoke the `board-game-evaluator` subagent: tell it this is
    turn `N`, and to score `board-game/IDEAS.json`, write
    `board-game/SCORES.md`, and update `board-game/BOARD.md` per its
    instructions.
-4. **Verify the ideator was untouched.** Compare
-   `.claude/agents/board-game-ideator.md` against the snapshot from step 2.
+5. **Verify the ideator was untouched.** Compare
+   `.claude/agents/board-game-ideator.md` against the snapshot from step 3.
    If it changed, the evaluator violated its hard rule — stop the loop,
    revert the unauthorized change (the evaluator's only legitimate writes
    are `SCORES.md`/`BOARD.md`), and report this to the user as a pipeline
    bug rather than continuing as if nothing happened.
-5. **Parse the score.** Extract the `AVERAGE_SCORE: <XX.X>` line from the
+6. **Parse the score.** Extract the `AVERAGE_SCORE: <XX.X>` line from the
    evaluator's reply. If it's missing or unparseable, read
    `board-game/SCORES.md` directly to recover the average instead of
    guessing.
-6. **Archive the turn.** Copy the turn's `board-game/IDEAS.json` and
+7. **Archive the turn.** Copy the turn's `board-game/IDEAS.json` and
    `board-game/SCORES.md` into `board-game/history/turn-<N>/` (create the
-   directory). Keep the top-level `IDEAS.json`/`SCORES.md` as the
-   "latest turn" copies — don't delete them, just also archive them. Do
-   **not** archive `board-game/tools/` — those are the ideator's persistent
-   toolkit, not per-turn artifacts.
-7. **Report progress** to the user in one short line, e.g.:
-   `Turn 3: avg 71.2/100 (target 80). Continuing…`
-8. **Check the stopping condition:**
+   directory) — images from step 2 are already there. Keep the top-level
+   `IDEAS.json`/`SCORES.md` as the "latest turn" copies — don't delete
+   them, just also archive them. Do **not** archive `board-game/tools/` —
+   those are the ideator's persistent toolkit, not per-turn artifacts.
+8. **Report progress** to the user in one short line, e.g.:
+   `Turn 3: avg 71.2/100 (target 80), 10/10 previews rendered. Continuing…`
+9. **Check the stopping condition:**
    - If average score **>= 80**: stop the loop. Report success — final
      score, turn number, and point the user at
      `.claude/agents/board-game-ideator.md` (the "Learned Heuristics"
@@ -90,3 +100,7 @@ For the current turn `N`:
   silently retrying in a loop.
 - Keep your own narration terse — one line of progress per turn plus a
   final summary. The interesting output is the files, not your commentary.
+- Image previews need `OPENROUTER_API_KEY` in the environment (or a `.env`
+  at the repo root). If it's missing, `generate_images.py` prints a clear
+  message and exits non-zero — treat that as informational, not an error to
+  fix or escalate; the loop's actual goal (score 80+) doesn't depend on it.
