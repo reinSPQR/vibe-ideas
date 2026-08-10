@@ -153,9 +153,3 @@ high-confidence pass.
     (shared target). Producibility reasons the double-depth channel as a
     direct extension of Connect Four's already-validated drop-slide joint
     rather than an open question.
-
-## CAD Reality Check — Purchase Intent (built ideas only)
-
-| # | Title | Would-Buy /20 | Panel notes |
-|---|-------|---------------:|-------------|
-| 2 | Terraform Ridge | 4 | Split almost entirely along audience segment: the few YES votes came from spatial-puzzle-optimization and aesthetic-object personas (calculable region×elevation scoring, minimalist sage-green look "reads as a design object," Kickstarter-style component novelty). The large NO majority converged on two independent complaints — (1) complexity/accessibility mismatch for the stated casual-family audience (elevation-adjacency rules and multiplication scoring read as "a math puzzle," too slow to teach at a cafe table or to kids) and (2) the monochromatic green finish undermines the very terrain-color mechanic the scoring depends on, which cost it with both the color-differentiation-sensitive and the "maximalist wants more stuff in the box" personas. Several NOs also flagged it as too close to Kingdomino's core draft-and-place loop despite the elevation twist, echoing this turn's own differentiation notes on idea 2, and raised durability doubts about repeated placement/removal of the 3D-printed tiles and the lack of a solo mode.

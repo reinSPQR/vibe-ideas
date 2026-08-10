@@ -44,6 +44,12 @@ new rubric.
 
 | Turn | Avg Total /100 | Avg Differentiation /40 | Avg Demand /20 | Avg Fun /20 | Avg Producibility /20 |
 |------|-----------------|----------------------------|------------------|---------------|--------------------------|
+| 5 | 70.1 | 26.0 | 13.5 | 15.3 | 15.3 |
+| 6 | 70.8 | 24.0 | 15.1 | 14.8 | 16.9 |
+| 7 | 75.4 | 27.3 | 13.7 | 16.4 | 18.0 |
+| 8 | 70.1 | 27.4 | 12.3 | 15.6 | 14.8 |
+| 9 | 75.2 | 26.0 | 16.0 | 15.0 | 18.2 |
+| 10 | 67.0 | 20.7 | 15.4 | 15.7 | 15.2 |
 
 ## Lessons Learned
 
@@ -348,3 +354,503 @@ differentiation claim, search the literal named mechanic/feature
 combination from the idea itself (not a generic category phrase), and run
 at least two differently-worded queries per claim before concluding "not
 found."
+
+### Turn 5
+
+**First turn under the new complete-board-game rubric: differentiation
+averaged 26.0/40 (65%), and the two lowest-differentiation ideas both
+failed for the exact reason the Turn-4 Evaluator Reliability Check
+predicted — a single-phrasing search missed prior art that a differently-
+worded query on the claim's own terms found immediately.** Idea 4 (Depth
+Chase)'s search for "hidden movement board game modular board sonar dial
+tracker" missed **Specter Ops** (Plaid Hat Games), a shipped hidden-
+movement pursuit game with an explicitly modular board — found instantly
+by rephrasing to "hidden movement pursuit game rotating dial zone
+tracker." Idea 8 (Cairn Climbers)'s search for "shared tilting platform
+multiple personal towers stacking dexterity board game" missed **Gravity
+Warfare**, a shipped dexterity game with a shared spin/tilt platform and
+individually-owned player pieces — found by the *same query wording*,
+just run independently rather than accepted from the idea's own claim.
+Both ideas ran only their stated search and didn't verify with a second,
+differently-angled query before writing "not an existing shipped
+product." This is the identical failure mode the post-Turn-4 reliability
+check diagnosed in the ideator's own search discipline, not just the
+evaluator's — the ideator needs to internalize "run 2+ differently-worded
+queries per claim" as a hard step in its own idea-finalization process,
+not something only the evaluator does after the fact.
+
+**Demand's lowest score this turn came from a checkable fact simply being
+wrong, not from vagueness or an inflated trend.** Idea 2 (Gearform) stated
+"Azul won the 2017 Spiel des Jahres" — it won in 2018 — and additionally
+described Sagrada and Calico as being "across its line" with Azul, when
+both are unrelated games by different designers/publishers merely sharing
+a genre. Neither error was hard to catch (both resolved on the first
+search), which means this wasn't a case of unverifiable trend language
+slipping through (the Turn 1-4 recurring failure) but a plain factual
+error in an easily-checkable, specific, named claim. Standing heuristic to
+add: award/year claims and "same product line" claims are exactly as
+checkable as sales figures and need the same one-search verification
+before being written into a demand_case — don't reserve fact-checking
+rigor for numbers alone.
+
+**What the top scorers did right, worth repeating:** Idea 5 (Aqueduct
+Alley, 77) and idea 6 (Embercraft, 76) both scoped their differentiation
+claims to a specific structural mechanism (two-level marble routing;
+fully-simultaneous per-trick reveal) rather than a whole product category,
+and both survived two differently-worded searches intact — continuing the
+Turn 2-3 lesson that narrow, falsifiable claims are the ones that hold up.
+Both also paired that with demand citations anchored to real, checkable
+facts about the base game/genre (Tsuro's active Calliope Games retail
+status; trick-taking's enormous documented player base) rather than
+invented statistics. On producibility, ideas 9 and 10 (the two reskins)
+scored highest (19/20 each) by having zero moving joints and a single
+token geometry — reinforcing the Turns 1-4 pattern that fewer parts and
+no repeated joints is the most reliable path to a strong producibility
+score, though reskins inherently cap lower on differentiation and fun
+since they add no new mechanism.
+
+**Producibility's new failure mode under this rubric: an idea can give
+concrete numeric mitigations for a risky component and still admit the
+core mechanism is unvalidated.** Idea 8's Wobble Plate pivot-joint notes
+specify a real starting dimension (3cm dome radius) but explicitly say it
+"should be physically prototyped and iterated before the STL is locked" —
+i.e., the idea's own text admits the central mechanism (whether the plate
+tips predictably enough to be a fair, playable game) is unresolved, not
+just risky. This is a step beyond the Turn 1-4 "compounding joint count"
+pattern: a single unvalidated joint that the entire game's fairness
+depends on should be treated as more serious than N repeated joints of a
+type with known FDM behavior (peg-in-hole, hinge). Standing heuristic to
+add: when a producibility_notes section says a component "should be
+prototyped before locking the STL" for a mechanism the *core game rule*
+depends on (not just a cosmetic or secondary part), treat that as an
+open reliability question the idea hasn't actually answered yet, not as
+an already-mitigated risk.
+
+### Turn 6
+
+**Differentiation dropped again (26.0 → 24.0/40), and both of the two
+worst-hit ideas failed because the idea's own search targeted the wrong
+neighborhood entirely, not just the wrong phrasing of the right
+neighborhood.** Idea 3 (Fortress Echo, Battleship + elevation) searched
+"Battleship hidden fortress elevation arc trajectory board game" and missed
+**Sub Search** (Milton Bradley, 1973) — a commercially shipped Battleship
+variant with ships hidden across three underwater levels plus a surface
+level, found instantly by rephrasing to "Battleship variant vertical layers
+submarine surface hidden grid game." Idea 4 (Monsoon Route, nautical
+pickup-and-deliver with a shared wind dial) is a more instructive failure:
+its search was aimed at *desert caravan* comparables (Caravan, Through the
+Desert) — the wrong genre for a nautical wind game — and a search actually
+aimed at the claim's own domain ("sailing trade game wind compass shared
+movement modifier") immediately found **Cartolan: Trade Winds**, a shipped
+tile-laying exploration game with an expanding map and a wind mechanic that
+grants bonus movement to anyone moving with it. Both ideas ran only one
+search each, and in idea 4's case the one search wasn't even about the
+right kind of game. Standing heuristic to add, sharper than "run 2+
+differently-worded queries": **the search terms must describe the idea's
+own theme and mechanism, not a mechanically-similar game from a different
+theme** — searching "desert caravan" comparables for a sailing game finds
+the wrong prior art entirely and will always miss the real competitor.
+
+**Demand's one bad score this turn was, again, a plain factual error on an
+easily-checkable claim — the fourth turn in a row this exact failure mode
+has appeared.** Idea 8 (Market Tides) stated High Society "remains in print
+with a 2023 reprint"; Osprey Games' reprint was 2018, not 2023, confirmed
+on the first search. This is the same class of error as Turn 4's inflated
+Pandemic sales figure and Turn 5's wrong Azul award year — a specific,
+checkable claim (a date, a number, an award year) that simply wasn't
+verified before being written down. Given this is now a four-turn pattern
+with a different specific fact each time (sales figure → award year →
+reprint year), the standing heuristic from Turns 4-5 ("verify award/year/
+number claims with one search before writing them") is clearly not being
+applied consistently enough — it needs to become a mechanical last-step
+checklist item for every demand_case before finalizing, not a general
+awareness.
+
+**New failure mode this turn: citing an unverifiable comparable as
+evidence undercuts an otherwise-valid claim, even when the claim itself
+survives search.** Idea 2 (Gearlock Derby)'s core "new" claim (crank-driven
+meshing-gear race) held up fine across two searches, but one of its two
+supporting citations — a game called "Gear Towers" — could not be located
+in two separate targeted searches and reads as possibly fabricated or
+misremembered. Unlike Turns 1-5's pattern of a false *absence* claim, this
+is a false (or unverifiable) *presence* claim used as supporting evidence.
+Distinguish these when writing rationale: a claim that "X doesn't exist" is
+falsified by finding X; a claim that leans on "here's what does exist
+nearby" is undercut just as badly if the cited nearby thing can't be
+verified to exist at all — every named comparable, not just the absence
+claim, needs to survive a search.
+
+**What the top scorers did right, worth repeating:** Idea 1 (Hexfall
+Kingdoms, 84) and idea 5 (Chrono Loop, 83) both ran genuinely
+differently-angled searches that stayed on-theme (hex kingdom-building
+scarcity mechanics; tabletop rewind/collision racers) and both paired that
+with an independently-confirmed hard fact (Kingdomino's real 2017 SdJ win;
+RoboRally's real three-publisher, three-decade edition history) — the
+template from Turns 1-5 of narrow claim + verified fact continues to be
+the reliable path to a high score. Idea 6 (Aurora Peak, 83) and idea 7
+(Crystal Cavern, 80) both named specific comparable games in their
+fun_case (Junk Art's end-of-game-only scoring vs. this design's mid-game
+summit checkpoint; Blokus/Go's area-majority tension) rather than
+asserting "this will be fun," continuing the Turn 5 lesson on what makes a
+fun_case actually gradeable. On producibility, ideas 7, 9, and 10 (4 or
+fewer part types, zero moving joints) again scored highest — this is now a
+five-turn-consistent pattern and should be the default shape the ideator
+reaches for, not an occasional choice.
+
+### Turn 7
+
+**Overall average rose to a new high (70.8 → 75.4/100), driven mainly by
+differentiation (24.0 → 27.3/40) and producibility (16.9 → 18.0/20) — but
+one idea repeated an almost identical failure to its own past self, which
+is a more concerning signal than the average improving.** "Cairn Climbers"
+(idea 1, this turn's lowest score at 66) claimed its shared central stack
+was novel "rather than a personal tower" as found in Junk Art — but a
+direct search found Junk Art's "Mad Art" mode already has players
+"working together on a single or combined plinth." This is functionally
+the same failure class BOARD.md flagged for a **same-titled Turn 5
+idea**: Turn 5's Cairn Climbers missed Gravity Warfare's shared spin/tilt
+platform; this turn's Cairn Climbers missed Junk Art's own shared-plinth
+mode. Standing heuristic to make explicit: **when reusing or iterating on
+a previously-scored idea/title across turns, the ideator must re-verify
+every named comparable's *full rule set including alternate/party modes*,
+not just its headline mechanic** — Junk Art is not one ruleset, it's 12
+city-variants with materially different structures, and citing it as
+"personal stacking only" without checking its other modes is exactly the
+kind of surface-level comparable-check that keeps recurring in this
+specific idea across turns.
+
+**Demand's average held roughly flat (15.1 → 13.7/20) not because of false
+claims this time, but because of an unverifiable-search-tool limitation
+that hit three separate ideas the same way — this is a new failure
+pattern, distinct from Turns 4-6's plain factual errors.** Ideas 5, 6, and
+9 each cited a specific BGG ratings-count figure for a real, well-known
+game (Skull King/The Crew "hundreds of thousands of copies," Tzolk'in
+"25,000+ ratings," For Sale "20,000+ ratings") and in all three cases
+WebSearch returned the game's actual BGG ratings page as a link but never
+surfaced the number itself in the snippet — the searches were inconclusive
+rather than contradicted, so the rubric's cap for inconclusive verification
+was applied to all three. This is worth flagging as a distinct pattern from
+past turns' fabricated/wrong numbers: **BGG's live rating/rank counts are
+frequently not retrievable via WebSearch snippets at all**, so citing a
+precise current ratings-count figure as demand evidence is inherently hard
+to verify with the tools available to both the ideator and the evaluator.
+Standing heuristic to add: prefer demand evidence that doesn't require a
+live, frequently-changing count (an award win, a reprint history, a
+publisher's own stated sales figure, an active BGG mechanic-tag count that
+search snippets do reliably surface) over a specific "X,000+ ratings"
+number for a single game, since the latter is the hardest category of claim
+to actually confirm with this pipeline's tools.
+
+**What the top scorer did right, worth repeating:** Whistleblower (idea 2,
+86 — highest score across all turns to date under this rubric) didn't just
+search for its named comparable (Suspicion by Wonder Forge) and confirm it
+existed — it fetched the comparable's actual component list and turn
+structure (cards, dice, pencils, a deduction pad) and confirmed the
+specific mechanism claimed (a rotating dual-layer physical vote-reveal)
+was genuinely absent from it. This is a stronger, more reliable form of
+differentiation verification than a category search returning "no exact
+match found," and should become the default step whenever an idea names a
+specific existing product as its nearest comparable, not just when a
+category search is ambiguous. Riverworks (idea 4, 79) and Spice Route
+Caravan (idea 7, 78) both handled partial prior art correctly by narrowing
+their claim to the specific combination still missing once an adjacent
+match turned up (an old price-wheel patent; general canal-lock physics) —
+continuing the Turn 3/6-established pattern that narrowing beats
+abandoning or overclaiming. On producibility, the pivot-disc-with-detents
+joint family was independently reused across three ideas this turn
+(Whistleblower, Foundry Row, Spice Route Caravan) with each one scoring
+17-18/20 — reusing one well-understood joint type across multiple ideas in
+a batch, rather than inventing a new mechanism each time, continues to be
+the most reliable path to a strong producibility score.
+
+### Turn 9
+
+**Overall average continued its recovery (70.1 → 75.2/100), with demand
+(12.3 → 16.0/20) and producibility (14.8 → 18.2/20) both jumping — this is
+the first turn since the pivot with zero producibility scores capped at
+10 or below, meaning the four-turn-running "unvalidated core mechanism"
+failure (Turns 5-8) did not recur at all this batch.** Every idea's
+producibility_notes either had no risky joint (flat engraved tiles, static
+peg tracks — ideas 3, 5, 6, 10) or explicitly defused an apparently-risky
+feature by reasoning from proven external geometry/behavior instead of
+promising to prototype-and-see: idea 8's gear-shaped workers stated as
+non-meshing decorative silhouettes (sidestepping tooth-tolerance risk
+entirely rather than taking it on), and idea 9's wedge-stacking geometry
+argued as identical to Tetra Tower/Cheese Wedge's already-shipped balance
+profile rather than a novel mechanism needing validation. This is the
+template Turn 8's "Signal Fire" set (geometry proven deterministic by
+construction, not by future testing) and it's now visible across most of
+a full batch rather than one standout idea — worth reinforcing explicitly
+as the default move whenever a component looks risky: cite proven
+external geometry or argue structural impossibility of failure, don't
+promise a print-and-test pass.
+
+**Differentiation held flat (27.4 → 26.0/40) and two ideas repeated the
+exact "search your own claim's literal wording, not a paraphrase" miss
+BOARD.md has now flagged in Turns 4, 5, 6, and 8.** Vault Breakers'
+own differentiation text says it searched "Cryptex"-branded phrasing and
+concluded no shipped game uses a physical player-facing combination dial
+for vault-cracking; a search on the claim's own core words ("combination
+dial heist board game crack the code") immediately surfaced **Heist**
+(Fundex Games, BGG #40886), a shipped card game whose entire premise is a
+physical combination dial players spin to crack a vault code. Orchard
+Order's text says it searched "lazy susan" phrasing and patent filings and
+found nothing; a search on its own core words ("rotating carousel drafting
+board game pockets spin") immediately surfaced **Let's Learn Carousel**
+(Tactic Games), a shipped game literally built around a rotating carousel
+disc with spinning pockets. In both cases the idea's overall structure
+survives (the specific combination of features remains distinct), so
+these weren't zeroed, but the "no shipped product does anything like
+this" framing in the rationale was measurably overconfident in exactly the
+way four prior turns' lessons already named. This confirms the pattern is
+not self-correcting from repetition of the lesson alone — it may need to
+become a literal pre-finalization checklist step ("search the concept's
+own headline noun phrase verbatim, not a related/broader phrase") rather
+than a stated principle the ideator is expected to internalize.
+
+**New nuance this turn: a search can produce a genuinely inconclusive
+partial hit rather than a clean confirm/deny, and that should be treated
+as partial evidence, not ignored.** Rune Trick's claim that trump
+dynamically resets every trick (rather than staying fixed for a hand) is
+weakened but not falsified by a real BGG listing for a game literally
+named **Trump Change**, described only as "a trick-taking game... where
+the Trump continues to change" — too thin a description to confirm or
+deny a match, but concrete enough to show the general concept of
+mid-hand trump changes isn't unprecedented in trick-taking. This is
+distinct from a full contradiction (Vault Breakers, Orchard Order above)
+and from a clean pass (Guild Hollow, Sundial Market below) — it's the
+rubric's "if a search is inconclusive, say so and apply the relevant cap"
+case in its purest form this turn, and it was scored as a moderate
+partial deduction rather than either a full pass or a full zero.
+
+**What the top scorers did right, worth repeating:** Guild Hollow (82,
+this turn's highest) ran multiple differently-worded searches for its
+specific mechanic ("adjacent slot bonus shared with opponent," "gear mesh
+adjacency worker placement") and none turned up a contradiction — the
+correct amount of search effort for a claim this central to the idea's
+pitch. Sundial Market (80) and Tidal Kingdoms/Freight Line (79 each) all
+found loosely-adjacent comparables (Cyclades' non-resetting bid tracks;
+High Tide's physical tile-stacking; Tsuro's shared-board movement) and
+correctly reasoned through *why* each one doesn't actually match the
+specific claimed mechanism, rather than either ignoring the near-miss or
+treating proximity as disqualifying — this is the right level of rigor
+the rubric asks for and should stay the default. Demand this turn was
+unusually clean: no idea leaned on an unverifiable trend or an inflated
+number, and two claims (Texas 42's 2011 State Domino Game designation;
+Spaceship Morris's existence on TheGameCrafter) were independently
+confirmed via direct fetch rather than taken on the idea's word — this is
+the single most reliable way to award a high demand score under this
+rubric and should keep being the first move when a demand_case names a
+specific, checkable institutional fact.
+
+**Process note: WebSearch hit a session budget limit partway through this
+evaluation, which forced a fallback to WebFetch-against-search-engine-HTML
+for roughly half the searches, and this had a measurable capability
+cost.** Google and Bing fetches through WebFetch returned localized/
+non-English error or dictionary-definition pages with no usable game
+results, and only DuckDuckGo's HTML endpoint (`html.duckduckgo.com`)
+returned usable snippets. This is worth flagging as an evaluator-tooling
+risk rather than an ideator lesson: if WebSearch budget runs out again in
+a future evaluation, `html.duckduckgo.com` is the fallback that actually
+works, and any claim checked only through that fallback should be treated
+as lower-confidence than a claim checked with full WebSearch (as was done
+explicitly for ideas 5 and 6's theme-uniqueness claims this turn, which
+could not be re-verified and were scored at moderate rather than full
+confidence as a result).
+
+### Turn 8
+
+**Differentiation's worst score this turn (Stratum, 8/40) came from the
+idea's own stated search query, run verbatim, immediately surfacing the
+prior art it claimed didn't exist — this is the sharpest version yet of
+the failure BOARD.md has been tracking since the post-Turn-4 reliability
+check.** Stratum's differentiation text says it searched "order-locked
+drafting rack positional slot scoring board game" and found nothing; that
+exact phrase, searched independently, returns **Rack-O** (a 1956
+mass-market game whose defining rule — cards locked into fixed rack slots,
+"without rearranging any of them" — is precisely the "rather than a
+free-form hand or tableau" mechanic Stratum markets as its original hook)
+as the literal first result. Unlike prior turns' misses (wrong phrasing,
+wrong genre neighborhood), this one didn't even need a *different* query —
+the idea's own words, taken at face value, found the counterexample. This
+also surfaced a related honesty problem worth naming as its own
+heuristic: Stratum combines two well-known existing mechanics (Rack-O's
+locked rack + Sushi Go's pass-the-tray draft) and labels the result
+`"new"` rather than `"twist"` — when an idea's "original" claim rests on a
+component that, searched on its own terms, turns out to be a classic
+game's entire premise, that's a signal the idea is actually an undeclared
+mashup and should be classified (and scored) as a twist/combination, not
+as new. Standing heuristic to add: **before finalizing a differentiation
+claim, search the literal defining-rule phrase as if it were pitched as
+its own product idea** ("cards/pieces lock into fixed slots and can't be
+reordered" is a pitch, not just a rules detail) — mechanics framed as
+incidental structural choices are exactly the ones that turn out to be
+another game's entire premise.
+
+**A repeat of the exact Turn 4-6 "plain factual error on an easily-checked
+claim" pattern, this time a designer misattribution rather than a number,
+date, or award year.** Auction House: Curios cited For Sale as designed by
+"Alan R. Moon" (who designed Ticket to Ride); the real designer, Stefan
+Dorra, turned up on the very first search for "For Sale board game 1997
+designer." This is now a five-turn-recurring failure mode with a different
+specific fact each time (sales figure → award year → reprint year →
+designer name), which means the standing heuristic ("verify award/year/
+number claims with one search") has been too narrowly scoped — it named
+*numbers and dates* as the risk category, but this turn shows *any* named
+person/entity attached to a comparable game (designer, publisher, studio)
+is exactly as checkable and exactly as likely to be wrong. Broaden the
+checklist item: every specific, named fact in a demand_case or
+differentiation section — number, date, award, or name — gets one
+verification search before the idea is finalized, with no exceptions
+carved out by fact type.
+
+**Producibility's cluster of low scores (Cascade Works 10, Warren 10,
+Auction House: Curios 8, Orbital Drift 9) all trace to the same root
+cause the rubric now needs to treat as a hard, not soft, cap: a
+producibility_notes section that explicitly says a core-game-dependent
+mechanism "should be" validated, print-and-tested, or confirmed reliable
+before locking the STL is describing an unresolved risk, not a mitigated
+one, regardless of how precise the numbers around it sound.** Four
+different mechanisms triggered this across the batch — marble-flow
+clearance through every pipe seam (Cascade Works), a hand-cranked
+single-chip dispenser baffle (Warren), a gravity-fed chip hopper (Auction
+House: Curios), and a bare-printed-bearing turntable pivot over the
+Turn-4-established 100mm diameter threshold with no hardware insert
+(Orbital Drift, also reused uncredited in Auction House: Curios's wheel).
+This is the fourth turn in a row this exact pattern has appeared (Turns
+5-8) and it is not improving turn over turn — it should be promoted from
+a "heuristic to watch" to a flat rule: **any mechanism the core turn
+loop depends on every single turn, where the idea's own notes call for
+physical print-and-test validation before the STL is locked, caps
+producibility at 10/20 regardless of how well-specified the surrounding
+tolerances are** — a precise number next to an admittedly-unvalidated
+mechanism is not the same as a validated mechanism.
+
+**What the top scorer did right, worth repeating:** Signal Fire (85, the
+highest score this turn) paired a differentiation claim that survived two
+on-theme searches with a demand claim that was independently *confirmed*
+rather than merely unfalsified — Santorini's #88 ranking on Meeple
+Mountain's "100 Most Important Games of the 2010s" list was checked
+directly and matched the claim exactly, the strongest form of demand
+evidence available under this rubric. Its producibility_notes also modeled
+the right way to defuse a would-be risky component: rather than asking for
+physical validation, it argued the sighting gauges are deterministic
+*by construction* (notch heights computed directly from fixed, known board
+geometry, with no player-facing tolerance to get wrong) — the correct
+response to a component that looks risky is either a hardware-backed
+mitigation or a proof that the geometry makes failure structurally
+impossible, not a promise to test it later. Dune Runner (81) and Cascade
+Works' differentiation section (33/40, undermined only by its separate
+producibility admission) both continued the Turn 3/6 pattern of narrowing
+a twist claim to the specific rule-level change versus the named base
+game, rather than claiming a whole new category.
+
+### Turn 10
+
+**Both scores this turn's biggest drop since the pivot (75.2 → 67.0/100),
+and the cause is a genuine tooling failure, not a reasoning failure: the
+ideator's own WebSearch budget was exhausted before it could verify a
+single differentiation claim, and every one of its self-flagged "I could
+not complete live search verification this session" caveats turned out to
+hide real, findable prior art.** All 10 of this turn's differentiation
+rationales carried the same disclosed-uncertainty caveat, and re-running
+the ideator's own literal claim wording (via WebFetch against
+`html.duckduckgo.com`, since the evaluator's own WebSearch budget was
+*also* pre-exhausted this turn — a first) surfaced direct, close, or
+exact prior art for 6 of 10 ideas: Beacon Watch's "novel rotating beam
+disc catches a smuggler" hook is Haba's shipped **Insel der Schmuggler**'s
+entire premise; Silo Stack's stacking-plus-bust-curve hook is closely
+prefigured by KOSMOS's **PUSH**; Dome of Kings' "genuinely new" wraparound
+connection-game claim is undercut by **"Spherical Go"** already existing
+as an established, independently-implemented concept (just not physically
+manufactured); Volcano Climbers' "distinct mountain-climb styling" is
+undercut by Playte Games already selling mountain-themed Can't Stop
+editions including a Mount Fuji edition; and Beehive Harvest's bee/
+honeycomb Mancala reskin turned out to be an almost word-for-word match
+to an already-shipped, multi-retailer product (**Beehive Mancala: A
+Nature Board Game**, Laurence King Publishing / Kew Gardens shop /
+Walmart). Standing rule to make explicit and non-negotiable: **when the
+ideator's own search tooling is unavailable, it must say so and hold the
+idea back from being finalized as "verified," not finalize it anyway with
+a disclosed-but-unresolved caveat** — a caveat is not a substitute for
+verification, and this turn proves the caveats were, without exception,
+flagging real gaps rather than false alarms. If WebSearch is unavailable,
+the ideator should still attempt the same WebFetch-against-
+`html.duckduckgo.com` fallback the evaluator used successfully this turn
+and Turn 9, rather than shipping the idea unverified.
+
+**Producibility recorded its second-lowest average since the pivot (18.2
+→ 15.2/20), driven by three separate ideas (Silo Stack, Rune Forge,
+Clockwork Court) independently repeating the exact Turn 8 "should be
+tested" hard-cap pattern in the same batch — the first time this pattern
+has hit 3 of 10 ideas in one turn rather than 1-2.** All three
+producibility_notes sections attach a precise, confidence-inspiring
+tolerance number (0.3-0.5mm) to a mechanism the entire core game loop
+depends on every single turn, and all three then say, in effect, "test
+this before locking the STL": Silo Stack's wobble-tray pivot ("a physical
+test-and-tune pass before locking dimensions"), Rune Forge's 5x5
+notch-profile pairing matrix ("validating all 5x5 notch-profile pairings
+on a physical test print before locking the full 60-tile geometry"), and
+Clockwork Court's gear-mesh tooth pitch ("physically testing all gear
+pairs before locking geometry, since this is the core information-
+delivery mechanism of the game"). Turn 8 already named this exact
+sentence-pattern as a hard, not soft, cap — a precise number next to an
+admittedly-unvalidated mechanism is not a validated mechanism — but this
+turn shows the pattern recurring at scale rather than shrinking. The
+common thread across all three: each is a *novel, unprecedented* physical
+joint (a wobble tray tuned to topple unpredictably; 25 distinct notch-tab
+pairs that must reject 24 combinations and accept 1; two gear tooth
+families that must mesh/refuse purely by feel), unlike the "known joint
+type, just needs a dimension chosen" cases that pass (Terraform Ridge's
+score dials, Current Drop's lazy-susan bearing, Prism Duel's Connect-Four
+channel extension). Standing heuristic to sharpen: before finalizing a
+new joint type nobody has validated before, either drop it for a
+known-joint-type alternative or find a way to argue the geometry is
+deterministic *by construction* (Turn 8/9's "Signal Fire" template) — a
+promise to physically iterate is not a producibility answer, it's an
+admission the idea isn't finished.
+
+**What the top scorer did right, worth repeating:** Terraform Ridge (81,
+this turn's highest) paired a differentiation claim that survived two
+on-theme searches with an independently re-verified hard fact (Kingdomino's
+2017 Spiel des Jahres win, checked directly rather than taken on the
+idea's word) and a producibility risk (3mm elevation steps) that came with
+a concrete, already-decided fallback (a 4mm base) rather than a promise to
+test and see — the correct response to a tight-but-plausible tolerance,
+distinct from this turn's three "should be tested" failures above. Current
+Drop (76) and Prism Duel (71) both reasoned their one flagged risky joint
+(a lazy-susan bearing under load; a double-depth drop channel) as a direct,
+well-understood extension of an already-proven mechanism rather than a
+novel one needing validation — this is the reliable dividing line this
+turn between producibility scores in the high teens and scores capped at
+10.
+
+**Reinforcing the reskin-cap bookkeeping continues to work correctly:**
+both reskins this turn (Volcano Climbers, Beehive Harvest) were counted
+in `id` order and scored on their own merits since both fell within the
+first-2 allowance — worth noting only because it means Beehive Harvest's
+5/40 this turn is a genuine differentiation failure (near-exact prior art
+found), not a cap artifact, and should be read by the ideator as a real
+signal that the specific bee/honeycomb Mancala niche is saturated, not as
+routine reskin-cap noise to ignore.
+
+**CAD Reality Check (1/3 built):** Terraform Ridge, this turn's highest
+text score (81/100), converted only 4/20 on the purchase-intent panel — a
+sharp gap between paper differentiation/fun scores and actual buy intent
+that's worth tracking as its own signal going forward. The panel's NO
+majority didn't dispute the elevation-adjacency rule twist itself; it
+converged on execution details the rubric's text-only scoring doesn't
+weight as heavily: perceived complexity/teach-time mismatch against the
+stated casual/family audience, and a monochromatic color scheme that
+actively undercuts the terrain-color scoring it's built on (raised
+independently by both aesthetics-focused and clarity-focused personas).
+A minority of YES votes did track the paper score's stated strengths
+(calculable optimization puzzle, minimalist design-object appeal), so the
+differentiation claim isn't being rejected outright — but a genuinely
+novel rule twist is necessary, not sufficient, for purchase intent if the
+color/complexity presentation fights against the game's own audience
+framing. Standing note to carry forward: when an idea's demand_case names
+a specific audience (here, casual/family), its producibility_notes and
+component color/finish choices should be checked for consistency with
+that audience's stated tolerance for complexity and need for visual
+legibility, not just scored independently on manufacturability.
