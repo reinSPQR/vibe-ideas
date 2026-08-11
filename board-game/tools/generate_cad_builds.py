@@ -33,6 +33,16 @@ could be attempted at all (client unreachable, no picks) or every pick
 failed/parked, so a caller (the /goal loop) can treat either "partial
 success" or "totally unreachable" as informational rather than a reason to
 stop.
+
+Every picked idea gets an `out_dir`/`manifest.json` written, regardless of
+outcome — a park/timeout/failure is no longer diagnostically silent. The
+manifest's `status` field always reflects the real outcome
+(`done`/`awaiting_questions`/`timeout`/`failed`/`submit_error`/etc.), and
+non-`done` manifests additionally carry `error` (a short human-readable
+reason where available) and `raw_job` (the full job-status response the
+API returned, when one was received) so a downstream reader can see
+*why* a pick didn't complete instead of inferring it from a missing
+directory.
 """
 from __future__ import annotations
 
@@ -198,41 +208,76 @@ def _build_idea(
 ) -> BuildResult:
     idea_id = idea.get("id")
     title = str(idea.get("title") or f"idea-{idea_id}")
+    out_dir = out_root / f"idea-{idea_id:02d}-{_slugify(title)}"
     prompt = idea.get("cad_prompt")
+
+    def _write_manifest(
+        *, status: str, job_id: str | None = None, design_id: str | None = None,
+        wall_time_s: float | None = None, error: str | None = None,
+        raw_job: dict | None = None, review_fix: dict | None = None,
+        photo_file: str | None = None, photo_error: str | None = None,
+    ) -> None:
+        # Always write a manifest, even on park/timeout/failure — this is the
+        # only diagnostic artifact a non-done pick leaves behind, so it
+        # carries whatever the job API actually returned (raw_job) rather
+        # than forcing downstream readers to infer "missing dir == parked".
+        out_dir.mkdir(parents=True, exist_ok=True)
+        manifest = {
+            "idea_id": idea_id,
+            "title": title,
+            "job_id": job_id,
+            "design_id": design_id,
+            "status": status,
+            "review_fix": review_fix,
+            "wall_time_s": round(wall_time_s, 1) if wall_time_s is not None else None,
+            "photo_file": photo_file,
+            "photo_error": photo_error,
+            "error": error,
+            "raw_job": raw_job,
+        }
+        (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, default=str))
+
     if not prompt:
-        return BuildResult(idea_id, title, ok=False, outcome="submit_error", error="idea has no 'cad_prompt' field")
+        _write_manifest(status="submit_error", error="idea has no 'cad_prompt' field")
+        return BuildResult(idea_id, title, ok=False, outcome="submit_error", out_dir=out_dir, error="idea has no 'cad_prompt' field")
 
     start = time.monotonic()
     try:
         submission = _submit_job(client_url, prompt)
     except (urllib.error.URLError, OSError, ValueError) as exc:
-        return BuildResult(idea_id, title, ok=False, outcome="submit_error", error=f"submit failed: {exc}")
+        _write_manifest(status="submit_error", error=f"submit failed: {exc}", wall_time_s=time.monotonic() - start)
+        return BuildResult(idea_id, title, ok=False, outcome="submit_error", out_dir=out_dir, error=f"submit failed: {exc}")
 
     job_id = submission.get("job_id")
     design_id = submission.get("target_design_id")
     if not job_id:
-        return BuildResult(idea_id, title, ok=False, outcome="submit_error", error=f"no job_id in response: {submission}")
+        _write_manifest(status="submit_error", error=f"no job_id in response: {submission}", raw_job=submission, wall_time_s=time.monotonic() - start)
+        return BuildResult(idea_id, title, ok=False, outcome="submit_error", out_dir=out_dir, error=f"no job_id in response: {submission}")
 
     try:
         job = _poll_job(client_url, job_id)
     except (urllib.error.URLError, OSError, ValueError) as exc:
-        return BuildResult(idea_id, title, ok=False, outcome="submit_error", job_id=job_id, design_id=design_id, error=f"poll failed: {exc}")
+        _write_manifest(status="submit_error", job_id=job_id, design_id=design_id, error=f"poll failed: {exc}", wall_time_s=time.monotonic() - start)
+        return BuildResult(idea_id, title, ok=False, outcome="submit_error", out_dir=out_dir, job_id=job_id, design_id=design_id, error=f"poll failed: {exc}")
 
     wall_time_s = time.monotonic() - start
     status = job.get("status")
-    out_dir = out_root / f"idea-{idea_id:02d}-{_slugify(title)}"
 
     if status == "awaiting_questions":
-        return BuildResult(idea_id, title, ok=False, outcome="parked_awaiting_questions", job_id=job_id, design_id=design_id, wall_time_s=wall_time_s)
+        _write_manifest(status="awaiting_questions", job_id=job_id, design_id=design_id, wall_time_s=wall_time_s, raw_job=job)
+        return BuildResult(idea_id, title, ok=False, outcome="parked_awaiting_questions", out_dir=out_dir, job_id=job_id, design_id=design_id, wall_time_s=wall_time_s)
     if status == "timeout":
-        return BuildResult(idea_id, title, ok=False, outcome="timeout", job_id=job_id, design_id=design_id, wall_time_s=wall_time_s)
+        _write_manifest(status="timeout", job_id=job_id, design_id=design_id, wall_time_s=wall_time_s, raw_job=job)
+        return BuildResult(idea_id, title, ok=False, outcome="timeout", out_dir=out_dir, job_id=job_id, design_id=design_id, wall_time_s=wall_time_s)
     if status != "done":
-        return BuildResult(idea_id, title, ok=False, outcome=status or "failed", job_id=job_id, design_id=design_id, wall_time_s=wall_time_s, error=str(job.get("error")))
+        _write_manifest(status=status or "failed", job_id=job_id, design_id=design_id, wall_time_s=wall_time_s, error=str(job.get("error")), raw_job=job)
+        return BuildResult(idea_id, title, ok=False, outcome=status or "failed", out_dir=out_dir, job_id=job_id, design_id=design_id, wall_time_s=wall_time_s, error=str(job.get("error")))
 
     result = job.get("result") or {}
     thumbnail_urls = result.get("thumbnail_urls") or []
     if not thumbnail_urls:
-        return BuildResult(idea_id, title, ok=False, outcome="done", job_id=job_id, design_id=design_id, wall_time_s=wall_time_s, error="job done but no thumbnail_urls in result")
+        _write_manifest(status="done", job_id=job_id, design_id=design_id, wall_time_s=wall_time_s, error="job done but no thumbnail_urls in result", raw_job=job)
+        return BuildResult(idea_id, title, ok=False, outcome="done", out_dir=out_dir, job_id=job_id, design_id=design_id, wall_time_s=wall_time_s, error="job done but no thumbnail_urls in result")
 
     assembled_url = thumbnail_urls[0]
     qa_url = assembled_url.rsplit("/", 1)[0] + "/_qa.png"
@@ -241,7 +286,8 @@ def _build_idea(
     try:
         (out_dir / "assembled.png").write_bytes(_http_bytes(_proxy_url(client_url, assembled_url)))
     except (urllib.error.URLError, OSError) as exc:
-        return BuildResult(idea_id, title, ok=False, outcome="done", job_id=job_id, design_id=design_id, wall_time_s=wall_time_s, error=f"could not fetch assembled.png: {exc}")
+        _write_manifest(status="done", job_id=job_id, design_id=design_id, wall_time_s=wall_time_s, error=f"could not fetch assembled.png: {exc}", raw_job=job)
+        return BuildResult(idea_id, title, ok=False, outcome="done", out_dir=out_dir, job_id=job_id, design_id=design_id, wall_time_s=wall_time_s, error=f"could not fetch assembled.png: {exc}")
     try:
         (out_dir / "qa.png").write_bytes(_http_bytes(_proxy_url(client_url, qa_url)))
     except (urllib.error.URLError, OSError):
@@ -249,18 +295,12 @@ def _build_idea(
 
     photo_path, photo_error = _run_ai_thumbnail(compose_file, out_dir / "assembled.png", job_id, out_dir)
 
-    manifest = {
-        "idea_id": idea_id,
-        "title": title,
-        "job_id": job_id,
-        "design_id": design_id,
-        "status": status,
-        "review_fix": result.get("review_fix"),
-        "wall_time_s": round(wall_time_s, 1),
-        "photo_file": photo_path.name if photo_path else None,
-        "photo_error": photo_error,
-    }
-    (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
+    _write_manifest(
+        status="done", job_id=job_id, design_id=design_id, wall_time_s=wall_time_s,
+        review_fix=result.get("review_fix"),
+        photo_file=photo_path.name if photo_path else None,
+        photo_error=photo_error,
+    )
 
     return BuildResult(
         idea_id, title, ok=True, outcome="done", out_dir=out_dir, job_id=job_id,

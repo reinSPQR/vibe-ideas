@@ -1,0 +1,27 @@
+{
+  "idea_id": 10,
+  "title": "Circuit Mill",
+  "job_id": "6a7a02066a9f3bd67427cc18",
+  "design_id": "6a7a02066a9f3bd67427cc19",
+  "status": "done",
+  "review_fix": {
+    "mode": "printability-only",
+    "threshold": 8,
+    "passed": true,
+    "iterations_used": 0,
+    "scores": {
+      "printability": 10
+    },
+    "history": [
+      {
+        "round": 0,
+        "scores": {
+          "printability": 10
+        }
+      }
+    ]
+  },
+  "wall_time_s": 810.7,
+  "photo_file": "photo.jpg",
+  "photo_error": null
+}

@@ -7,7 +7,7 @@
 # Heist; Orchard Order missed Let's Learn Carousel; Stratum's own stated
 # query, run verbatim, found Rack-O as the first result.)
 #
-# Usage: ./prior_art_search.sh "combination dial vault cracking" "heist theme"
+# Usage: ./prior_art_search.sh "combination dial vault cracking" "heist theme" "Vault Breakers"
 #   arg1 = the mechanism/feature phrase in the idea's OWN words, as if it
 #          were the headline pitch of a standalone product (not a rules
 #          detail buried in a longer description)
@@ -15,6 +15,9 @@
 #          aimed at a mechanically-similar game in the WRONG theme has
 #          repeatedly missed the real competitor, e.g. searching "desert
 #          caravan" comparables for a sailing/wind game missed Cartolan)
+#   arg3 = the idea's own title (optional but strongly recommended — Turn 11:
+#          "Caravan Ledger" never searched its own name and missed a shipped
+#          game literally titled "Caravan" whose core mechanic overlapped)
 #
 # Prints one query per line. Run EACH one through WebSearch (not just the
 # first) and actually read the top 2-3 results before writing the
@@ -22,12 +25,13 @@
 # every query below comes back clean.
 
 if [ -z "$1" ]; then
-  echo "Usage: $0 \"<mechanism/feature phrase, idea's own words>\" [\"<theme>\"]" >&2
+  echo "Usage: $0 \"<mechanism/feature phrase, idea's own words>\" [\"<theme>\"] [\"<idea's own title>\"]" >&2
   exit 1
 fi
 
 FEATURE="$1"
 THEME="${2:-}"
+TITLE="${3:-}"
 
 cat <<EOF
 $FEATURE
@@ -38,6 +42,13 @@ EOF
 if [ -n "$THEME" ]; then
   cat <<EOF
 $FEATURE $THEME board game
+EOF
+fi
+
+if [ -n "$TITLE" ]; then
+  cat <<EOF
+$TITLE board game
+$TITLE board game BGG
 EOF
 fi
 
@@ -69,4 +80,11 @@ MANDATORY before writing "differentiation":
    absence claim) also needs its own existence-check — a fabricated or
    unfindable "here's what's similar" citation undercuts the idea as much
    as a false "nobody does this" claim (Turn 6: "Gear Towers").
+6. ALWAYS also search the idea's own title/name as a plain "<title> board
+   game" query, independent of the mechanism search — a title that closely
+   echoes an existing shipped game's name is itself a differentiation red
+   flag, even when the mechanism search comes back clean (Turn 11:
+   "Caravan Ledger" was never checked against a real shipped game literally
+   titled "Caravan," whose steal-a-visible-good mechanic overlapped with
+   the idea's own "Toll" rule).
 WARN

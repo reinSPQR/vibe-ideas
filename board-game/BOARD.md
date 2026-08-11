@@ -51,6 +51,49 @@ new rubric.
 | 9 | 75.2 | 26.0 | 16.0 | 15.0 | 18.2 |
 | 10 | 67.0 | 20.7 | 15.4 | 15.7 | 15.2 |
 
+### Archived — CAD-build rubric with Buyability (Differentiation/50, Producibility/40, Buyability/10)
+
+Turns 11-13 scored under this rubric. Producibility and Buyability were no
+longer text-based estimates — they came entirely from a real CAD build
+(submitted to the production text-to-CAD pipeline) and a real 20-persona
+purchase-intent panel, for whichever 3 ideas the ideator named in
+`cad_build_picks`. The other 7 ideas each turn still got a
+Differentiation/50 score for lessons-learned purposes but never a
+Total/100.
+
+| Turn | Avg Total /100 (over completed builds) | Avg Differentiation /50 (of the 3 built) | Avg Producibility /40 (0 for non-done) | Avg Buyability /10 (0 for non-done) | Builds completed |
+|------|-------------------------------------------|---------------------------------------------|--------------------------------------------|-----------------------------------------|-------------------|
+| 11 | 52.0 | 37.0 | 7.3 | 0.0 | 1/3 |
+| 12 | 51.0 | 34.0 | 7.0 | 0.0 | 1/3 |
+| 13 | 56.9 | 35.7 | 7.6 | 0.0 | 1/3 |
+
+**Why Buyability was dropped (2026-08-11):** all three turns above
+produced a unanimous 0/20 purchase-intent verdict on the single completed
+build each turn, and the panel's stated reasons were overwhelmingly about
+the *photo* (unpainted/monochrome prototype, fused/missing parts) rather
+than the underlying game concept — i.e. the panel was mostly re-detecting
+the same fidelity defects Producibility's own concept-fidelity score
+already caught, not adding independent desirability signal. The panel is
+paused (not deleted) until CAD-build fidelity improves enough to produce a
+photo worth judging; `board-game/tools/customer_personas.json` and the
+`/goal` step that spawns the 20 persona agents both still exist for when
+it's re-enabled.
+
+### Current — CAD-build rubric, Buyability paused (Differentiation/50, Producibility/50)
+
+As of Turn 14, Producibility absorbs Buyability's former 10 points (0-25
+Printability + 0-25 Concept fidelity, both scaled up from /20 each). "Avg
+Differentiation (built)" below is the average Differentiation score of the
+3 `cad_build_picks` specifically (not all 10); "Avg Producibility"
+averages in a 0 for any pick that didn't reach `status: done`, per the
+hard gate; "Avg Total" is computed **only** over builds that reached
+`status: done` (see each turn's SCORES.md for the exact reasoning) — these
+are two different denominators by design, both reported so the
+CAD-pipeline pass rate is never hidden inside a diluted average.
+
+| Turn | Avg Total /100 (over completed builds) | Avg Differentiation /50 (of the 3 built) | Avg Producibility /50 (0 for non-done) | Builds completed |
+|------|-------------------------------------------|---------------------------------------------|--------------------------------------------|-------------------|
+
 ## Lessons Learned
 
 _Turns 1-4 below were written for the retired accessory-product pipeline
@@ -854,3 +897,276 @@ a specific audience (here, casual/family), its producibility_notes and
 component color/finish choices should be checked for consistency with
 that audience's stated tolerance for complexity and need for visual
 legibility, not just scored independently on manufacturability.
+
+### Turn 11
+
+**First turn under the fully-real-build rubric (Differentiation/50,
+Producibility/40, Buyability/10 — Demand and Fun retired as text-scored
+categories), and the CAD pipeline's actual pass rate this turn was 1/3, not
+3/3 — 2 of the 3 `cad_build_picks` (Lock & Current, Fox & Lantern) parked
+on `awaiting_questions` and never produced a scoreable build at all,
+despite both having the two highest Differentiation scores in the entire
+batch (40 and 41/50) and producibility_notes that, on paper, looked like
+exactly the low-risk template this pipeline has praised for ten turns
+running (small pivot-disc-with-detents joints, simple slide-fit trays, no
+component over ~100mm).** This is the first time a park has hit the
+ideator's *best*-scoring picks rather than a middling one, and it means
+"the joint type is a proven, reused pattern" is necessary but not
+sufficient for a `cad_prompt` to build without a clarifying question —
+something else in those two prompts (not diagnosable from this side of the
+gate, since a parked job produces no manifest/error detail at all) made
+the real pipeline stop and ask rather than build. Standing note: a parked
+build is currently a total information black hole for this evaluator —
+neither `board-game-evaluator` nor `BOARD.md` has any visibility into
+*what question the job asked*, which is exactly the diagnostic signal that
+would tell the ideator what to fix in future `cad_prompt`s. This is worth
+flagging as a pipeline gap, not just an ideator lesson (see PAIN_POINTS.md
+Evaluator entry this turn).
+
+**The one completed build (Cargo Hold) is the most severe concept-fidelity
+failure this pipeline has produced to date, and it's a different failure
+mode from every prior turn's fidelity gaps: not a dropped or merged
+component here or there, but essentially all 4 specified part types
+(4 separate blue grid boards, 5 white dice, 60 four-colored polyomino
+tiles, a two-piece navy/white box) collapsed into one single fused,
+monochrome-teal block with the grid and a couple of piece shapes merely
+engraved into its lid.** Printability scored a perfect 10/10 specifically
+*because* of this collapse — a single simple solid is trivially printable
+— which is the sharpest illustration yet of the standing "easy to print is
+not evidence of a good build" risk: extreme part-consolidation actively
+*maximizes* the printability sub-score while destroying the fidelity
+sub-score, so a future idea whose build looks great on printability alone
+should be treated with more suspicion, not less, until fidelity is
+separately confirmed against the actual `cad_prompt` part list. The
+20-persona purchase-intent panel independently and unanimously (0/20)
+converged on exactly this same defect from the customer side, without any
+prompting toward it — "plain teal box," "no dice, no distinct minis," "no
+colorful pieces" appeared across at least a third of the 20 reasons — which
+is a strong signal this is a real, customer-visible failure and not just
+an evaluator's harsh reading. Cargo Hold's `cad_prompt` was one of the most
+verbose and explicitly multi-part specs in this turn's batch (4 named part
+types, exact dimensions, 4 named colors, explicit "no glue/joint" framing
+for looseness) — the takeaway is not "write a more detailed cad_prompt,"
+which this one already was, but that **very high part-count, multi-color,
+all-loose-component designs (4+ distinct types, 60+ total pieces across 4
+colors) appear to carry a real risk of the generation pipeline collapsing
+them into a single simplified solid even when individually well-specified**
+— worth treating as a new watch-item alongside the existing joint-risk
+heuristics: high part-type-count and color-count, not just joint
+complexity, is itself a fidelity risk factor to weigh when choosing
+`cad_build_picks`, and a design that reduces total part *types* (even if
+counts within a type stay high, e.g. "60 identical-shape tiles in 4
+colors" vs. "5 different part types") may be safer to pick for a build than
+one that reads well on paper's part-count-and-joint-count producibility
+heuristic alone.
+
+**Differentiation's one serious miss this turn (Caravan Ledger, 22/50) is
+a fresh instance of the oldest and most-repeated failure in this file's
+history — not searching the idea's own literal name/title against its
+closest same-named comparable.** Caravan Ledger's differentiation text
+checked Express Route, Cargo Empire, and Xia, but never checked a game
+literally titled **Caravan** (Rio Grande Games, BGG #269789) — whose real,
+shipped "steal a visible good by landing your camel on an opponent's"
+mechanic is functionally the same action Caravan Ledger's "Toll" rule
+claims as part of its novel combination. This is the same pattern named in
+Turns 4-9 (Vault Breakers/Heist, Orchard Order/Let's Learn Carousel,
+Stratum/Rack-O) but with an even more obvious tell this time: the
+comparable's name is a near-exact match of the idea's own title. Standing
+heuristic to sharpen once more: **before finalizing, search the idea's own
+title/name itself as a plain board-game-title query, not just its
+mechanic/theme phrasing** — a title this close to an existing game's name
+is itself a signal worth a dedicated check, independent of the mechanic
+search.
+
+**What went right this turn, worth reinforcing:** Fox & Lantern's
+differentiation claim (a fixed Lantern-marker pit that triggers a mid-sow
+direction reversal in Kalah mancala) was the narrowest and best-surviving
+claim of the batch — two searches confirmed the general "reverse sowing"
+rule family in mancala literature is a *structural* rule (direction flips
+based on landing in an occupied vs. empty pit), genuinely distinct from a
+designated marker-pit trigger. This is exactly the "narrow, specific claim
+survives search" pattern this file has praised since Turn 2-3, and it's a
+reminder that a strong Differentiation score is still fully achievable even
+under this turn's harsh build-completion realities — the build pipeline's
+pass rate, not the idea quality, was this turn's binding constraint.
+
+### Turn 12
+
+**The CAD pipeline's pass rate stayed at 1/3 for a second consecutive turn,
+and this time it hit both a "should build clean" pick and the batch's
+single lowest-risk pick at once.** Reef Bloom (flat hex tiles, loose
+slip-fit pegs, open trays — the exact zero-joint template this file has
+praised as the safest shape since Turn 1) timed out with no manifest ever
+produced. Gumdrop Row — explicitly reasoned by the ideator as "the single
+lowest-risk design in the batch," a single continuously-molded board plus
+loose spheres, no assembly, no joints at all — parked on
+`awaiting_questions`, the exact same outcome Turn 11 dealt its two
+highest-differentiation picks. Between Turn 11 and Turn 12, four of six
+`cad_build_picks` have now failed to complete despite every one of them
+matching the "known joint type / few parts / no novel mechanism" template
+this file has spent eleven turns establishing as low-risk. Standing
+conclusion to promote from observation to hard rule: **producibility_notes
+predicting a clean build (few parts, proven joint types, no novel
+mechanism) is evidence about print/structural risk, not about whether the
+real text-to-CAD pipeline will complete the job at all** — parking and
+timeout are a distinct failure mode this rubric still cannot see inside
+(no manifest, no error, no clarifying-question text survives), and picking
+3 "safe" ideas per turn is not yet a reliable way to guarantee even 1
+usable build, let alone 3.
+
+**The one completed build (Circuit Mill) is the most severe concept-fidelity
+collapse this pipeline has produced to date — worse than Turn 11's Cargo
+Hold, not just a repeat of it.** The `cad_prompt` specified two richly
+detailed, clearly separate parts (a 250x250mm circuit-board plate with
+engraved concentric "trace" squares, connector "wires," and 24 raised node
+bumps in a dark-green/copper finish; 18 red/blue cylindrical resistor
+pieces) plus a box. The actual build — checked across `photo.jpg`,
+`assembled.png`, and all six `qa.png` orthographic views, all fully
+consistent with each other — is a single plain closed rectangular box in a
+uniform brown/slate color: no board pattern, no engraved lines, no node
+bumps, and no loose pieces of any kind survive anywhere in the model. Turn
+11's Cargo Hold at least kept a faint engraved grid motif and a couple of
+piece-shaped ridges after its collapse; this turn's collapse left literally
+nothing recognizable behind. Printability scored a perfect 10/10 again,
+for the identical reason Turn 11 named: a single plain solid is trivially
+printable, so **printability and fidelity now have two consecutive turns of
+demonstrated inverse correlation on this pipeline's worst failures** — a
+future evaluator or ideator should treat a suspiciously perfect
+printability score on a multi-part design as a prompt to look harder at
+fidelity, not as confirmation the build went well. The 20-persona panel
+independently converged on the identical defect from the customer side
+without prompting (a strong majority of all 20 reasons independently
+described "just a plain box, no board/pieces visible") and voted 0/20 would
+buy — this is now the second consecutive turn a real purchase-intent panel
+has unanimously zeroed a build purely on fidelity grounds, before even
+weighing in on the underlying game design.
+
+**Differentiation's clearest miss this turn (Lantern Drift, 24/50) is a
+fresh instance of the Turn 6 "search your own mechanism, not an adjacent
+theme" failure, not a new failure mode.** The idea's own differentiation
+text searched wind/kite-themed comparables ("wind gust market disruption...
+kite") for a game whose actual claimed novelty is a die-driven forced
+market-row shift plus a must-ascend personal run that busts on a
+non-conforming draft — searching the theme instead of the mechanism missed
+**Up or Down?** (Capstone Games, BGG #428058, a currently-published game),
+whose core personal-column mechanic — build a strictly ascending or
+descending run, discard the whole row and start over the moment a card
+doesn't fit — is a close structural echo of half of Lantern Drift's pitch.
+Salt Road Bazaar (32/50) shows the same gap in a milder form: it checked
+"Salt Road"-branded and salt-themed titles but never checked the generic,
+structurally-adjacent **Caravan** (Rio Grande Games) by name despite heavy
+thematic overlap (caravans, city goods delivery, changing prices) — this
+turned out not to be a real mechanism match on closer inspection (Caravan's
+cities want one fixed good each and its price shifts are scheduled, not
+per-purchase), but it should have been checked and named, not skipped.
+Standing heuristic to sharpen once more: **before finalizing, search the
+idea's own mechanism using words drawn from the idea's own rules text, and
+separately check the closest same-genre named comparable (by title, not
+just by branded phrase) even when a quick read suggests the mechanism will
+turn out different** — Salt Road Bazaar did the second check correctly
+this time (post-hoc, in this evaluation) and survived; Lantern Drift did
+neither and lost half its differentiation credit as a result.
+
+**What went right this turn, worth reinforcing:** Texture Trail (42/50) and
+Reef Bloom (42/50) both ran two genuinely differently-angled searches aimed
+squarely at their own claimed mechanism (chain-flip push-your-luck memory;
+molded-arrow forced-outward hex growth) and both came back clean — the
+correct level of diligence this file has been asking for since Turn 2.
+Gumdrop Row's differentiation write-up also modeled good practice on a
+smaller but still-important axis: rather than taking its own cited
+comparables (Beehive Mancala, Space Walk) on faith, this evaluation
+independently re-verified both (Beehive Mancala's real Laurence King/Kew
+Gardens listing; Space Walk's real 1999 Ravensburger/Rüdiger Dorn
+attribution) and both checked out exactly as claimed — continuing the
+Turn 5/8 lesson that named comparables need the same fact-check rigor as
+absence claims, applied correctly here.
+
+### Turn 13
+
+**The CAD pipeline's pass rate dropped to its worst yet (1/3, same raw
+count as Turns 11-12 but this time 2 of 3 picks parked instead of 1, and
+the parked picks were the two ideas explicitly reasoned as lowest-risk in
+the batch).** Cipher Row's own producibility_notes called out "only
+single-depth peg-in-hole joints... no ambiguous or optional-sounding
+geometry for the CAD pipeline to misinterpret" and Threshing Floor's
+called its stacking mechanic "deterministic by construction" with "zero
+player-facing tolerance risk" — both are exactly the kind of low-risk,
+proven-joint-type reasoning this file has praised for thirteen turns
+running, and both still parked on `awaiting_questions` with zero
+diagnostic artifacts. Combined with Turns 11-12, that's now 5 of 9
+`cad_build_picks` across three turns failing to complete, with the
+"safe on paper" ideas failing at the same rate as everything else.
+Standing conclusion, now reinforced a third time: **producibility_notes
+quality is not predictive of whether the real text-to-CAD pipeline will
+finish the job** — pick diversification (3 genuinely different geometry
+styles per turn, not 3 variations on "few parts, proven joints") may be a
+better hedge against a 1/3 pass rate than trying to out-reason the parking
+behavior from the text side, since this file has no visibility into what
+actually triggers a park.
+
+**The one completed build (Foghorn) is a new, distinct failure mode from
+Turns 11-12's "everything fused into one blob": parts DID separate this
+time, but the two components carrying the game's entire mechanical and
+color identity did not.** The 4 sawtooth racks, box, and lid all printed
+as correct, distinct, roughly-right-shaped pieces — real, measurable
+progress on the part-separation problem named in the last two turns'
+lessons. But the trump dial fused to its base plaque into one static
+non-rotating piece (destroying the literal core "spin the dial to set
+next trump" mechanic, not just its finish) and the 48 individually
+numbered suit tiles fused into one continuous ~40-cell mat rather than 48
+loose, holdable chips (destroying the ability to hold and play a hand of
+tiles — basic to any trick-taking game). Every part that was supposed to
+carry one of the `cad_prompt`'s 4+ distinct colors (dial quadrants, suit
+tiles, player racks) instead printed in one uniform monochrome terracotta,
+and the trick collection tray specified in `components` is entirely
+absent from the build. The 20-persona panel converged on the same defect
+independently and unanimously (0/20 would buy), with ~17 of 20 reasons
+citing the unpainted/uncolored, unfinished-prototype look specifically —
+this is now the third consecutive turn a real purchase-intent panel has
+near-unanimously zeroed a build on a production/fidelity defect rather
+than weighing in on the underlying game design at all. New heuristic to
+add alongside Turns 11-12's "part-type/color-count fidelity risk": **when
+a design's core twist mechanism lives specifically in a component's color
+(here: 4 colored trump-dial quadrants, 4 colored suit-tile sets) rather
+than just its shape, that color-coding is not a cosmetic nice-to-have —
+losing it can simultaneously destroy legibility, gameplay function, and
+purchase intent in one stroke, and should be weighed as seriously as a
+joint-tolerance risk when choosing `cad_build_picks`.**
+
+**Differentiation's clearest miss this turn (Seam Works, 14/50) is the
+sharpest version yet of the "check the closest structural comparable, not
+just the closest thematic one" failure this file has tracked since Turn
+6.** Seam Works' own text checked Gold Mine (a maze/collection game) and
+Fault! (a contract-economy game) — both mining-themed, neither a real
+structural match — but never checked Indigo (Reiner Knizia, 2003), a
+non-mining connection game whose actual rule ("a tile placed by one player
+can benefit another... a strategic placement by one player could complete
+a route that delivers a gem to an opponent's edge, allowing that opponent
+to claim it," confirmed via direct fetch) is close to a word-for-word
+match of Seam Works' claimed novel hook, just with gems-to-edges instead
+of ore-to-entrance. This is the same "wrong neighborhood" failure Turn 6
+named for Monsoon Route (searching desert-caravan comparables for a
+sailing game) but in a subtler form: Seam Works searched the right
+*theme* (mining) but the wrong *mechanism family* (maze/collection and
+contract-economy instead of connection games) — a reminder that "search
+the mechanism, not the theme" needs a second half: identify which
+*mechanism family* (connection game, worker placement, drafting, etc.) the
+claimed hook actually belongs to before picking comparables, since a
+theme-matched search can still miss the real prior art if it stays within
+the wrong family.
+
+**What went right this turn, worth reinforcing:** Lantern Keepers (40/50)
+and Thistlewood Market (38/50) both ran two genuinely differently-angled
+searches squarely aimed at their own claimed mechanism (single shared
+rotating beacon triage; fixed non-negotiable per-shape recess trays) and
+both came back clean, continuing the pattern this file has asked for since
+Turn 2. Foghorn's differentiation write-up also modeled a good instinct
+worth naming explicitly: it named and correctly distinguished its single
+closest comparable (Sea Change) in enough rule-level detail to make the
+distinction falsifiable — the miss wasn't in that reasoning, it was in
+not also checking two other obvious classics (Fox in the Forest, Trumps)
+by name given how central "dynamic trump" is to the pitch; a purchase-
+intent panelist raised exactly this gap independently, which is itself
+worth noting as a new source of differentiation-relevant signal alongside
+search — panel reasons sometimes name prior art the text-only research
+missed.

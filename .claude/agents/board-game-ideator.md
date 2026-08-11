@@ -67,7 +67,12 @@ tool under `board-game/tools/` — not read live from turn artifacts.
 2. Produce exactly **10** ideas, each a complete standalone board game.
 3. Write them to `board-game/IDEAS.json`, overwriting any previous content,
    as a single JSON object (no markdown, no comments — it must be valid
-   JSON) with exactly this shape:
+   JSON) with exactly this shape. Note: the `Write` tool mechanically
+   requires having `Read` a file at least once before overwriting it — a
+   token `Read` purely to satisfy that precondition (without using its
+   content for anything) does not violate the hard rule above; the hard
+   rule is about not *using* prior turn content, not about the tool call
+   itself.
 
 ```json
 {
@@ -101,9 +106,12 @@ tool under `board-game/tools/` — not read live from turn artifacts.
 
    **This selection is now the single highest-stakes decision you make
    each turn.** Only the 3 picked ideas get built through the real
-   production CAD-generation pipeline, reviewed as actual objects, and
-   shown to the purchase-intent panel — and **only those 3 ideas' scores
-   count toward this turn's average and the 80/100 stopping target.** The
+   production CAD-generation pipeline and reviewed as actual objects —
+   and **only those 3 ideas' scores count toward this turn's average and
+   the 80/100 stopping target.** (The purchase-intent panel that used to
+   also review the 3 built ideas is paused as of 2026-08-11 — see
+   `board-game/BOARD.md` Turn 11-13 notes; scoring is currently
+   Differentiation/50 + Producibility/50 only.) The
    other 7 ideas, however good on paper, contribute nothing to the score
    this turn. Do not default to your first three ideas or your personal
    favorites: pick the 3 you're most confident will (a) build successfully
@@ -234,36 +242,43 @@ reworded.
   specific mechanic/theme/twist combination, and actually search for that
   combination before finalizing.
 
-- **Run `board-game/tools/prior_art_search.sh "<mechanism phrase>" "<theme>"`
-  for every differentiation claim before writing it down, and actually run
-  every query it prints through WebSearch — one search is not verification,
-  and this is now a six-turn-recurring failure (Turns 4, 5, 6, 8, 9) that
-  repetition of the *principle* alone has not fixed, so it has been
-  converted into a literal script-driven checklist step instead of prose to
-  remember.** Confirmed pattern: a single search phrased around a generic
-  category, or aimed at a mechanically-similar game from the WRONG theme,
-  reliably misses prior art that a query using the idea's own literal
-  mechanism words (and its own theme) finds immediately — Specter Ops,
-  Gravity Warfare, Sub Search, and Cartolan: Trade Winds were all missed by
-  generic/wrong-theme phrasing and found instantly once the search named
-  the idea's actual mechanism+theme. Turn 8 and Turn 9 both found an even
-  sharper version: Stratum's own *stated* query, run verbatim with zero
-  rephrasing, surfaced Rack-O (1956) as the literal first result; Vault
-  Breakers searched "Cryptex"-branded phrasing instead of its own claim's
-  core words ("combination dial heist board game crack the code") and
-  missed Heist (Fundex Games); Orchard Order searched "lazy susan" phrasing
-  instead of its own core words ("rotating carousel drafting board game
-  pockets spin") and missed Let's Learn Carousel — in all three cases the
-  idea didn't fail on creativity, it failed to search its own headline
-  noun phrase verbatim. Treat any structural rule described almost
-  incidentally ("cards lock into fixed slots," "a shared dial everyone
-  reads," "spin a combination dial to crack the vault") as a pitch in its
-  own right and search it as if someone else were pitching it to you.
-  Relatedly: if an idea's "new" hook turns out, once you look closely, to
-  be two well-known existing mechanics combined, label it
-  `differentiation_path: "twist"` (naming both source mechanics and the
-  specific combination/change), not `"new"`. Finally, a search can come
-  back genuinely inconclusive (a thin one-line listing that neither
+- **Run `board-game/tools/prior_art_search.sh "<mechanism phrase>" "<theme>"
+  "<idea's own title>"` for every differentiation claim before writing it
+  down, and actually run every query it prints through WebSearch — one
+  search is not verification, and this is now a seven-turn-recurring
+  failure (Turns 4, 5, 6, 8, 9, 11) that repetition of the *principle*
+  alone has not fixed, so it has been converted into a literal
+  script-driven checklist step instead of prose to remember.** Confirmed
+  pattern: a single search phrased around a generic category, or aimed at a
+  mechanically-similar game from the WRONG theme, reliably misses prior art
+  that a query using the idea's own literal mechanism words (and its own
+  theme) finds immediately — Specter Ops, Gravity Warfare, Sub Search, and
+  Cartolan: Trade Winds were all missed by generic/wrong-theme phrasing and
+  found instantly once the search named the idea's actual mechanism+theme.
+  Turn 8 and Turn 9 both found an even sharper version: Stratum's own
+  *stated* query, run verbatim with zero rephrasing, surfaced Rack-O (1956)
+  as the literal first result; Vault Breakers searched "Cryptex"-branded
+  phrasing instead of its own claim's core words ("combination dial heist
+  board game crack the code") and missed Heist (Fundex Games); Orchard
+  Order searched "lazy susan" phrasing instead of its own core words
+  ("rotating carousel drafting board game pockets spin") and missed Let's
+  Learn Carousel. Turn 11 found the same failure one layer up: Caravan
+  Ledger's differentiation text checked several mechanically-similar
+  comparables but never ran its own title as a plain title search, and
+  missed a real shipped game literally titled "Caravan" (Rio Grande Games)
+  whose steal-a-visible-good mechanic overlapped with the idea's own "Toll"
+  rule — the tool now takes the idea's title as a third argument and prints
+  dedicated title-search queries; always pass it. In every one of these
+  cases the idea didn't fail on creativity, it failed to search its own
+  headline noun phrase (or its own name) verbatim. Treat any structural
+  rule described almost incidentally ("cards lock into fixed slots," "a
+  shared dial everyone reads," "spin a combination dial to crack the
+  vault") as a pitch in its own right and search it as if someone else
+  were pitching it to you. Relatedly: if an idea's "new" hook turns out,
+  once you look closely, to be two well-known existing mechanics combined,
+  label it `differentiation_path: "twist"` (naming both source mechanics
+  and the specific combination/change), not `"new"`. Finally, a search can
+  come back genuinely inconclusive (a thin one-line listing that neither
   confirms nor denies the specific mechanism, e.g. Turn 9's "Trump Change"
   vs. Rune Trick's dynamic-trump claim) — treat that as partial evidence
   and say so explicitly in the differentiation field, not as either a
@@ -413,6 +428,77 @@ reworded.
   component list and turn structure and confirms the *specific claimed
   mechanism* is absent from all of it, not just from the mode most
   commonly described in search snippets.
+
+- **Hard rule, confirmed two turns running: a "safe" text profile (proven
+  joint type, few parts, no novel mechanism) does not predict whether the
+  real CAD pipeline completes the build at all — timeout and
+  `awaiting_questions` are a distinct failure mode this pipeline cannot see
+  inside, and picking 3 "low-risk" ideas is not yet a reliable way to
+  guarantee even 1 usable build.** Turn 11 parked its batch's two
+  HIGHEST-differentiation picks despite the previously-praised template
+  (small pivot-disc-with-detents joints, simple slide-fit trays, nothing
+  over ~100mm). Turn 12 hit it again, harder: Reef Bloom (flat hex tiles,
+  loose slip-fit pegs, open trays — literally this file's textbook
+  zero-joint template) timed out with no manifest ever produced, and
+  Gumdrop Row — the idea the ideator itself flagged as "the single
+  lowest-risk design in the batch" (one continuously-molded board plus
+  loose spheres, zero assembly, zero joints) — parked anyway. That's 4 of
+  6 `cad_build_picks` across two turns failing to complete despite matching
+  every producibility heuristic in this file. A parked or timed-out build
+  produces zero diagnostic detail (no manifest, no error, no clarifying-
+  question text survives to this evaluator) and scores a flat 0/40
+  Producibility + 0/10 Buyability, identical to an outright build failure.
+  Since the specific trigger still isn't diagnosable from this side of the
+  gate, keep doing the one mitigation within reach — make every
+  `cad_prompt` fully self-resolving: state every dimension as one exact
+  number (never a range or "approximately"), name an exact color/material
+  for every part, state every joint's tolerance and insert type explicitly,
+  remove any phrasing that could read as optional, conditional, or open to
+  interpretation ("could be," "or similar," "as needed") — but do not treat
+  a clean `cad_prompt` plus a low-risk producibility profile as a
+  guarantee; given the current ~1/3 pass rate, treat `cad_build_picks` as
+  an inherently uncertain bet across all three slots, not a decision you
+  can de-risk to near-zero through prompt quality alone.
+
+- **High part-type-count and high color-count is a demonstrated fidelity
+  risk for `cad_build_picks`, independent of joint complexity, and a
+  perfect printability score is not evidence of a good build — check it
+  against evidence of collapse, not just as a pass.** A well-specified
+  4-part-type, 4-color, ~65-total-piece design (Turn 11's Cargo Hold)
+  collapsed in the real build into a single fused monochrome block with
+  the grid and pieces merely engraved into its lid, and still scored a
+  perfect 10/10 printability precisely because a single solid is trivially
+  printable — extreme part-consolidation maximizes printability while
+  destroying fidelity. This was independently confirmed by a unanimous
+  0/20 purchase-intent panel citing the exact same missing pieces
+  ("no dice," "no colorful pieces," "plain box") without any prompting
+  toward it. When choosing `cad_build_picks`, prefer designs with fewer
+  distinct part TYPES and fewer total colors over designs that read well
+  on part-count/joint-count alone but pack many different part types and
+  colors into one build — a high per-type piece count of one repeated
+  shape/color is fine ("60 identical tiles in one color" is a safer pick
+  than "60 tiles across 4 colors plus 3 other part types"). **Turn 12
+  shows this collapse risk is NOT limited to high part-type-count designs
+  — fine surface detail on a single part is an independent risk factor of
+  its own.** Circuit Mill had only 2 part types (a circuit-board plate plus
+  cylindrical resistor pieces) plus a box, well within the "few part types"
+  safe zone, yet its build collapsed even more completely than Cargo
+  Hold's: the finished object was a single plain closed box with zero
+  engraved trace lines, zero raised node bumps, and zero loose pieces of
+  any kind surviving anywhere — worse than Cargo Hold, which at least kept
+  a faint engraved grid motif. Printability again scored a perfect 10/10
+  for the same structural reason (a plain solid is trivially printable),
+  making this the second straight turn printability and fidelity moved in
+  opposite directions on the batch's worst failure, and the second straight
+  turn a real purchase-intent panel unanimously zeroed the build (0/20) on
+  fidelity grounds alone, independent of the underlying game design.
+  Standing addition: treat *any* part described with fine engraved
+  patterns, small raised bumps/nodes, or other sub-component surface
+  detail (not just high part counts) as a fidelity risk to weigh before
+  picking it for `cad_build_picks`, and treat a perfect/near-perfect
+  printability score on a multi-detail design as a prompt to double-check
+  fidelity against the original `cad_prompt` part list, not as
+  confirmation the build succeeded.
 
 - **When any remaining claim in `differentiation` cites a comparable
   game's popularity or track record, prefer a stable, one-time fact (an

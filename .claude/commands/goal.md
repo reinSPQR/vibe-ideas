@@ -8,9 +8,9 @@ argument-hint: "[max-turns, default 6]"
 You are the orchestrator for the loop described in `idea.md`. The endgoal is
 not a good set of ideas — it's a `board-game-ideator` agent
 (`.claude/agents/board-game-ideator.md`) that reliably produces idea sets
-whose *built, photographed, panel-tested* picks average **80+/100** on the
-sellability rubric (Differentiation /50, Producibility /40, Buyability
-/10). Drive the loop below using the Task tool to invoke the
+whose *built, photographed* picks average **80+/100** on the sellability
+rubric (Differentiation /50, Producibility /50). Drive the loop below using
+the Task tool to invoke the
 `board-game-ideator` and `board-game-evaluator` subagents. Do not do their
 jobs yourself — delegate and orchestrate. The one exception is the new
 pain-point triage step below, which is explicitly your own job, not a
@@ -18,6 +18,16 @@ subagent's.
 
 Parse `$ARGUMENTS` as an optional max-turn cap; default to **6** if not
 given or not a number.
+
+**Buyability / the 20-persona purchase-intent panel is paused as of
+2026-08-11** — three straight turns produced a unanimous 0/20 verdict on
+the single built idea each time, driven almost entirely by unpainted/
+monochrome prototype photos rather than genuine desirability signal (see
+`board-game/BOARD.md` Turn 11-13 notes). Step 4 below is skipped
+entirely while paused, and the rubric is Differentiation/50 +
+Producibility/50 (`board-game-evaluator` already reflects this). If a
+later `/goal` invocation is meant to re-enable the panel, that must be an
+explicit instruction here, not an automatic revival.
 
 ## Setup
 
@@ -28,10 +38,10 @@ given or not a number.
    use `(number of existing `turn-*` subdirectories) + 1`. Start at 1 if the
    directory is empty or doesn't exist.
 3. **Verify the local CAD build infra is reachable — required, not
-   optional.** Under the current rubric, Producibility and Buyability are
-   scored entirely from a real CAD build and a real purchase-intent panel,
-   so this loop cannot produce a valid score without that infra running.
-   Issue a lightweight GET against the client API base URL (default
+   optional.** Under the current rubric, Producibility is scored entirely
+   from a real CAD build, so this loop cannot produce a valid score
+   without that infra running. Issue a lightweight GET against the client
+   API base URL (default
    `http://localhost:4320`) via Bash/curl — the same reachability
    convention `generate_cad_builds.py` uses internally (any HTTP response,
    even an error status, counts as reachable; a connection failure does
@@ -95,36 +105,28 @@ For the current turn `N`:
      scoring mechanism itself.
    - If 1-3 builds completed, proceed normally — the turn's average is
      computed over however many builds actually succeeded (see step 8).
-4. **Purchase-intent panel (only if step 3 produced at least one
-   successful build).** Read `board-game/tools/customer_personas.json`
-   (20 fixed persona descriptions). For each persona, spawn one `Agent`
-   call — all 20 in a single message so they run in parallel — with a
-   prompt built from: that persona's description, the built ideas' photo
-   paths (each build's `manifest.json` has a `photo_file` field — the
-   extension varies, e.g. `.jpg` or `.png`, since the real thumbnail
-   pipeline corrects it to match whatever format the model actually
-   returns) plus their `concept`/`rules` text (from `board-game/IDEAS.json`),
-   and an
-   instruction to give one YES/NO buy verdict + one-line reason per
-   product in a strict, parseable format, explicitly assuming
-   price/budget is not a constraint. Collect all 20 replies, tally YES
-   votes per product (drop any persona call that errored from the
-   denominator rather than blocking), and write
-   `board-game/history/turn-<N>/cad-builds/purchase-intent.json`: for each
-   built idea, its `id`, `title`, `would_buy` count, panel size actually
-   tallied, and the list of one-line reasons. If step 3 produced zero
-   successful builds, this step never runs (the loop already stopped in
-   step 3).
+   - Every pick now gets a `manifest.json` in its build directory
+     regardless of outcome, including parks/timeouts/failures — its
+     `status` field gives the real outcome and, for non-`done` outcomes,
+     its `error`/`raw_job` fields carry whatever diagnostic detail the job
+     API returned. You don't need to read these yourself; the evaluator
+     reads them directly in step 6.
+4. **Purchase-intent panel — PAUSED as of 2026-08-11.** Skip this step
+   entirely; do not spawn persona agents and do not write
+   `purchase-intent.json`. (See the note near the top of this file for
+   why, and Turn 11-13 in `board-game/BOARD.md` for the data.)
 5. **Snapshot the ideator file.** Before evaluating, note the current
    content/hash of `.claude/agents/board-game-ideator.md` so you can detect
    if it changes when it shouldn't.
 6. **Evaluate.** Invoke the `board-game-evaluator` subagent: tell it this is
    turn `N`, and to score `board-game/IDEAS.json`, write
    `board-game/SCORES.md`, and update `board-game/BOARD.md` per its
-   instructions — Producibility and Buyability for the built ideas now come
-   directly from `cad-builds/` and `purchase-intent.json`. It also appends
-   its own **Evaluator:** subsection to `board-game/PAIN_POINTS.md` under
-   this turn's `### Turn <N>` heading (already created in step 1).
+   instructions — Producibility for the built ideas now comes directly
+   from `cad-builds/` (its own instructions already reflect the paused
+   panel and the Differentiation/50 + Producibility/50 rubric — you don't
+   need to repeat that in your invocation prompt). It also appends its own
+   **Evaluator:** subsection to `board-game/PAIN_POINTS.md` under this
+   turn's `### Turn <N>` heading (already created in step 1).
 7. **Verify the ideator was untouched.** Compare
    `.claude/agents/board-game-ideator.md` against the snapshot from step 5.
    If it changed, the evaluator violated its hard rule — stop the loop,
@@ -176,26 +178,26 @@ For the current turn `N`:
    - **Guardrails**: never touch `board-game/IDEAS.json`, `SCORES.md`, or
      `BOARD.md` content in this step — those are the agents' own scoring
      outputs. Never change a scoring weight, threshold, or the pipeline's
-     shape (Differentiation/50, Producibility/40, Buyability/10, the
-     80/100 target, the 3-build cap, panel size) without explicit user
-     approval, even if a pain point seems to argue for it — that's always
-     controversial by definition, never an auto-fix. If you edit this file
-     (`goal.md`) mid-run, note that it only affects the *next* `/goal`
-     invocation — this run's instructions are already loaded and won't
-     change retroactively mid-loop.
+     shape (Differentiation/50, Producibility/50, whether the panel is
+     paused or active, the 80/100 target, the 3-build cap) without explicit
+     user approval, even if a pain point seems to argue for it — that's
+     always controversial by definition, never an auto-fix. If you edit
+     this file (`goal.md`) mid-run, note that it only affects the *next*
+     `/goal` invocation — this run's instructions are already loaded and
+     won't change retroactively mid-loop.
 10. **Archive the turn.** Copy the turn's `board-game/IDEAS.json` and
     `board-game/SCORES.md` into `board-game/history/turn-<N>/` (create the
-    directory) — images from step 2 and `cad-builds/` (including
-    `purchase-intent.json`) from steps 3-4 are already written directly
-    there and need no separate top-level "latest" mirror, unlike
-    `IDEAS.json`/`SCORES.md`. Do **not** archive `board-game/tools/` (the
-    ideator's persistent toolkit) or `board-game/PAIN_POINTS.md` (a running
-    cross-turn log, like `BOARD.md` — never per-turn-copied).
+    directory) — images from step 2 and `cad-builds/` from step 3 are
+    already written directly there and need no separate top-level "latest"
+    mirror, unlike `IDEAS.json`/`SCORES.md`. Do **not** archive
+    `board-game/tools/` (the ideator's persistent toolkit) or
+    `board-game/PAIN_POINTS.md` (a running cross-turn log, like `BOARD.md`
+    — never per-turn-copied).
 11. **Report progress** to the user in one short line, e.g.:
-    `Turn 3: avg 71.2/100 (3/3 built, target 80), 10/10 previews rendered, panel avg 7.4/10 buyability. Pain-points: 2 auto-fixed, 1 asked (declined). Continuing…`
+    `Turn 3: avg 71.2/100 (3/3 built, target 80), 10/10 previews rendered. Pain-points: 2 auto-fixed, 1 asked (declined). Continuing…`
     (Adjust the built-count and pain-points clauses to what actually
     happened — omit "Pain-points: ..." entirely if there were none this
-    turn.)
+    turn. Omit any buyability/panel clause while the panel is paused.)
 12. **Check the stopping condition:**
    - If average score **>= 80**: stop the loop. Report success — final
      score, turn number, and point the user at
@@ -240,9 +242,15 @@ For the current turn `N`:
   step 3 already checks for this before the turn begins. If infra goes
   down *mid-turn* (after Setup's check passed), step 3's own retry-then-
   stop handling covers it.
-- The purchase-intent panel (step 4) is 20 parallel `Agent` calls — send
-  them as one message with 20 tool uses so they actually run concurrently,
-  not 20 sequential Task calls.
+- The purchase-intent panel is paused (step 4) — when it's re-enabled by an
+  explicit instruction, it's 20 parallel `Agent` calls; send them as one
+  message with 20 tool uses so they actually run concurrently, not 20
+  sequential Task calls.
+- Every CAD build pick (step 3) now gets a `manifest.json`, including
+  parked/timed-out/failed ones, carrying an `error`/`raw_job` diagnostic —
+  this replaced the old "missing directory = parked, no other signal"
+  behavior on 2026-08-11 so the evaluator (and future triage passes) can
+  see *why* a pick didn't complete instead of just that it didn't.
 - The pain-point triage step (step 9) is bounded by design: at most 3
   auto-fixes per turn, and anything touching scoring/architecture always
   goes through `AskUserQuestion` rather than being auto-applied. If triage

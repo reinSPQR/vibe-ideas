@@ -1,0 +1,27 @@
+{
+  "idea_id": 6,
+  "title": "Cargo Hold",
+  "job_id": "6a79f2c66a9f3bd67427cc0c",
+  "design_id": "6a79f2c66a9f3bd67427cc0d",
+  "status": "done",
+  "review_fix": {
+    "mode": "printability-only",
+    "threshold": 8,
+    "passed": true,
+    "iterations_used": 0,
+    "scores": {
+      "printability": 10
+    },
+    "history": [
+      {
+        "round": 0,
+        "scores": {
+          "printability": 10
+        }
+      }
+    ]
+  },
+  "wall_time_s": 1066.0,
+  "photo_file": "photo.jpg",
+  "photo_error": null
+}
