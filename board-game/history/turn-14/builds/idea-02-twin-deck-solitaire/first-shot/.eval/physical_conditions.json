@@ -1,0 +1,70 @@
+{
+  "assembly": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main.stl",
+  "parts": {
+    "board_top": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/board_top.stl",
+    "board_bottom": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/board_bottom.stl"
+  },
+  "conditions": [
+    {
+      "id": "ms1",
+      "category": "assembly_gap",
+      "severity": "critical",
+      "check": "part_clearance",
+      "description": "The two boards are held in a fixed parallel stack with a clear open air gap between them, not touching or fused into one solid block.",
+      "inputs": {},
+      "thresholds": {
+        "min_gap_mm": 25,
+        "max_gap_mm": 35
+      }
+    },
+    {
+      "id": "ms2",
+      "category": "hole_correctness",
+      "severity": "critical",
+      "check": "opening_presence",
+      "description": "Each board carries 33 genuinely pierced or drilled holes in the standard cross layout (66 total), not shallow decorative dimples.",
+      "inputs": {},
+      "thresholds": {
+        "expected_openings": 66,
+        "min_depth_mm": 8,
+        "diameter_mm": 12
+      }
+    },
+    {
+      "id": "ms3",
+      "category": "separation_correctness",
+      "severity": "critical",
+      "check": "assembly_component_count",
+      "description": "64 pegs exist as separate loose cylindrical bodies, not fused to a board or to each other.",
+      "inputs": {},
+      "thresholds": {
+        "expected_components": 70
+      }
+    },
+    {
+      "id": "ms4",
+      "category": "hole_alignment",
+      "severity": "high",
+      "check": "axis_alignment",
+      "description": "Every one of the 33 hole positions on the top board sits in true vertical alignment with its twin hole on the bottom board, forming a real straight-through transfer channel.",
+      "inputs": {},
+      "thresholds": {
+        "max_offset_mm": 1.0,
+        "positions_checked": 33
+      }
+    },
+    {
+      "id": "ms5",
+      "category": "fit_correctness",
+      "severity": "medium",
+      "check": "cylindrical_fit",
+      "description": "Each peg is a snug, removable friction fit in the 12mm holes -- close enough to stay seated, loose enough to lift out by hand.",
+      "inputs": {},
+      "thresholds": {
+        "hole_diameter_mm": 12,
+        "peg_diameter_mm": 11.4,
+        "clearance_mm": 0.3
+      }
+    }
+  ]
+}

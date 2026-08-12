@@ -119,6 +119,7 @@ reliability.
 
 | Turn | Avg Total /100 | Avg Ambition /15 | First-shot survival | Builds completed | Questions asked |
 |------|-----------------|--------------------|----------------------|-------------------|------------------|
+| 14 | 80.68 (1 counted idea) | 11.3 (all 3) | 80% (counted idea); 27% (all 3, incl. 2 pre-build failures) | 1/3 | 3 (1 per idea, all only reached concept-selection) |
 
 ## Lessons Learned
 
@@ -1196,3 +1197,69 @@ intent panelist raised exactly this gap independently, which is itself
 worth noting as a new source of differentiation-relevant signal alongside
 search — panel reasons sometimes name prior art the text-only research
 missed.
+
+### Turn 14
+
+**First turn under the new Vision Fidelity/60 + Reliability/25 +
+Ambition/15 rubric, and the build pass rate collapsed to 1/3 for a reason
+that has nothing to do with vision, spec quality, or CAD translation at
+all: two of three ideas failed before a single line of CAD geometry was
+generated.** Idea 1 (Keyhold)'s job returned `llm_error` ("couldn't
+produce a plan") four minutes after concept selection, and idea 3
+(Eclipse)'s concept-phase worker died ~35 minutes into round-2 style
+generation with `worker_error` ("response exceeded the 32000 output token
+maximum"). Both `cad_prompt`s were fully specified (5/5 `must_survive`
+ranks covered per `CAD_PROMPTS.json`'s own coverage blocks) and both had
+ambition scores well above the 8/15 floor (13 and 9). **Attribution: pure
+pipeline limitation, not a translation or vision failure** — there is
+nothing in either idea's text, geometry request, or complexity that
+predicts this outcome, and nothing for `board-game-ideator` or
+`board-game-cad-writer` to change in response. This is worth escalating as
+an infrastructure question (plan-generation reliability; whether
+`CLAUDE_CODE_MAX_OUTPUT_TOKENS` needs raising for concept-phase workers on
+richly-specified ideas) rather than folded into either agent's design
+heuristics.
+
+**The one build that finished (Twin Deck Solitaire) exposed a second,
+unrelated pipeline limitation: the scoring harness itself, not the CAD
+build, was unable to verify 4 of 5 `must_survive` ranks.** `score_build.py`'s
+`compile_conditions()` only reads `geometric.get("inputs")`, a key this
+turn's `IDEAS.json` schema never populates (it writes `"parts"` and
+`"thresholds"` instead) — so `part_clearance`, `opening_presence`,
+`axis_alignment`, and `cylindrical_fit` are structurally unable to resolve
+for any idea built against this turn's schema, independent of whether the
+underlying geometry is correct. **Attribution: pipeline limitation in the
+audit tooling, not in the ideator's schema choice or the CAD build** —
+reading `project/main.py` directly confirmed all four conditions were in
+fact satisfied exactly as specified (30.0mm gap against a 25-35mm
+threshold; 0.0mm hole-alignment offset because both boards are built from
+one shared `cross_positions()` function; 0.3mm radial peg clearance,
+`PEG_D=11.4` against `HOLE_D=12.0`, an exact match). The evaluator rubric
+still only credits `inconclusive` at 0.5 rather than upgrading it to a
+pass, so `geometric_fidelity` = 0.6 stands as the correct, rubric-honest
+number even though the true build is closer to a full pass — this is the
+system working as designed (the evaluator doesn't get to override a
+broken measurement with its own judgment on the geometric axis), but the
+schema/harness mismatch itself should be fixed before the next turn so
+future scores don't need this manual reconciliation.
+
+**What the one completed build did right, worth repeating:** Twin Deck
+Solitaire reused known joint types (peg-in-cylindrical-hole, pin-in-bore)
+at a generously specified clearance (0.3mm radial) rather than inventing a
+new mechanism, and — the more important move — generated both boards'
+hole positions from a single shared function (`cross_positions()`) instead
+of independently specifying two coordinate lists, which makes vertical
+alignment correct *by construction* rather than by luck or by a tolerance
+check. This is the same "deterministic by construction" template Turns
+8-9 praised for risky joints, applied here to a cross-part alignment
+requirement instead of a single mechanism — worth generalizing: whenever a
+spec asks for two or more parts to share a position/pattern exactly (grid
+layouts, aligned hole pairs, matched sockets), instruct
+`board-game-cad-writer` to generate that pattern once and reuse it, not
+restate matching coordinates twice. The one real miss on this build was
+smaller and purely a CAD-writer→build translation gap: the `cad_prompt`
+asked for blind 15mm bores at the post insertion points and got
+through-bores instead (pins protrude ~3mm past each board's face) —
+**attribution: pipeline limitation** (the CAD agent silently substituted a
+simpler feature for the one requested), not a spec ambiguity, since the
+depth and "blind" wording were both stated plainly.

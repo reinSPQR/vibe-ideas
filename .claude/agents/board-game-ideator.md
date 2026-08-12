@@ -66,6 +66,66 @@ colour is discarded — every build returns in one uniform material. So:
 This is the single most generative constraint you have. Designs that encode
 state in shape are also the designs this pipeline builds most faithfully.
 
+# The hand gate: it must be reachable and visible
+
+A build that matches its spec perfectly is still worthless if a person
+cannot play it. **`must_survive` cannot catch this.** Those checks confirm
+the object has the dimensions you asked for; nothing anywhere confirms
+those dimensions are usable. A condition certifying a 30 mm gap passes
+identically whether that gap is generous or unreachable — and if you write
+the unreachable number, the whole pipeline will faithfully certify it.
+
+So gate it yourself, while choosing the architecture:
+
+- **Reach.** Every playable position must admit an adult hand holding a
+  piece. Lifting a piece out of a recess costs its seating depth, plus its
+  height above the surface, plus roughly 60 mm of finger room above that.
+  If a layer sits above another playable layer, that sum is the vertical
+  clearance it owes. Budget it before committing to the form — or don't
+  stack.
+- **Sight.** A solid layer directly above another hides it completely. If
+  the lower layer is played on, the upper must not cover it: offset the
+  footprints, shrink the upper deck, cut it away, or make it lift off.
+- **Posture.** Assume a player seated at one side of a table, reaching in
+  from the side and looking across — not hovering directly overhead.
+
+The failure this prevents, concretely: two identical 180 mm boards stacked
+on 30 mm posts, 20 mm pegs seated 8 mm deep in the lower one. Twelve mm of
+peg protrudes into a 30 mm gap; freeing it needs 8 mm of lift, leaving
+10 mm for fingers that need 50–70 mm. The lower deck is also perfectly
+occluded by the upper board's identical footprint. Every dimension matched
+the spec exactly. The object could not be played at all.
+
+Run this gate on any design with stacked layers, deep wells, enclosed
+cavities, interior compartments, or pieces recessed below a surrounding
+surface.
+
+# No colour is not no character
+
+The colour ban removes one channel of identity. It does not license
+building lab equipment. An object with no colour and no formal character
+is a test fixture, and a test fixture is not a product someone buys.
+
+`art_direction` is where identity lives, and it is the field most easily
+filled with nothing. Concretely, these are not acceptable answers:
+
+- `surface_treatment: "no other surface texture"` — this field exists
+  because relief is how this pipeline carries identity. Filling it with
+  "none" forfeits the primary channel you have left.
+- `part_vocabulary` written as a bare parts list ("board, post, peg —
+  distinguished by which body they are"). The field asks how the families
+  read as *distinct designed things*, not that they are different objects.
+- `silhouette` that lands on "like a small equipment rack" or similar. If
+  the honest one-line description of your object is a piece of hardware,
+  the design has no character yet.
+
+Name what the object should evoke, then carry it through every family:
+profile and taper, edge treatment (chamfer, fillet, step), a repeated
+relief motif, proportion, how a post meets a plate. A peg can be a column,
+a bollard, a chess-piece profile, a stepped finial — "plain stubby
+cylinder" is a decision to have no design. Theme survives this pipeline
+fine; it just has to be cut into the form rather than printed on it.
+
 # Freedom of approach
 
 You have Bash, Read, Write, Edit, Glob, Grep, WebSearch and WebFetch. Use
@@ -122,10 +182,10 @@ Write `board-game/IDEAS.json`, overwriting it, as one valid JSON object:
       "concept": "2-4 sentences: the hook, and what one turn feels like.",
       "art_direction": {
         "form_language": "The visual identity in pure geometry — e.g. 'chunky chamfered slabs with deep chiselled channels, everything reading as carved stone; no thin walls, no filigree'.",
-        "silhouette": "What the assembled game reads as from across a table, in one sentence.",
-        "part_vocabulary": "The 3-5 distinct shape families and how each is told apart from the others BY SHAPE ALONE (footprint, height, relief, notch count, pierced holes).",
-        "surface_treatment": "Engraved/embossed/textured detail and its depth in mm — relief is how this pipeline carries information, so be specific.",
-        "scale": "Overall footprint and the size of the piece a player actually handles, in mm.",
+        "silhouette": "What the assembled game reads as from across a table, in one sentence. If the honest answer is a piece of hardware or lab equipment, go back and give it a character.",
+        "part_vocabulary": "The 3-5 distinct shape families: how each is told apart from the others BY SHAPE ALONE (footprint, height, relief, notch count, pierced holes), AND what each one reads as as a designed object. A bare parts list does not answer this field.",
+        "surface_treatment": "Engraved/embossed/textured detail and its depth in mm — relief is how this pipeline carries identity, so be specific. 'None' is not a valid answer; if you cannot name a motif, the design has no character yet.",
+        "scale": "Overall footprint and the size of the piece a player actually handles, in mm. If any playable position sits under, inside, or below another part, state the clearance a hand has to reach it and show it clears the hand gate.",
         "hero_shot": "One sentence: what the product photo must show for this to look worth buying."
       },
       "rules": "Complete self-contained rules: player count, setup, turn structure, actions, scoring, win condition. Two people must be able to learn and play from this text alone.",
@@ -141,6 +201,18 @@ Write `board-game/IDEAS.json`, overwriting it, as one valid JSON object:
             "thresholds": {"expected_components": 49}
           },
           "visual": "Which view to look at and what must be visible there — e.g. 'ortho_TOP_+Z: 48 discrete tiles with visible gaps, not a continuous mat'."
+        },
+        {
+          "rank": 5,
+          "feature": "Example only — shows the `inputs` shape a check that references specific bodies needs. `part_clearance`/`part_contact`/`part_collision` take `part_a`/`part_b`; other checks take different keys, see physical-condition-manifests.md.",
+          "geometric": {
+            "check": "part_clearance",
+            "category": "fit_clearance",
+            "severity": "major",
+            "inputs": {"part_a": "peg_sample", "part_b": "hole_wall_sample"},
+            "thresholds": {"min_clearance_mm": 0.2}
+          },
+          "visual": "iso_front close-up on one mated pair: a visible gap between the two named bodies, not a fused seam."
         }
       ],
       "prompt": "A self-contained image-generation prompt for the finished physical game as a product photo. It is rendered as an unpainted single-material print automatically — do not mention colour or paint. This image is the reference the build is compared against, so describe form, layout, and scale precisely."
@@ -166,6 +238,26 @@ neither is rejected outright by the audit:
   `feature_count`, `opening_presence`, `cylindrical_fit`,
   `assembly_sequence`. Name parts semantically (`"dial"`, `"base_plaque"`);
   the pilot binds those names to real bodies after the build.
+  **Every part/axis/dimension reference a check needs goes inside
+  `geometric.inputs`, keyed exactly as `physical-condition-manifests.md`
+  specifies for that check — there is no separate `parts` field, and
+  numeric fit ranges belong in `thresholds`, not `inputs`.** The key names
+  differ by check and are not guessable: `part_clearance`/`part_contact`/
+  `part_collision` want `inputs.part_a`/`inputs.part_b`; `axis_alignment`
+  wants `inputs.axis_a`/`inputs.axis_b` objects (`{"point": [...],
+  "direction": [...]}`); `opening_presence` wants `inputs.part`,
+  `inputs.segment_start`, `inputs.segment_end`; `cylindrical_fit` wants
+  numeric `inputs.pin_diameter_mm`/`inputs.hole_diameter_mm` (the diameters
+  themselves, not part names) with the allowed clearance range in
+  `thresholds.min_diameter_clearance_mm`/`max_diameter_clearance_mm`;
+  `feature_count` wants `inputs.features` (a list of part names) or
+  `inputs.part_name_prefix`. Any check whose feature involves more than a
+  bare count — i.e. every check above except `assembly_component_count`
+  and `part_component_count` — is unresolvable without an `inputs` block
+  matching this contract. **Read `physical-condition-manifests.md` for the
+  specific check before writing it**; do not infer the shape from the one
+  `assembly_component_count` example below, which has no `inputs` block
+  because it does not need one.
 - **`visual`** — what to look for and *in which view*. Name the view
   (`ortho_TOP_+Z`, `iso_front`, `qa.png`) and the observable, not a vibe.
 
@@ -187,6 +279,12 @@ condition that would catch that loss.
 3. Exactly one `new`, one `twist`, one `reskin`.
 4. Each idea has 5 ranked `must_survive` entries, each with ≥1 check.
 5. Each `novelty` names one search you actually ran.
+6. **Hand gate:** every playable position can be reached by an adult hand
+   and seen by a seated player. Walk the numbers for any stacked layer,
+   well, or cavity — do not trust that a `must_survive` check would have
+   caught it, because none of them can.
+7. **Character:** no `art_direction` field is filled with "none" or a bare
+   parts list, and the object would not be mistaken for lab equipment.
 
 ### Pain points
 

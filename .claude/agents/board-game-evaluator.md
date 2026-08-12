@@ -36,6 +36,25 @@ much of the design is carried by real geometry (relief, silhouette variety,
 part vocabulary) versus flat plates and plain boxes, and whether the
 `must_survive` conditions actually put something at risk.
 
+**Character is part of this score.** The colour ban removes one channel of
+identity; it does not excuse an object with none. Read the `art_direction`
+fields as answers, not as prose — and treat these as the failures they are:
+
+- `surface_treatment` filled with "none" or "no other surface texture". This
+  is the field that carries identity in a colourless pipeline; empty means
+  the primary remaining channel was forfeited.
+- `part_vocabulary` written as a bare parts list ("board, post, peg —
+  distinguished by which body they are") rather than what each family reads
+  as as a designed object.
+- `silhouette` that lands on a piece of hardware — "like a small equipment
+  rack", "like a test fixture", "like a lab jig".
+
+An idea whose own art direction describes lab equipment is not a 12/15
+however cleanly it is specified. Cap such an idea in the single digits and
+say why. Specificity and buildability are not the same thing as ambition —
+a precisely-dimensioned object with no character is a precisely-dimensioned
+test fixture, and this axis exists to catch exactly that.
+
 This runs first, and its result is final, precisely so a build outcome cannot
 contaminate it. A fidelity-first loop's natural failure is converging on
 featureless slabs — a plain box scores 100% fidelity — and this axis is the
@@ -88,9 +107,37 @@ entries. Weights are 5,4,3,2,1 by rank.
 - For each entry's `visual` check: judge it yourself against the view the
   entry names. Same three-way credit. Look at the ortho renders first —
   they carry a feature-edge overlay and are the legible ones — then `qa.png`,
-  then `assembled.png`.
+  then `assembled.png`. **If `first-shot/renders/` is empty or missing**
+  (a known host-config issue — cadquery/docker unavailable on this host, not
+  a build defect), fall back to `first-shot/project/main_review/*.png` (the
+  per-part QA renders; they typically include labeled ortho top/front/back/
+  left/right views and section cuts) alongside `assembled.png`/`qa.png` —
+  do not treat an empty `renders/` as missing evidence before checking there.
 - An entry's credit is the mean of the checks it declared.
-- Fidelity = 60 × Σ(weight × credit) / Σ(weight).
+- **Playability check — run this before computing the total.** A build that
+  matches its spec exactly is still a failed object if a person cannot play
+  it, and no `must_survive` check can catch that: those checks confirm the
+  dimensions are as specified, never that the specified dimensions are
+  usable. So judge it yourself, from the renders, the spec, and the source:
+
+  - **Reach.** For every position the rules require a player to interact
+    with, can an adult hand get a piece in and out? Lifting a piece from a
+    recess costs its seating depth, plus its height above the surface, plus
+    roughly 60 mm of finger room. Walk the arithmetic for stacked layers,
+    wells, cavities, and enclosed compartments.
+  - **Sight.** Can a seated player see every playable position? A solid
+    layer directly above another of the same footprint occludes it entirely.
+
+  Where a position fails either test, **zero the credit of every
+  `must_survive` rank that certifies the offending dimension** — those ranks
+  certified an unusable object, and scoring them as passes is what lets an
+  unplayable design top the board. If no rank certifies it, subtract 10 from
+  Fidelity instead so the failure still lands somewhere. Either way, state
+  the finding explicitly in `SCORES.md` with the arithmetic, and attribute
+  it to the ideator as a vision failure — it is never a translation or
+  pipeline fault.
+- Fidelity = 60 × Σ(weight × credit) / Σ(weight), after the playability
+  adjustment above.
 
 Score the **first shot only**. The repair round is diagnostic and never
 contributes to this number.

@@ -1,0 +1,3871 @@
+{
+  "turn": 14,
+  "idea_id": 2,
+  "title": "Twin Deck Solitaire",
+  "stage": "first-shot",
+  "scored_at": "2026-08-12T01:24:16.656945+00:00",
+  "geometry": {
+    "assembly_stl": "project/main.stl",
+    "part_stl_count": 70,
+    "step_files": [
+      "project/main.step",
+      "project/main_parts/board_bottom.step",
+      "project/main_parts/board_top.step",
+      "project/main_parts/peg_bottom_0.step",
+      "project/main_parts/peg_bottom_1.step",
+      "project/main_parts/peg_bottom_10.step",
+      "project/main_parts/peg_bottom_11.step",
+      "project/main_parts/peg_bottom_12.step",
+      "project/main_parts/peg_bottom_13.step",
+      "project/main_parts/peg_bottom_14.step",
+      "project/main_parts/peg_bottom_15.step",
+      "project/main_parts/peg_bottom_16.step",
+      "project/main_parts/peg_bottom_17.step",
+      "project/main_parts/peg_bottom_18.step",
+      "project/main_parts/peg_bottom_19.step",
+      "project/main_parts/peg_bottom_2.step",
+      "project/main_parts/peg_bottom_20.step",
+      "project/main_parts/peg_bottom_21.step",
+      "project/main_parts/peg_bottom_22.step",
+      "project/main_parts/peg_bottom_23.step",
+      "project/main_parts/peg_bottom_24.step",
+      "project/main_parts/peg_bottom_25.step",
+      "project/main_parts/peg_bottom_26.step",
+      "project/main_parts/peg_bottom_27.step",
+      "project/main_parts/peg_bottom_28.step",
+      "project/main_parts/peg_bottom_29.step",
+      "project/main_parts/peg_bottom_3.step",
+      "project/main_parts/peg_bottom_30.step",
+      "project/main_parts/peg_bottom_4.step",
+      "project/main_parts/peg_bottom_5.step",
+      "project/main_parts/peg_bottom_6.step",
+      "project/main_parts/peg_bottom_7.step",
+      "project/main_parts/peg_bottom_8.step",
+      "project/main_parts/peg_bottom_9.step",
+      "project/main_parts/peg_floating.step",
+      "project/main_parts/peg_top_0.step",
+      "project/main_parts/peg_top_1.step",
+      "project/main_parts/peg_top_10.step",
+      "project/main_parts/peg_top_11.step",
+      "project/main_parts/peg_top_12.step",
+      "project/main_parts/peg_top_13.step",
+      "project/main_parts/peg_top_14.step",
+      "project/main_parts/peg_top_15.step",
+      "project/main_parts/peg_top_16.step",
+      "project/main_parts/peg_top_17.step",
+      "project/main_parts/peg_top_18.step",
+      "project/main_parts/peg_top_19.step",
+      "project/main_parts/peg_top_2.step",
+      "project/main_parts/peg_top_20.step",
+      "project/main_parts/peg_top_21.step",
+      "project/main_parts/peg_top_22.step",
+      "project/main_parts/peg_top_23.step",
+      "project/main_parts/peg_top_24.step",
+      "project/main_parts/peg_top_25.step",
+      "project/main_parts/peg_top_26.step",
+      "project/main_parts/peg_top_27.step",
+      "project/main_parts/peg_top_28.step",
+      "project/main_parts/peg_top_29.step",
+      "project/main_parts/peg_top_3.step",
+      "project/main_parts/peg_top_30.step",
+      "project/main_parts/peg_top_31.step",
+      "project/main_parts/peg_top_4.step",
+      "project/main_parts/peg_top_5.step",
+      "project/main_parts/peg_top_6.step",
+      "project/main_parts/peg_top_7.step",
+      "project/main_parts/peg_top_8.step",
+      "project/main_parts/peg_top_9.step",
+      "project/main_parts/post_1.step",
+      "project/main_parts/post_2.step",
+      "project/main_parts/post_3.step",
+      "project/main_parts/post_4.step"
+    ],
+    "assembly_connected_components": 70,
+    "extract_error": null
+  },
+  "printability": {
+    "score_0_10": 7.68,
+    "class": "hard",
+    "raw": {
+      "score": 7.68,
+      "class": "hard",
+      "hard_failures": [],
+      "risk_factors": [
+        "assembly: 70 disconnected mesh components",
+        "assembly: moderate unsupported overhang area (10.7% of surface)"
+      ],
+      "assembly": {
+        "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main.stl",
+        "score": 6.7,
+        "class": "hard",
+        "hard_failures": [],
+        "risk_factors": [
+          "70 disconnected mesh components",
+          "moderate unsupported overhang area (10.7% of surface)"
+        ],
+        "metrics": {
+          "triangle_count": 12512,
+          "bbox_min": [
+            -90.0,
+            -90.0,
+            -15.0
+          ],
+          "bbox_max": [
+            90.0,
+            90.0,
+            54.0
+          ],
+          "bbox_size": [
+            180.0,
+            180.0,
+            69.0
+          ],
+          "surface_area_mm2": 190708.5893,
+          "volume_mm3": 597010.8667,
+          "degenerate_triangles": 0,
+          "watertight": true,
+          "bad_edge_count": 0,
+          "bad_edge_length_mm": 0.0,
+          "connected_components": 70,
+          "tiny_components": 0,
+          "selected_orientation": "y_min",
+          "bed_contact_area_mm2": 1728.0,
+          "unsupported_overhang_area_mm2": 20359.0311,
+          "unsupported_overhang_fraction": 0.106755
+        },
+        "assumptions": {
+          "build_volume_mm": [
+            220.0,
+            220.0,
+            250.0
+          ],
+          "overhang_angle_deg": 45.0,
+          "bed_epsilon_mm": 0.05,
+          "min_bed_contact_area_mm2": 25.0,
+          "tiny_component_area_fraction": 0.001,
+          "high_triangle_count": 500000,
+          "severe_bad_boundary_surface_ratio": 0.5,
+          "severe_bad_edge_count": 32
+        }
+      },
+      "parts": [
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/board_bottom.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 3200,
+            "bbox_min": [
+              -90.0,
+              -90.0,
+              0.0
+            ],
+            "bbox_max": [
+              90.0,
+              90.0,
+              12.0
+            ],
+            "bbox_size": [
+              180.0,
+              180.0,
+              12.0
+            ],
+            "surface_area_mm2": 62393.3909,
+            "volume_mm3": 226537.1844,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 21329.2827,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/board_top.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 3200,
+            "bbox_min": [
+              -90.0,
+              -90.0,
+              0.0
+            ],
+            "bbox_max": [
+              90.0,
+              90.0,
+              12.0
+            ],
+            "bbox_size": [
+              180.0,
+              180.0,
+              12.0
+            ],
+            "surface_area_mm2": 62393.3909,
+            "volume_mm3": 226537.1844,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 21329.2827,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_0.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_1.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_10.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_11.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_12.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_13.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_14.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_15.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_16.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_17.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_18.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_19.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_2.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_20.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_21.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_22.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_23.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_24.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_25.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_26.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_27.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_28.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_29.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_3.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_30.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_4.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_5.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_6.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_7.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_8.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_bottom_9.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_floating.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_0.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_1.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_10.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_11.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_12.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_13.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_14.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_15.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_16.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_17.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_18.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_19.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_2.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_20.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_21.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_22.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_23.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_24.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_25.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_26.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_27.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_28.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_29.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_3.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_30.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_31.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_4.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_5.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_6.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_7.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_8.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/peg_top_9.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 80,
+            "bbox_min": [
+              -5.6363,
+              -5.6841,
+              0.0
+            ],
+            "bbox_max": [
+              5.7,
+              5.6841,
+              20.0
+            ],
+            "bbox_size": [
+              11.3363,
+              11.3681,
+              20.0
+            ],
+            "surface_area_mm2": 914.7229,
+            "volume_mm3": 2011.0851,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 100.5543,
+            "unsupported_overhang_area_mm2": 0.0,
+            "unsupported_overhang_fraction": 0.0
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/post_1.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 248,
+            "bbox_min": [
+              -4.9442,
+              -4.986,
+              0.0
+            ],
+            "bbox_max": [
+              5.0,
+              4.986,
+              60.0
+            ],
+            "bbox_size": [
+              9.9442,
+              9.972,
+              60.0
+            ],
+            "surface_area_mm2": 1844.8858,
+            "volume_mm3": 3806.7631,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 49.5189,
+            "unsupported_overhang_area_mm2": 27.8544,
+            "unsupported_overhang_fraction": 0.015098
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/post_2.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 248,
+            "bbox_min": [
+              -4.9442,
+              -4.986,
+              0.0
+            ],
+            "bbox_max": [
+              5.0,
+              4.986,
+              60.0
+            ],
+            "bbox_size": [
+              9.9442,
+              9.972,
+              60.0
+            ],
+            "surface_area_mm2": 1844.8858,
+            "volume_mm3": 3806.7631,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 49.5189,
+            "unsupported_overhang_area_mm2": 27.8544,
+            "unsupported_overhang_fraction": 0.015098
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/post_3.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 248,
+            "bbox_min": [
+              -4.9442,
+              -4.986,
+              0.0
+            ],
+            "bbox_max": [
+              5.0,
+              4.986,
+              60.0
+            ],
+            "bbox_size": [
+              9.9442,
+              9.972,
+              60.0
+            ],
+            "surface_area_mm2": 1844.8858,
+            "volume_mm3": 3806.7631,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 49.5189,
+            "unsupported_overhang_area_mm2": 27.8544,
+            "unsupported_overhang_fraction": 0.015098
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        },
+        {
+          "path": "board-game/history/turn-14/builds/idea-02-twin-deck-solitaire/first-shot/project/main_parts/post_4.stl",
+          "score": 10.0,
+          "class": "easy",
+          "hard_failures": [],
+          "risk_factors": [],
+          "metrics": {
+            "triangle_count": 248,
+            "bbox_min": [
+              -4.9442,
+              -4.986,
+              0.0
+            ],
+            "bbox_max": [
+              5.0,
+              4.986,
+              60.0
+            ],
+            "bbox_size": [
+              9.9442,
+              9.972,
+              60.0
+            ],
+            "surface_area_mm2": 1844.8858,
+            "volume_mm3": 3806.7631,
+            "degenerate_triangles": 0,
+            "watertight": true,
+            "bad_edge_count": 0,
+            "bad_edge_length_mm": 0.0,
+            "connected_components": 1,
+            "tiny_components": 0,
+            "selected_orientation": "z_min",
+            "bed_contact_area_mm2": 49.5189,
+            "unsupported_overhang_area_mm2": 27.8544,
+            "unsupported_overhang_fraction": 0.015098
+          },
+          "assumptions": {
+            "build_volume_mm": [
+              220.0,
+              220.0,
+              250.0
+            ],
+            "overhang_angle_deg": 45.0,
+            "bed_epsilon_mm": 0.05,
+            "min_bed_contact_area_mm2": 25.0,
+            "tiny_component_area_fraction": 0.001,
+            "high_triangle_count": 500000,
+            "severe_bad_boundary_surface_ratio": 0.5,
+            "severe_bad_edge_count": 32
+          }
+        }
+      ],
+      "assumptions": {
+        "build_volume_mm": [
+          220.0,
+          220.0,
+          250.0
+        ],
+        "overhang_angle_deg": 45.0,
+        "bed_epsilon_mm": 0.05,
+        "min_bed_contact_area_mm2": 25.0,
+        "tiny_component_area_fraction": 0.001,
+        "high_triangle_count": 500000,
+        "severe_bad_boundary_surface_ratio": 0.5,
+        "severe_bad_edge_count": 32
+      }
+    }
+  },
+  "physical_correctness": {
+    "score_0_10": 7.8,
+    "condition_results": [
+      {
+        "id": "ms1",
+        "category": "assembly_gap",
+        "severity": "critical",
+        "check": "part_clearance",
+        "status": "inconclusive",
+        "description": "The two boards are held in a fixed parallel stack with a clear open air gap between them, not touching or fused into one solid block.",
+        "detail": "part_clearance requires part_a and part_b",
+        "measurements": {}
+      },
+      {
+        "id": "ms2",
+        "category": "hole_correctness",
+        "severity": "critical",
+        "check": "opening_presence",
+        "status": "inconclusive",
+        "description": "Each board carries 33 genuinely pierced or drilled holes in the standard cross layout (66 total), not shallow decorative dimples.",
+        "detail": "opening_presence requires part",
+        "measurements": {}
+      },
+      {
+        "id": "ms3",
+        "category": "separation_correctness",
+        "severity": "critical",
+        "check": "assembly_component_count",
+        "status": "pass",
+        "description": "64 pegs exist as separate loose cylindrical bodies, not fused to a board or to each other.",
+        "detail": "assembly connected components 70 == expected 70",
+        "measurements": {
+          "actual_components": 70,
+          "expected_components": 70
+        }
+      },
+      {
+        "id": "ms4",
+        "category": "hole_alignment",
+        "severity": "high",
+        "check": "axis_alignment",
+        "status": "inconclusive",
+        "description": "Every one of the 33 hole positions on the top board sits in true vertical alignment with its twin hole on the bottom board, forming a real straight-through transfer channel.",
+        "detail": "axis_a.point must be [x, y, z]",
+        "measurements": {}
+      },
+      {
+        "id": "ms5",
+        "category": "fit_correctness",
+        "severity": "medium",
+        "check": "cylindrical_fit",
+        "status": "inconclusive",
+        "description": "Each peg is a snug, removable friction fit in the 12mm holes -- close enough to stay seated, loose enough to lift out by hand.",
+        "detail": "cylindrical_fit requires numeric pin_diameter_mm and hole_diameter_mm",
+        "measurements": {}
+      }
+    ],
+    "hard_failures": []
+  },
+  "must_survive": [
+    {
+      "rank": 1,
+      "feature": "The two boards are held in a fixed parallel stack with a clear open air gap between them, not touching or fused into one solid block.",
+      "weight": 5,
+      "has_geometric": true,
+      "has_visual": true,
+      "visual_instruction": "iso_front: two distinct flat boards visibly separated by open space, connected only by four slender posts at the corners, daylight clearly visible between the plates.",
+      "status": "inconclusive",
+      "detail": "part_clearance requires part_a and part_b",
+      "measurements": {}
+    },
+    {
+      "rank": 2,
+      "feature": "Each board carries 33 genuinely pierced or drilled holes in the standard cross layout (66 total), not shallow decorative dimples.",
+      "weight": 4,
+      "has_geometric": true,
+      "has_visual": true,
+      "visual_instruction": "ortho_TOP_+Z on each board: 33 clearly visible circular holes arranged in the classic peg-solitaire cross pattern.",
+      "status": "inconclusive",
+      "detail": "opening_presence requires part",
+      "measurements": {}
+    },
+    {
+      "rank": 3,
+      "feature": "64 pegs exist as separate loose cylindrical bodies, not fused to a board or to each other.",
+      "weight": 3,
+      "has_geometric": true,
+      "has_visual": true,
+      "visual_instruction": "iso_front: 64 individually distinguishable cylindrical pegs visibly seated in holes, each one appearing liftable and separate from the board body.",
+      "status": "pass",
+      "detail": "assembly connected components 70 == expected 70",
+      "measurements": {
+        "actual_components": 70,
+        "expected_components": 70
+      }
+    },
+    {
+      "rank": 4,
+      "feature": "Every one of the 33 hole positions on the top board sits in true vertical alignment with its twin hole on the bottom board, forming a real straight-through transfer channel.",
+      "weight": 2,
+      "has_geometric": true,
+      "has_visual": true,
+      "visual_instruction": "ortho_FRONT: a peg dropped through one transfer channel lines up with no visible lateral offset between its top-board and bottom-board holes.",
+      "status": "inconclusive",
+      "detail": "axis_a.point must be [x, y, z]",
+      "measurements": {}
+    },
+    {
+      "rank": 5,
+      "feature": "Each peg is a snug, removable friction fit in the 12mm holes -- close enough to stay seated, loose enough to lift out by hand.",
+      "weight": 1,
+      "has_geometric": true,
+      "has_visual": true,
+      "visual_instruction": "iso_front: pegs sit flush and level across both boards at a consistent height, none tilted or proud, none jammed.",
+      "status": "inconclusive",
+      "detail": "cylindrical_fit requires numeric pin_diameter_mm and hole_diameter_mm",
+      "measurements": {}
+    }
+  ],
+  "unbindable": [],
+  "bindings_attempted": true,
+  "geometric_fidelity": 0.6,
+  "geometric_weight_covered": 15.0,
+  "visual_pending": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "renders": [],
+  "render_error": "cadquery unusable on this host and no docker compose file found \u2014 pass --compose-file to render inside the worker container"
+}

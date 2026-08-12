@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "title": "Stacked Peg-Solitaire Display Set",
+  "tagline": "The classic English cross board, reimagined as a floating two-tier sculpture.",
+  "description": "A twin-board peg-solitaire assembly held apart by four sturdy corner posts, with pegs seated across both open cross grids and one lone peg suspended mid-air in the gap. It reads as a game and a display piece at once — solid, tactile, and quietly striking on a shelf or desk.",
+  "purpose": "A decorative, playable take on traditional peg solitaire, staged as a self-supporting stacked showpiece.",
+  "use_cases": [
+    "desk or shelf conversation piece",
+    "tactile fidget and puzzle play",
+    "gift for board-game lovers",
+    "handmade decor accent"
+  ],
+  "material_suggestion": "PLA",
+  "print_notes": "Print boards flat and pegs upright; posts stand on end. Add supports for the post pins and use ~15% infill.",
+  "tags": [
+    "peg-solitaire",
+    "game",
+    "puzzle",
+    "desk-decor",
+    "display",
+    "cross-board",
+    "tabletop",
+    "gift"
+  ],
+  "part_count": 70,
+  "parts": [
+    {
+      "name": "board_bottom"
+    },
+    {
+      "name": "board_top"
+    },
+    {
+      "name": "post_1"
+    },
+    {
+      "name": "post_2"
+    },
+    {
+      "name": "post_3"
+    },
+    {
+      "name": "post_4"
+    },
+    {
+      "name": "peg_bottom_0"
+    },
+    {
+      "name": "peg_bottom_1"
+    },
+    {
+      "name": "peg_bottom_2"
+    },
+    {
+      "name": "peg_bottom_3"
+    },
+    {
+      "name": "peg_bottom_4"
+    },
+    {
+      "name": "peg_bottom_5"
+    },
+    {
+      "name": "peg_bottom_6"
+    },
+    {
+      "name": "peg_bottom_7"
+    },
+    {
+      "name": "peg_bottom_8"
+    },
+    {
+      "name": "peg_bottom_9"
+    },
+    {
+      "name": "peg_bottom_10"
+    },
+    {
+      "name": "peg_bottom_11"
+    },
+    {
+      "name": "peg_bottom_12"
+    },
+    {
+      "name": "peg_bottom_13"
+    },
+    {
+      "name": "peg_bottom_14"
+    },
+    {
+      "name": "peg_bottom_15"
+    },
+    {
+      "name": "peg_bottom_16"
+    },
+    {
+      "name": "peg_bottom_17"
+    },
+    {
+      "name": "peg_bottom_18"
+    },
+    {
+      "name": "peg_bottom_19"
+    },
+    {
+      "name": "peg_bottom_20"
+    },
+    {
+      "name": "peg_bottom_21"
+    },
+    {
+      "name": "peg_bottom_22"
+    },
+    {
+      "name": "peg_bottom_23"
+    },
+    {
+      "name": "peg_bottom_24"
+    },
+    {
+      "name": "peg_bottom_25"
+    },
+    {
+      "name": "peg_bottom_26"
+    },
+    {
+      "name": "peg_bottom_27"
+    },
+    {
+      "name": "peg_bottom_28"
+    },
+    {
+      "name": "peg_bottom_29"
+    },
+    {
+      "name": "peg_bottom_30"
+    },
+    {
+      "name": "peg_top_0"
+    },
+    {
+      "name": "peg_top_1"
+    },
+    {
+      "name": "peg_top_2"
+    },
+    {
+      "name": "peg_top_3"
+    },
+    {
+      "name": "peg_top_4"
+    },
+    {
+      "name": "peg_top_5"
+    },
+    {
+      "name": "peg_top_6"
+    },
+    {
+      "name": "peg_top_7"
+    },
+    {
+      "name": "peg_top_8"
+    },
+    {
+      "name": "peg_top_9"
+    },
+    {
+      "name": "peg_top_10"
+    },
+    {
+      "name": "peg_top_11"
+    },
+    {
+      "name": "peg_top_12"
+    },
+    {
+      "name": "peg_top_13"
+    },
+    {
+      "name": "peg_top_14"
+    },
+    {
+      "name": "peg_top_15"
+    },
+    {
+      "name": "peg_top_16"
+    },
+    {
+      "name": "peg_top_17"
+    },
+    {
+      "name": "peg_top_18"
+    },
+    {
+      "name": "peg_top_19"
+    },
+    {
+      "name": "peg_top_20"
+    },
+    {
+      "name": "peg_top_21"
+    },
+    {
+      "name": "peg_top_22"
+    },
+    {
+      "name": "peg_top_23"
+    },
+    {
+      "name": "peg_top_24"
+    },
+    {
+      "name": "peg_top_25"
+    },
+    {
+      "name": "peg_top_26"
+    },
+    {
+      "name": "peg_top_27"
+    },
+    {
+      "name": "peg_top_28"
+    },
+    {
+      "name": "peg_top_29"
+    },
+    {
+      "name": "peg_top_30"
+    },
+    {
+      "name": "peg_top_31"
+    },
+    {
+      "name": "peg_floating"
+    }
+  ],
+  "overall_dimensions_mm": [
+    180.0,
+    180.0,
+    69.0
+  ],
+  "volume_mm3": 598225.0576604967,
+  "is_solid": true,
+  "warnings_count": 2,
+  "facts_source": "sidecar",
+  "generated": true
+}

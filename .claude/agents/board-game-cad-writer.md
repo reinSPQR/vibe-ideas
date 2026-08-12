@@ -96,7 +96,11 @@ Reliability points and means information the prompt should have carried.
 
 ### Pain points
 
-Append a `PAIN_POINTS:` section after the JSON: spec fields that were
+Append a `PAIN_POINTS:` section after the JSON, **in your reply text only —
+never inside `board-game/CAD_PROMPTS.json` itself.** The file you write must
+be valid JSON and nothing else; every downstream consumer (back-translation,
+the cad-pilot) parses it directly and a trailing non-JSON section after the
+closing `}` breaks the file for all of them. List spec fields that were
 genuinely ambiguous, anything you had to leave unstated, anything about this
 file that made translation harder. Be concrete. `- none` if nothing.
 

@@ -1,0 +1,485 @@
+{
+  "job_id": "6a7bc7d01fbc549bea7bcbbf",
+  "status": "done",
+  "progress": 100,
+  "questions": null,
+  "concept_pending_question": null,
+  "concept_selected_set_id": "c",
+  "concept_style_directions": [
+    {
+      "set_id": "a",
+      "descriptor": "minimal and precise, crisp flat faces with clean sharp edges, plain unadorned cylinders, a tidy machined look where every part feels exact and understated",
+      "images": {
+        "front": "https://cdn.eternalai.org/panda-social-cc-agent/local-cdn/concept/6a7bc7d01fbc549bea7bcbbf/round-1/a-front.png",
+        "side": "https://cdn.eternalai.org/panda-social-cc-agent/local-cdn/concept/6a7bc7d01fbc549bea7bcbbf/round-1/a-side.png",
+        "top": "https://cdn.eternalai.org/panda-social-cc-agent/local-cdn/concept/6a7bc7d01fbc549bea7bcbbf/round-1/a-top.png"
+      }
+    },
+    {
+      "set_id": "b",
+      "descriptor": "soft and organic, gently rounded board edges and smoothly domed peg tops, pillowy tactile forms that feel warm and hand-friendly with no hard corners anywhere",
+      "images": {
+        "front": "https://cdn.eternalai.org/panda-social-cc-agent/local-cdn/concept/6a7bc7d01fbc549bea7bcbbf/round-1/b-front.png",
+        "side": "https://cdn.eternalai.org/panda-social-cc-agent/local-cdn/concept/6a7bc7d01fbc549bea7bcbbf/round-1/b-side.png",
+        "top": "https://cdn.eternalai.org/panda-social-cc-agent/local-cdn/concept/6a7bc7d01fbc549bea7bcbbf/round-1/b-top.png"
+      }
+    },
+    {
+      "set_id": "c",
+      "descriptor": "chunky and utilitarian, thick blocky boards with hefty stout posts and stocky wide pegs, a rugged toy-like heft where everything reads solid, sturdy and oversized",
+      "images": {
+        "front": "https://cdn.eternalai.org/panda-social-cc-agent/local-cdn/concept/6a7bc7d01fbc549bea7bcbbf/round-1/c-front.png",
+        "side": "https://cdn.eternalai.org/panda-social-cc-agent/local-cdn/concept/6a7bc7d01fbc549bea7bcbbf/round-1/c-side.png",
+        "top": "https://cdn.eternalai.org/panda-social-cc-agent/local-cdn/concept/6a7bc7d01fbc549bea7bcbbf/round-1/c-top.png"
+      }
+    }
+  ],
+  "error": null,
+  "result": {
+    "history_id": "6a7bca7c39a8e5008f399418",
+    "project_url": "http://gcs:4443/panda-local/snapshots/6a7bc7d01fbc549bea7bcbc0/73b68429943e442cab128917ba6e0503afb311e89e5d8b39dc22bb1fcc52b495/",
+    "thumbnail_urls": [
+      "http://gcs:4443/panda-local/snapshots/6a7bc7d01fbc549bea7bcbc0/73b68429943e442cab128917ba6e0503afb311e89e5d8b39dc22bb1fcc52b495/main_review/_assembled.png"
+    ],
+    "commit_sha": "73b68429943e442cab128917ba6e0503afb311e89e5d8b39dc22bb1fcc52b495",
+    "review_fix": {
+      "mode": "printability-only",
+      "threshold": 8,
+      "passed": true,
+      "iterations_used": 0,
+      "scores": {
+        "printability": 10
+      },
+      "history": [
+        {
+          "round": 0,
+          "scores": {
+            "printability": 10
+          }
+        }
+      ]
+    },
+    "assembly_parts": [
+      {
+        "order": 0,
+        "mesh_name": "board_bottom",
+        "part": "board_bottom.stl",
+        "color": "#3F5E8C"
+      },
+      {
+        "order": 1,
+        "mesh_name": "board_top",
+        "part": "board_top.stl",
+        "color": "#5E8C4E"
+      },
+      {
+        "order": 2,
+        "mesh_name": "post_1",
+        "part": "post_1.stl",
+        "color": "#7A5C99"
+      },
+      {
+        "order": 3,
+        "mesh_name": "post_2",
+        "part": "post_2.stl",
+        "color": "#C9A15A"
+      },
+      {
+        "order": 4,
+        "mesh_name": "post_3",
+        "part": "post_3.stl",
+        "color": "#2E7D75"
+      },
+      {
+        "order": 5,
+        "mesh_name": "post_4",
+        "part": "post_4.stl",
+        "color": "#C0623D"
+      },
+      {
+        "order": 6,
+        "mesh_name": "peg_bottom_0",
+        "part": "peg_bottom_0.stl",
+        "color": "#3F5E8C"
+      },
+      {
+        "order": 7,
+        "mesh_name": "peg_bottom_1",
+        "part": "peg_bottom_1.stl",
+        "color": "#5E8C4E"
+      },
+      {
+        "order": 8,
+        "mesh_name": "peg_bottom_2",
+        "part": "peg_bottom_2.stl",
+        "color": "#7A5C99"
+      },
+      {
+        "order": 9,
+        "mesh_name": "peg_bottom_3",
+        "part": "peg_bottom_3.stl",
+        "color": "#C9A15A"
+      },
+      {
+        "order": 10,
+        "mesh_name": "peg_bottom_4",
+        "part": "peg_bottom_4.stl",
+        "color": "#2E7D75"
+      },
+      {
+        "order": 11,
+        "mesh_name": "peg_bottom_5",
+        "part": "peg_bottom_5.stl",
+        "color": "#C0623D"
+      },
+      {
+        "order": 12,
+        "mesh_name": "peg_bottom_6",
+        "part": "peg_bottom_6.stl",
+        "color": "#3F5E8C"
+      },
+      {
+        "order": 13,
+        "mesh_name": "peg_bottom_7",
+        "part": "peg_bottom_7.stl",
+        "color": "#5E8C4E"
+      },
+      {
+        "order": 14,
+        "mesh_name": "peg_bottom_8",
+        "part": "peg_bottom_8.stl",
+        "color": "#7A5C99"
+      },
+      {
+        "order": 15,
+        "mesh_name": "peg_bottom_9",
+        "part": "peg_bottom_9.stl",
+        "color": "#C9A15A"
+      },
+      {
+        "order": 16,
+        "mesh_name": "peg_bottom_10",
+        "part": "peg_bottom_10.stl",
+        "color": "#2E7D75"
+      },
+      {
+        "order": 17,
+        "mesh_name": "peg_bottom_11",
+        "part": "peg_bottom_11.stl",
+        "color": "#C0623D"
+      },
+      {
+        "order": 18,
+        "mesh_name": "peg_bottom_12",
+        "part": "peg_bottom_12.stl",
+        "color": "#3F5E8C"
+      },
+      {
+        "order": 19,
+        "mesh_name": "peg_bottom_13",
+        "part": "peg_bottom_13.stl",
+        "color": "#5E8C4E"
+      },
+      {
+        "order": 20,
+        "mesh_name": "peg_bottom_14",
+        "part": "peg_bottom_14.stl",
+        "color": "#7A5C99"
+      },
+      {
+        "order": 21,
+        "mesh_name": "peg_bottom_15",
+        "part": "peg_bottom_15.stl",
+        "color": "#C9A15A"
+      },
+      {
+        "order": 22,
+        "mesh_name": "peg_bottom_16",
+        "part": "peg_bottom_16.stl",
+        "color": "#2E7D75"
+      },
+      {
+        "order": 23,
+        "mesh_name": "peg_bottom_17",
+        "part": "peg_bottom_17.stl",
+        "color": "#C0623D"
+      },
+      {
+        "order": 24,
+        "mesh_name": "peg_bottom_18",
+        "part": "peg_bottom_18.stl",
+        "color": "#3F5E8C"
+      },
+      {
+        "order": 25,
+        "mesh_name": "peg_bottom_19",
+        "part": "peg_bottom_19.stl",
+        "color": "#5E8C4E"
+      },
+      {
+        "order": 26,
+        "mesh_name": "peg_bottom_20",
+        "part": "peg_bottom_20.stl",
+        "color": "#7A5C99"
+      },
+      {
+        "order": 27,
+        "mesh_name": "peg_bottom_21",
+        "part": "peg_bottom_21.stl",
+        "color": "#C9A15A"
+      },
+      {
+        "order": 28,
+        "mesh_name": "peg_bottom_22",
+        "part": "peg_bottom_22.stl",
+        "color": "#2E7D75"
+      },
+      {
+        "order": 29,
+        "mesh_name": "peg_bottom_23",
+        "part": "peg_bottom_23.stl",
+        "color": "#C0623D"
+      },
+      {
+        "order": 30,
+        "mesh_name": "peg_bottom_24",
+        "part": "peg_bottom_24.stl",
+        "color": "#3F5E8C"
+      },
+      {
+        "order": 31,
+        "mesh_name": "peg_bottom_25",
+        "part": "peg_bottom_25.stl",
+        "color": "#5E8C4E"
+      },
+      {
+        "order": 32,
+        "mesh_name": "peg_bottom_26",
+        "part": "peg_bottom_26.stl",
+        "color": "#7A5C99"
+      },
+      {
+        "order": 33,
+        "mesh_name": "peg_bottom_27",
+        "part": "peg_bottom_27.stl",
+        "color": "#C9A15A"
+      },
+      {
+        "order": 34,
+        "mesh_name": "peg_bottom_28",
+        "part": "peg_bottom_28.stl",
+        "color": "#2E7D75"
+      },
+      {
+        "order": 35,
+        "mesh_name": "peg_bottom_29",
+        "part": "peg_bottom_29.stl",
+        "color": "#C0623D"
+      },
+      {
+        "order": 36,
+        "mesh_name": "peg_bottom_30",
+        "part": "peg_bottom_30.stl",
+        "color": "#3F5E8C"
+      },
+      {
+        "order": 37,
+        "mesh_name": "peg_top_0",
+        "part": "peg_top_0.stl",
+        "color": "#5E8C4E"
+      },
+      {
+        "order": 38,
+        "mesh_name": "peg_top_1",
+        "part": "peg_top_1.stl",
+        "color": "#7A5C99"
+      },
+      {
+        "order": 39,
+        "mesh_name": "peg_top_2",
+        "part": "peg_top_2.stl",
+        "color": "#C9A15A"
+      },
+      {
+        "order": 40,
+        "mesh_name": "peg_top_3",
+        "part": "peg_top_3.stl",
+        "color": "#2E7D75"
+      },
+      {
+        "order": 41,
+        "mesh_name": "peg_top_4",
+        "part": "peg_top_4.stl",
+        "color": "#C0623D"
+      },
+      {
+        "order": 42,
+        "mesh_name": "peg_top_5",
+        "part": "peg_top_5.stl",
+        "color": "#3F5E8C"
+      },
+      {
+        "order": 43,
+        "mesh_name": "peg_top_6",
+        "part": "peg_top_6.stl",
+        "color": "#5E8C4E"
+      },
+      {
+        "order": 44,
+        "mesh_name": "peg_top_7",
+        "part": "peg_top_7.stl",
+        "color": "#7A5C99"
+      },
+      {
+        "order": 45,
+        "mesh_name": "peg_top_8",
+        "part": "peg_top_8.stl",
+        "color": "#C9A15A"
+      },
+      {
+        "order": 46,
+        "mesh_name": "peg_top_9",
+        "part": "peg_top_9.stl",
+        "color": "#2E7D75"
+      },
+      {
+        "order": 47,
+        "mesh_name": "peg_top_10",
+        "part": "peg_top_10.stl",
+        "color": "#C0623D"
+      },
+      {
+        "order": 48,
+        "mesh_name": "peg_top_11",
+        "part": "peg_top_11.stl",
+        "color": "#3F5E8C"
+      },
+      {
+        "order": 49,
+        "mesh_name": "peg_top_12",
+        "part": "peg_top_12.stl",
+        "color": "#5E8C4E"
+      },
+      {
+        "order": 50,
+        "mesh_name": "peg_top_13",
+        "part": "peg_top_13.stl",
+        "color": "#7A5C99"
+      },
+      {
+        "order": 51,
+        "mesh_name": "peg_top_14",
+        "part": "peg_top_14.stl",
+        "color": "#C9A15A"
+      },
+      {
+        "order": 52,
+        "mesh_name": "peg_top_15",
+        "part": "peg_top_15.stl",
+        "color": "#2E7D75"
+      },
+      {
+        "order": 53,
+        "mesh_name": "peg_top_16",
+        "part": "peg_top_16.stl",
+        "color": "#C0623D"
+      },
+      {
+        "order": 54,
+        "mesh_name": "peg_top_17",
+        "part": "peg_top_17.stl",
+        "color": "#3F5E8C"
+      },
+      {
+        "order": 55,
+        "mesh_name": "peg_top_18",
+        "part": "peg_top_18.stl",
+        "color": "#5E8C4E"
+      },
+      {
+        "order": 56,
+        "mesh_name": "peg_top_19",
+        "part": "peg_top_19.stl",
+        "color": "#7A5C99"
+      },
+      {
+        "order": 57,
+        "mesh_name": "peg_top_20",
+        "part": "peg_top_20.stl",
+        "color": "#C9A15A"
+      },
+      {
+        "order": 58,
+        "mesh_name": "peg_top_21",
+        "part": "peg_top_21.stl",
+        "color": "#2E7D75"
+      },
+      {
+        "order": 59,
+        "mesh_name": "peg_top_22",
+        "part": "peg_top_22.stl",
+        "color": "#C0623D"
+      },
+      {
+        "order": 60,
+        "mesh_name": "peg_top_23",
+        "part": "peg_top_23.stl",
+        "color": "#3F5E8C"
+      },
+      {
+        "order": 61,
+        "mesh_name": "peg_top_24",
+        "part": "peg_top_24.stl",
+        "color": "#5E8C4E"
+      },
+      {
+        "order": 62,
+        "mesh_name": "peg_top_25",
+        "part": "peg_top_25.stl",
+        "color": "#7A5C99"
+      },
+      {
+        "order": 63,
+        "mesh_name": "peg_top_26",
+        "part": "peg_top_26.stl",
+        "color": "#C9A15A"
+      },
+      {
+        "order": 64,
+        "mesh_name": "peg_top_27",
+        "part": "peg_top_27.stl",
+        "color": "#2E7D75"
+      },
+      {
+        "order": 65,
+        "mesh_name": "peg_top_28",
+        "part": "peg_top_28.stl",
+        "color": "#C0623D"
+      },
+      {
+        "order": 66,
+        "mesh_name": "peg_top_29",
+        "part": "peg_top_29.stl",
+        "color": "#3F5E8C"
+      },
+      {
+        "order": 67,
+        "mesh_name": "peg_top_30",
+        "part": "peg_top_30.stl",
+        "color": "#5E8C4E"
+      },
+      {
+        "order": 68,
+        "mesh_name": "peg_top_31",
+        "part": "peg_top_31.stl",
+        "color": "#7A5C99"
+      },
+      {
+        "order": 69,
+        "mesh_name": "peg_floating",
+        "part": "peg_floating.stl",
+        "color": "#C9A15A"
+      }
+    ]
+  }
+}
