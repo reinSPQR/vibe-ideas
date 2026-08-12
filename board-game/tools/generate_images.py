@@ -44,6 +44,21 @@ _EXTENSIONS = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}
 _MAX_WORKERS = 3
 _TIMEOUT_S = 180.0
 
+# The CAD pipeline has no colour-assignment step: every build comes back in one
+# uniform material regardless of what the prompt asks for. A colourful
+# reference render would therefore differ from every build in a way we already
+# know about and do not score, contaminating the vision-vs-build comparison at
+# its source. So every render is pinned to the same unpainted single-material
+# look the pipeline can actually deliver, and the ideator is told not to design
+# around colour at all — distinction has to live in geometry.
+MATERIAL_CLAUSE = (
+    " Render as an unpainted single-material 3D print: one uniform matte "
+    "off-white/light-grey filament throughout, no paint, no decals, no colour "
+    "coding of any kind. All distinction between parts must read from shape, "
+    "silhouette, height, engraved relief and surface texture alone. Neutral "
+    "studio background, even lighting, no props."
+)
+
 
 @dataclass
 class RenderResult:
@@ -86,16 +101,17 @@ def _render_idea(
     aspect_ratio: str,
     resolution: str,
     out_dir: Path,
+    field: str = "prompt",
 ) -> RenderResult:
     idea_id = idea.get("id")
     title = str(idea.get("title") or f"idea-{idea_id}")
-    prompt = idea.get("prompt")
+    prompt = idea.get(field)
     if not prompt:
-        return RenderResult(idea_id, title, ok=False, error="idea has no 'prompt' field")
+        return RenderResult(idea_id, title, ok=False, error=f"idea has no '{field}' field")
 
     body = {
         "model": model,
-        "prompt": prompt,
+        "prompt": prompt + MATERIAL_CLAUSE,
         "aspect_ratio": aspect_ratio,
         "resolution": resolution,
     }
@@ -164,6 +180,18 @@ def main() -> int:
         default="board-game/images",
         help="convenience copy of this turn's images, cleared and repopulated each run (default: %(default)s)",
     )
+    parser.add_argument(
+        "--field",
+        default="prompt",
+        help=(
+            "which field to render (default: %(default)s). Use --field cad_prompt "
+            "--ideas-file board-game/CAD_PROMPTS.json for the back-translation "
+            "pre-flight: rendering the cad_prompt ALONE, with no theme text and no "
+            "sight of the vision render, shows what a reader who only has the prompt "
+            "would build. If that image is missing a must_survive feature, the CAD "
+            "pipeline will miss it too — caught in 20 seconds instead of 30 minutes."
+        ),
+    )
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--aspect-ratio", default=DEFAULT_ASPECT_RATIO)
     parser.add_argument("--resolution", default=DEFAULT_RESOLUTION)
@@ -206,6 +234,7 @@ def main() -> int:
                 aspect_ratio=args.aspect_ratio,
                 resolution=args.resolution,
                 out_dir=out_dir,
+                field=args.field,
             ): idea
             for idea in ideas
         }

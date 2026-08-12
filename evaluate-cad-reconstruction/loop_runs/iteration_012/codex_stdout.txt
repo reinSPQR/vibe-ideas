@@ -1,0 +1,27 @@
+Completed iteration 12.
+
+Wrote final reports for all four batch projects:
+
+| Project | Printability | Physical | Feature |
+|---|---:|---:|---:|
+| `dummy-13-frame-step-file` | 1.2 impossible | 7.2 hard | 8.4 good |
+| `easy-filament-swap-gingerbread-cookie` | 4.0 hard | 10.0 easy | 8.8 good |
+| `easy-to-print-functional-janney-coupler-including` | 4.0 hard | 8.0 easy | 8.6 good |
+| `ender-3-v2-step-file-for-easy-modification-and-des` | 2.4 impossible | 8.0 easy | 9.0 excellent |
+
+Implemented one narrow evaluator improvement: `spherical_fit`, a ball/socket size proxy that checks explicit ball/socket radii or diameters and reports radial clearance/interference. It is documented as a proxy only: it does not validate socket-mouth geometry, snap compliance, retention force, or swept articulation.
+
+Changed:
+- [physical_correctness_score.py](/Users/macbookpro/Documents/ai-chain/_hardware/cad-skill-test-2/skills/evaluate-cad-reconstruction/cad_reconstruction_eval/physical_correctness_score.py:1010)
+- [test_physical_correctness_score.py](/Users/macbookpro/Documents/ai-chain/_hardware/cad-skill-test-2/skills/evaluate-cad-reconstruction/tests/test_physical_correctness_score.py:228)
+- [physical-condition-manifests.md](/Users/macbookpro/Documents/ai-chain/_hardware/cad-skill-test-2/skills/evaluate-cad-reconstruction/references/physical-condition-manifests.md:241)
+- [scoring-guide.md](/Users/macbookpro/Documents/ai-chain/_hardware/cad-skill-test-2/skills/evaluate-cad-reconstruction/references/scoring-guide.md:197)
+- [SKILL.md](/Users/macbookpro/Documents/ai-chain/_hardware/cad-skill-test-2/skills/evaluate-cad-reconstruction/SKILL.md:205)
+
+Before/after: DUMMY physical score stayed `7.2 -> 7.2`; the new helper added a passing representative ball/socket radius check but did not mask the real component-fragmentation failures.
+
+Verification:
+- `PYTHONPATH=skills/evaluate-cad-reconstruction python3 -m unittest skills/evaluate-cad-reconstruction/tests/test_physical_correctness_score.py` passed: 26 tests.
+- Temporary `.eval_tmp` artifacts were removed; artifact check found no temp evaluation files left in the four projects.
+
+Residual risks: CadQuery rendering was unavailable in this sandbox, so new render generation failed; reports record that limitation and use existing DUMMY renders plus spec/code/STL evidence. Full ball/socket articulation, snap retention, hinge compliance, Janney lock/rotation paths, and Ender hardware engagement remain missing-helper territory.

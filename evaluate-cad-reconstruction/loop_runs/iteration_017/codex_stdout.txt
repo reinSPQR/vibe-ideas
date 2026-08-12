@@ -1,0 +1,12 @@
+Completed iteration 17 batch evaluation. Final reports are written:
+
+- [gridfinity-wire-spool-holder/evaluation_report.json](/Users/macbookpro/Documents/ai-chain/_hardware/cad-skill-test-2/outputs/reconstructions/step-to-cadquery/gridfinity-wire-spool-holder/evaluation_report.json): printability `4.0`, physical `10.0`, feature `8.4`
+- [hexagonal-paper-towel-holder/evaluation_report.json](/Users/macbookpro/Documents/ai-chain/_hardware/cad-skill-test-2/outputs/reconstructions/step-to-cadquery/hexagonal-paper-towel-holder/evaluation_report.json): printability `6.4`, physical `10.0`, feature `8.6`
+- [ikea-alex-wide-gridfinity-baseplate/evaluation_report.json](/Users/macbookpro/Documents/ai-chain/_hardware/cad-skill-test-2/outputs/reconstructions/step-to-cadquery/ikea-alex-wide-gridfinity-baseplate/evaluation_report.json): printability `4.0`, physical `8.0`, feature `9.2`
+- [improved-all-in-one-temperature-and-bridging-tower/evaluation_report.json](/Users/macbookpro/Documents/ai-chain/_hardware/cad-skill-test-2/outputs/reconstructions/step-to-cadquery/improved-all-in-one-temperature-and-bridging-tower/evaluation_report.json): printability `4.0`, physical `10.0`, feature `9.0`
+
+Temporary `.eval_tmp` directories were removed; the final reports are the only evaluation artifacts left in the batch projects.
+
+No evaluator code change was applied. The batch did not expose a narrow deterministic helper gap worth implementing in this iteration. The main missing-helper theme is still semantic recovery of touching/fused STEP solids from STL-only component extraction, especially for the ALEX baseplate where four intended quarter tiles collapse into two STL connected bands. That is broader than a local helper/proxy change and matches the existing loop-report theme.
+
+Helper usage in this batch included `assembly_component_count`, `part_component_count`, `clear_path_proxy`, `part_contact`, `relative_pose`, and `contact_graph`. Before/after evaluator scores are unchanged because no scoring/check code changed. CadQuery rendering could not be rerun in this sandbox due missing local dependency and blocked network, so reports rely on existing render folders where available plus mesh/component metrics.

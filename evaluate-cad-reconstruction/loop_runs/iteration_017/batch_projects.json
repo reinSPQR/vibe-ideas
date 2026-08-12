@@ -1,0 +1,19 @@
+{
+  "iteration": 17,
+  "projects_root": "outputs/reconstructions/step-to-cadquery",
+  "batch_size": 4,
+  "projects": [
+    "outputs/reconstructions/step-to-cadquery/gridfinity-wire-spool-holder",
+    "outputs/reconstructions/step-to-cadquery/hexagonal-paper-towel-holder",
+    "outputs/reconstructions/step-to-cadquery/ikea-alex-wide-gridfinity-baseplate",
+    "outputs/reconstructions/step-to-cadquery/improved-all-in-one-temperature-and-bridging-tower"
+  ],
+  "excluded_project_names": [
+    "phone-holder",
+    "silica-gel-spool-container",
+    "simple-twist-open-mushroom",
+    "spool-holder-and-drybox-for-enclosure-v2-with-humi",
+    "tablet-and-notebook-stand"
+  ],
+  "codex_returncode": 0
+}

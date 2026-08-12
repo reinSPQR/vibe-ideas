@@ -1,0 +1,626 @@
+{
+  "generated_at": "2026-07-09T17:18:24.146938+00:00",
+  "root": "outputs/reconstructions/step-to-cadquery",
+  "project_count": 41,
+  "scores": [
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/3d-printable-jet-engine",
+      "printability": 0.4,
+      "physical_correctness": 6.2,
+      "feature_retention": 8.6
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/5015-radial-fan-3d-model-for-conception-step-stl-f",
+      "printability": 9.2,
+      "physical_correctness": 8.0,
+      "feature_retention": 8.4
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/all-in-one-temperature-bridging-tower",
+      "printability": 4.0,
+      "physical_correctness": 9.2,
+      "feature_retention": 9.2
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/arduino-uno",
+      "printability": 9.9,
+      "physical_correctness": 10.0,
+      "feature_retention": 8.8
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/articulated-snowman-fidget",
+      "printability": 5.5,
+      "physical_correctness": 6.0,
+      "feature_retention": 8.6
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/articulated-tie-step-file-included",
+      "printability": 5.5,
+      "physical_correctness": 8.0,
+      "feature_retention": 8.7
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/aspire-planter",
+      "printability": 6.7,
+      "physical_correctness": 6.0,
+      "feature_retention": 8.2
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/astronomical-telescope-hadley-an-easy-assembly-hig",
+      "printability": 4.0,
+      "physical_correctness": 6.0,
+      "feature_retention": 8.0
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/bambu-lab-filament-poop-bin-x1c-p1s-and-p2s",
+      "printability": 4.0,
+      "physical_correctness": 10.0,
+      "feature_retention": 8.6
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/bentobox-v20-carbon-filter-for-bambu-lab-x1c-enclo",
+      "printability": 9.6,
+      "physical_correctness": 10.0,
+      "feature_retention": 8.4
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/build-tray",
+      "printability": 8.4,
+      "physical_correctness": 10.0,
+      "feature_retention": 9.3
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/cable-spool-holder-gridfinity",
+      "printability": 4.0,
+      "physical_correctness": 8.0,
+      "feature_retention": 7.6
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/cricut-material-holder",
+      "printability": null,
+      "physical_correctness": null,
+      "feature_retention": null
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/crossbow-kit-card-fully-printed",
+      "printability": null,
+      "physical_correctness": null,
+      "feature_retention": null
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/customizable-stackable-beer-crate",
+      "printability": null,
+      "physical_correctness": null,
+      "feature_retention": null
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/dewalt-battery-holder",
+      "printability": null,
+      "physical_correctness": null,
+      "feature_retention": null
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/dummy-13-frame-step-file",
+      "printability": 1.2,
+      "physical_correctness": 7.2,
+      "feature_retention": 8.4
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/easy-filament-swap-gingerbread-cookie",
+      "printability": 4.0,
+      "physical_correctness": 10.0,
+      "feature_retention": 8.8
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/easy-to-print-functional-janney-coupler-including",
+      "printability": 4.0,
+      "physical_correctness": 8.0,
+      "feature_retention": 8.6
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/ender-3-v2-step-file-for-easy-modification-and-des",
+      "printability": 2.4,
+      "physical_correctness": 8.0,
+      "feature_retention": 9.0
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/fidget-clicking-wheel-20",
+      "printability": 5.55,
+      "physical_correctness": 9.2,
+      "feature_retention": 8.2
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/filament-cutter",
+      "printability": 4.0,
+      "physical_correctness": 7.2,
+      "feature_retention": 9.2
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/final-eiffel-tower",
+      "printability": 4.0,
+      "physical_correctness": 10.0,
+      "feature_retention": 9.5
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/fractal-vise",
+      "printability": 2.7,
+      "physical_correctness": 8.0,
+      "feature_retention": 8.4
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/gravity-broom-holder",
+      "printability": 4.0,
+      "physical_correctness": 10.0,
+      "feature_retention": 8.6
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/gridfinity-1xy-multi-compartment-lidded-bins-with",
+      "printability": 3.2,
+      "physical_correctness": 8.0,
+      "feature_retention": 7.4
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/gridfinity-battery-hopper",
+      "printability": 9.6,
+      "physical_correctness": 8.0,
+      "feature_retention": 8.7
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/gridfinity-magnet-dispenser",
+      "printability": 10.0,
+      "physical_correctness": 10.0,
+      "feature_retention": 9.1
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/gridfinity-micro-sd-card-holder-1x1x3-added-step-f",
+      "printability": 10.0,
+      "physical_correctness": 10.0,
+      "feature_retention": 9.2
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/gridfinity-plain-bin",
+      "printability": 10.0,
+      "physical_correctness": 10.0,
+      "feature_retention": 9.4
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/gridfinity-screw-together-baseplate",
+      "printability": 10.0,
+      "physical_correctness": 8.0,
+      "feature_retention": 8.6
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/gridfinity-sd-card-holder",
+      "printability": 10.0,
+      "physical_correctness": 10.0,
+      "feature_retention": 9.1
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/gridfinity-sd-card-microsd-card-and-usb-stick-hold",
+      "printability": 10.0,
+      "physical_correctness": 10.0,
+      "feature_retention": 9.4
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/gridfinity-under-desk-drawer",
+      "printability": 9.4,
+      "physical_correctness": 4.0,
+      "feature_retention": 8.0
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/gridfinity-usb-cablemanager",
+      "printability": 10.0,
+      "physical_correctness": 10.0,
+      "feature_retention": 9.0
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/gridfinity-utensil-holder",
+      "printability": 10.0,
+      "physical_correctness": 10.0,
+      "feature_retention": 8.2
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/phone-holder",
+      "printability": 4.0,
+      "physical_correctness": 10.0,
+      "feature_retention": 5.5
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/silica-gel-spool-container",
+      "printability": 3.6,
+      "physical_correctness": 6.0,
+      "feature_retention": 8.0
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/simple-twist-open-mushroom",
+      "printability": 4.0,
+      "physical_correctness": 4.0,
+      "feature_retention": 9.1
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/spool-holder-and-drybox-for-enclosure-v2-with-humi",
+      "printability": 4.0,
+      "physical_correctness": 4.0,
+      "feature_retention": 7.6
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/tablet-and-notebook-stand",
+      "printability": 4.0,
+      "physical_correctness": 10.0,
+      "feature_retention": 8.7
+    }
+  ],
+  "used_checks": {
+    "clear_path_proxy": 44,
+    "assembly_component_count": 41,
+    "part_component_count": 36,
+    "cylindrical_fit": 20,
+    "part_contact": 9,
+    "feature_count": 4,
+    "opening_presence": 4,
+    "axis_alignment": 3,
+    "assembly_sequence": 2,
+    "part_clearance": 2,
+    "vent_opening_proxy": 1,
+    "spherical_fit": 1,
+    "part_collision": 1,
+    "relative_pose": 1
+  },
+  "unused_checks": [
+    "linear_motion_collision",
+    "linear_motion_clearance",
+    "rotation_motion_collision",
+    "vent_grid_open_area_proxy",
+    "contact_graph"
+  ],
+  "failed_checks": {
+    "assembly_component_count": 14,
+    "clear_path_proxy": 5,
+    "part_component_count": 4,
+    "part_collision": 1
+  },
+  "missing_helper_notes": {
+    "No new deterministic helper was added for this project. Remaining unmeasured relationships involve external object proxies or real-use properties such as exact card/cable/utensil/desk hardware fit, load, friction, or ergonomics.": 4,
+    "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 2 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 2,
+    "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 120 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+    "{'relationship': 'elastic cord through bottom/chest/head bores', 'triage': 'missing_helper', 'reason': 'Requires path continuity through internal cavities and flexible cord behavior; no placed-instance cavity/path extraction available in this environment.'}": 1,
+    "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 23 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+    "{'relationship': 'full hinge rotation path for each seated joint', 'triage': 'missing_helper', 'reason': 'Needs joint-aware kinematics and placed-instance geometry; existing rotation helper is too coarse for print-in-place seated hinge knuckles.'}": 1,
+    "{'relationship': 'clip spring compliance and shirt retention', 'triage': 'missing_helper', 'reason': 'Requires material flexibility/friction and external fabric geometry.'}": 1,
+    "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 12 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+    "{'relationship': 'pot drains and saucer drain grid open-area preservation', 'triage': 'proxy_now', 'reason': 'Existing vent/opening proxies could sample rays if placed component meshes or coordinates were prepared; not needed as a new helper.'}": 1,
+    "{'relationship': 'pot-in-saucer seating/support', 'triage': 'missing_helper', 'reason': 'Requires external/use-pose placement, since the exported assembly is a laid-out print set rather than nested pots in saucers.'}": 1,
+    "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 9 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+    "{'relationship': 'tube, truss pole, mirror, focuser, screw and clamp fit', 'triage': 'missing_helper', 'reason': 'External mating hardware is absent; requires external proxy dimensions not encoded in this report.'}": 1,
+    "{'relationship': 'thread engagement and load-bearing stiffness', 'triage': 'missing_helper', 'reason': 'Requires thread/material/load simulation beyond current deterministic helpers.'}": 1,
+    "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 10 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+    "{'relationship': 'semantic tab/slot fit beyond near-contact proxy', 'triage': 'proxy_now already partially checked', 'reason': 'STL component extraction enabled an arm/post near-contact check that passed at 0.097 mm minimum distance. Exact localized tab-through-slot clearance profile still needs semantic feature regions or a slot-profile helper.'}": 1,
+    "{'relationship': 'semantic tab/slot profile beyond extracted component near-contact', 'triage': 'proxy_now already partially checked', 'reason': 'Component extraction enabled the arm/post pairwise near-contact check; exact local tab-through-slot clearance still needs semantic slot feature regions or a slot-profile helper.'}": 1,
+    "{'relationship': 'snap-off tab breakability and assembled crossbow mechanics', 'triage': 'missing_helper', 'reason': 'Requires material/fracture/flexible limb behavior and post-separation assembly state not represented by the single fused print STL.'}": 1,
+    "{'relationship': 'true crate stacking/nesting and battery fit', 'triage': 'missing_helper', 'reason': 'Requires external crate/battery proxy sizes or use-pose stack transforms not present in the exported tray layout.'}": 1,
+    "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 9 extracted-component conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+    "{'relationship': 'DeWalt battery rail sliding fit and wall screw engagement', 'triage': 'missing_helper', 'reason': 'Requires external battery and screw geometry; current checks only proxy rail/hole openness on reconstructed holder geometry.'}": 1,
+    "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 2 extracted-component conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+    "{'relationship': 'wheel/case/spring assembled clicking articulation', 'triage': 'missing_helper', 'reason': 'The exported file is a print/customizer layout, not an assembled use pose; checking pawl compliance and wheel rotation would require use-pose transforms and spring/contact compliance.'}": 1,
+    "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 7 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+    "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 8 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+    "{'relationship': 'full nested lever/lead-screw jaw motion and clamping load', 'triage': 'missing_helper', 'reason': 'Requires joint-aware kinematics and load/contact modeling from a static 80-body pose; not a narrow local helper.'}": 1,
+    "{'relationship': '80 placed-solid separation vs 48 STL connected components attribution', 'triage': 'proxy_now', 'reason': 'A placed-instance export/STEP topology proxy could classify touching contacts versus accidental fusions, but CadQuery/OCP was unavailable in this sandbox and the helper would be broader than this batch.'}": 1,
+    "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 48 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+    "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 175 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+    "{'relationship': 'Gridfinity foot/lip fit against external mating bin/base', 'triage': 'missing_helper', 'reason': 'Requires external standard Gridfinity mating geometry or a project-specific proxy body; local single-body STL can only sample openings and inventory.'}": 1,
+    "{'relationship': 'Exact Gridfinity stacking lip/foot mate', 'triage': 'missing_helper', 'reason': 'Requires external standard mating geometry; local single-body checks can verify body inventory and representative openings only.'}": 1,
+    "{'relationship': 'All 49 cell opening profiles, all 196 boss holes, and all 84 perimeter holes exact count/diameter validation', 'triage': 'proxy_now partially checked', 'reason': 'Current helpers can sample representative clear paths, but exact repeated feature counting/diameter extraction from one fused mesh would need a localized hole-pattern detector.'}": 1,
+    "{'relationship': 'Heat-set insert retention / screw thread engagement', 'triage': 'missing_helper', 'reason': 'Requires hardware material/thread engagement modelling beyond local mesh geometry.'}": 1,
+    "{'relationship': 'Exact Gridfinity foot/lip fit against external mate', 'triage': 'missing_helper', 'reason': 'Requires external standard mating geometry or generated proxy; local single-body STL can only check representative openings and inventory.'}": 1,
+    "thread fit, cap/body screw engagement, silica containment, and fit inside a spool core need helpers/external proxies not implemented": 1,
+    "body vs cap: cylindrical/threaded fit and rotation-motion; current helper cannot validate helical thread": 1,
+    "body/cap vs filament spool core: contains/fits; external spool proxy missing": 1,
+    "vent holes/grilles: opening presence could be sampled but is unreliable on highly perforated non-watertight STL": 1,
+    "cap/body pairs: rotation-motion/thread or bayonet engagement, missing twist-cam helper": 1,
+    "dot/eye inserts vs body sockets: clearance-fit/contact/glue seating, missing socket proxy/clearance helper": 1,
+    "external spool/enclosure, humidity sensor, hinge/latch behavior, strength, and mounting loads are unmeasured": 1,
+    "drybox vs spool/enclosure: contains/supports/mounts; external objects missing": 1,
+    "sensor window vs humidity sensor: clearance-fit; external sensor proxy missing": 1,
+    "True screw thread engagement and torque retention are not implemented.": 1,
+    "Snap/press-fit compliance for bracket slots and beam tabs is not implemented.": 1,
+    "Load-bearing stiffness, tipping stability, and device weight support are not implemented.": 1,
+    "Full folding motion path for the linkage needs joint-aware kinematic helpers; current rotation helper is too coarse for seated hinge geometry.": 1
+  },
+  "missing_helper_classes": {
+    "implement_now": {
+      "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 2 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 2,
+      "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 120 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+      "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 23 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+      "{'relationship': 'full hinge rotation path for each seated joint', 'triage': 'missing_helper', 'reason': 'Needs joint-aware kinematics and placed-instance geometry; existing rotation helper is too coarse for print-in-place seated hinge knuckles.'}": 1,
+      "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 12 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+      "{'relationship': 'pot drains and saucer drain grid open-area preservation', 'triage': 'proxy_now', 'reason': 'Existing vent/opening proxies could sample rays if placed component meshes or coordinates were prepared; not needed as a new helper.'}": 1,
+      "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 9 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+      "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 10 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+      "{'relationship': 'semantic tab/slot fit beyond near-contact proxy', 'triage': 'proxy_now already partially checked', 'reason': 'STL component extraction enabled an arm/post near-contact check that passed at 0.097 mm minimum distance. Exact localized tab-through-slot clearance profile still needs semantic feature regions or a slot-profile helper.'}": 1,
+      "{'relationship': 'semantic tab/slot profile beyond extracted component near-contact', 'triage': 'proxy_now already partially checked', 'reason': 'Component extraction enabled the arm/post pairwise near-contact check; exact local tab-through-slot clearance still needs semantic slot feature regions or a slot-profile helper.'}": 1,
+      "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 9 extracted-component conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+      "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 2 extracted-component conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+      "{'relationship': 'wheel/case/spring assembled clicking articulation', 'triage': 'missing_helper', 'reason': 'The exported file is a print/customizer layout, not an assembled use pose; checking pawl compliance and wheel rotation would require use-pose transforms and spring/contact compliance.'}": 1,
+      "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 7 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+      "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 8 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+      "{'relationship': 'full nested lever/lead-screw jaw motion and clamping load', 'triage': 'missing_helper', 'reason': 'Requires joint-aware kinematics and load/contact modeling from a static 80-body pose; not a narrow local helper.'}": 1,
+      "{'relationship': '80 placed-solid separation vs 48 STL connected components attribution', 'triage': 'proxy_now', 'reason': 'A placed-instance export/STEP topology proxy could classify touching contacts versus accidental fusions, but CadQuery/OCP was unavailable in this sandbox and the helper would be broader than this batch.'}": 1,
+      "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 48 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+      "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 175 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}": 1,
+      "{'relationship': 'All 49 cell opening profiles, all 196 boss holes, and all 84 perimeter holes exact count/diameter validation', 'triage': 'proxy_now partially checked', 'reason': 'Current helpers can sample representative clear paths, but exact repeated feature counting/diameter extraction from one fused mesh would need a localized hole-pattern detector.'}": 1,
+      "vent holes/grilles: opening presence could be sampled but is unreliable on highly perforated non-watertight STL": 1,
+      "dot/eye inserts vs body sockets: clearance-fit/contact/glue seating, missing socket proxy/clearance helper": 1,
+      "Snap/press-fit compliance for bracket slots and beam tabs is not implemented.": 1,
+      "Full folding motion path for the linkage needs joint-aware kinematic helpers; current rotation helper is too coarse for seated hinge geometry.": 1
+    },
+    "missing_helper": {
+      "No new deterministic helper was added for this project. Remaining unmeasured relationships involve external object proxies or real-use properties such as exact card/cable/utensil/desk hardware fit, load, friction, or ergonomics.": 4,
+      "{'relationship': 'elastic cord through bottom/chest/head bores', 'triage': 'missing_helper', 'reason': 'Requires path continuity through internal cavities and flexible cord behavior; no placed-instance cavity/path extraction available in this environment.'}": 1,
+      "{'relationship': 'clip spring compliance and shirt retention', 'triage': 'missing_helper', 'reason': 'Requires material flexibility/friction and external fabric geometry.'}": 1,
+      "{'relationship': 'pot-in-saucer seating/support', 'triage': 'missing_helper', 'reason': 'Requires external/use-pose placement, since the exported assembly is a laid-out print set rather than nested pots in saucers.'}": 1,
+      "{'relationship': 'tube, truss pole, mirror, focuser, screw and clamp fit', 'triage': 'missing_helper', 'reason': 'External mating hardware is absent; requires external proxy dimensions not encoded in this report.'}": 1,
+      "{'relationship': 'thread engagement and load-bearing stiffness', 'triage': 'missing_helper', 'reason': 'Requires thread/material/load simulation beyond current deterministic helpers.'}": 1,
+      "{'relationship': 'snap-off tab breakability and assembled crossbow mechanics', 'triage': 'missing_helper', 'reason': 'Requires material/fracture/flexible limb behavior and post-separation assembly state not represented by the single fused print STL.'}": 1,
+      "{'relationship': 'true crate stacking/nesting and battery fit', 'triage': 'missing_helper', 'reason': 'Requires external crate/battery proxy sizes or use-pose stack transforms not present in the exported tray layout.'}": 1,
+      "{'relationship': 'DeWalt battery rail sliding fit and wall screw engagement', 'triage': 'missing_helper', 'reason': 'Requires external battery and screw geometry; current checks only proxy rail/hole openness on reconstructed holder geometry.'}": 1,
+      "{'relationship': 'Gridfinity foot/lip fit against external mating bin/base', 'triage': 'missing_helper', 'reason': 'Requires external standard Gridfinity mating geometry or a project-specific proxy body; local single-body STL can only sample openings and inventory.'}": 1,
+      "{'relationship': 'Exact Gridfinity stacking lip/foot mate', 'triage': 'missing_helper', 'reason': 'Requires external standard mating geometry; local single-body checks can verify body inventory and representative openings only.'}": 1,
+      "{'relationship': 'Heat-set insert retention / screw thread engagement', 'triage': 'missing_helper', 'reason': 'Requires hardware material/thread engagement modelling beyond local mesh geometry.'}": 1,
+      "{'relationship': 'Exact Gridfinity foot/lip fit against external mate', 'triage': 'missing_helper', 'reason': 'Requires external standard mating geometry or generated proxy; local single-body STL can only check representative openings and inventory.'}": 1,
+      "thread fit, cap/body screw engagement, silica containment, and fit inside a spool core need helpers/external proxies not implemented": 1,
+      "body/cap vs filament spool core: contains/fits; external spool proxy missing": 1,
+      "external spool/enclosure, humidity sensor, hinge/latch behavior, strength, and mounting loads are unmeasured": 1,
+      "drybox vs spool/enclosure: contains/supports/mounts; external objects missing": 1,
+      "sensor window vs humidity sensor: clearance-fit; external sensor proxy missing": 1
+    },
+    "proxy_now": {
+      "body vs cap: cylindrical/threaded fit and rotation-motion; current helper cannot validate helical thread": 1,
+      "cap/body pairs: rotation-motion/thread or bayonet engagement, missing twist-cam helper": 1,
+      "True screw thread engagement and torque retention are not implemented.": 1,
+      "Load-bearing stiffness, tipping stability, and device weight support are not implemented.": 1
+    },
+    "review": {}
+  },
+  "ranked_improvement_candidates": [
+    {
+      "class": "implement_now",
+      "count": 2,
+      "note": "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 2 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 120 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 23 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'full hinge rotation path for each seated joint', 'triage': 'missing_helper', 'reason': 'Needs joint-aware kinematics and placed-instance geometry; existing rotation helper is too coarse for print-in-place seated hinge knuckles.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 12 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'pot drains and saucer drain grid open-area preservation', 'triage': 'proxy_now', 'reason': 'Existing vent/opening proxies could sample rays if placed component meshes or coordinates were prepared; not needed as a new helper.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 9 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 10 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'semantic tab/slot fit beyond near-contact proxy', 'triage': 'proxy_now already partially checked', 'reason': 'STL component extraction enabled an arm/post near-contact check that passed at 0.097 mm minimum distance. Exact localized tab-through-slot clearance profile still needs semantic feature regions or a slot-profile helper.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'semantic tab/slot profile beyond extracted component near-contact', 'triage': 'proxy_now already partially checked', 'reason': 'Component extraction enabled the arm/post pairwise near-contact check; exact local tab-through-slot clearance still needs semantic slot feature regions or a slot-profile helper.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 9 extracted-component conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 2 extracted-component conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'wheel/case/spring assembled clicking articulation', 'triage': 'missing_helper', 'reason': 'The exported file is a print/customizer layout, not an assembled use pose; checking pawl compliance and wheel rotation would require use-pose transforms and spring/contact compliance.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 7 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 8 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'full nested lever/lead-screw jaw motion and clamping load', 'triage': 'missing_helper', 'reason': 'Requires joint-aware kinematics and load/contact modeling from a static 80-body pose; not a narrow local helper.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': '80 placed-solid separation vs 48 STL connected components attribution', 'triage': 'proxy_now', 'reason': 'A placed-instance export/STEP topology proxy could classify touching contacts versus accidental fusions, but CadQuery/OCP was unavailable in this sandbox and the helper would be broader than this batch.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 48 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'semantic placed-instance recovery beyond disconnected STL component extraction', 'triage': 'missing_helper', 'reason': 'STL edge-component extraction was run and used for 175 part-level conditions, but it cannot split touching/fused bodies or recover original CAD instance roles.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "{'relationship': 'All 49 cell opening profiles, all 196 boss holes, and all 84 perimeter holes exact count/diameter validation', 'triage': 'proxy_now partially checked', 'reason': 'Current helpers can sample representative clear paths, but exact repeated feature counting/diameter extraction from one fused mesh would need a localized hole-pattern detector.'}"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "vent holes/grilles: opening presence could be sampled but is unreliable on highly perforated non-watertight STL"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "dot/eye inserts vs body sockets: clearance-fit/contact/glue seating, missing socket proxy/clearance helper"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "Snap/press-fit compliance for bracket slots and beam tabs is not implemented."
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "Full folding motion path for the linkage needs joint-aware kinematic helpers; current rotation helper is too coarse for seated hinge geometry."
+    },
+    {
+      "class": "proxy_now",
+      "count": 1,
+      "note": "body vs cap: cylindrical/threaded fit and rotation-motion; current helper cannot validate helical thread"
+    },
+    {
+      "class": "proxy_now",
+      "count": 1,
+      "note": "cap/body pairs: rotation-motion/thread or bayonet engagement, missing twist-cam helper"
+    },
+    {
+      "class": "proxy_now",
+      "count": 1,
+      "note": "True screw thread engagement and torque retention are not implemented."
+    },
+    {
+      "class": "proxy_now",
+      "count": 1,
+      "note": "Load-bearing stiffness, tipping stability, and device weight support are not implemented."
+    },
+    {
+      "class": "missing_helper",
+      "count": 4,
+      "note": "No new deterministic helper was added for this project. Remaining unmeasured relationships involve external object proxies or real-use properties such as exact card/cable/utensil/desk hardware fit, load, friction, or ergonomics."
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "{'relationship': 'elastic cord through bottom/chest/head bores', 'triage': 'missing_helper', 'reason': 'Requires path continuity through internal cavities and flexible cord behavior; no placed-instance cavity/path extraction available in this environment.'}"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "{'relationship': 'clip spring compliance and shirt retention', 'triage': 'missing_helper', 'reason': 'Requires material flexibility/friction and external fabric geometry.'}"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "{'relationship': 'pot-in-saucer seating/support', 'triage': 'missing_helper', 'reason': 'Requires external/use-pose placement, since the exported assembly is a laid-out print set rather than nested pots in saucers.'}"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "{'relationship': 'tube, truss pole, mirror, focuser, screw and clamp fit', 'triage': 'missing_helper', 'reason': 'External mating hardware is absent; requires external proxy dimensions not encoded in this report.'}"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "{'relationship': 'thread engagement and load-bearing stiffness', 'triage': 'missing_helper', 'reason': 'Requires thread/material/load simulation beyond current deterministic helpers.'}"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "{'relationship': 'snap-off tab breakability and assembled crossbow mechanics', 'triage': 'missing_helper', 'reason': 'Requires material/fracture/flexible limb behavior and post-separation assembly state not represented by the single fused print STL.'}"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "{'relationship': 'true crate stacking/nesting and battery fit', 'triage': 'missing_helper', 'reason': 'Requires external crate/battery proxy sizes or use-pose stack transforms not present in the exported tray layout.'}"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "{'relationship': 'DeWalt battery rail sliding fit and wall screw engagement', 'triage': 'missing_helper', 'reason': 'Requires external battery and screw geometry; current checks only proxy rail/hole openness on reconstructed holder geometry.'}"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "{'relationship': 'Gridfinity foot/lip fit against external mating bin/base', 'triage': 'missing_helper', 'reason': 'Requires external standard Gridfinity mating geometry or a project-specific proxy body; local single-body STL can only sample openings and inventory.'}"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "{'relationship': 'Exact Gridfinity stacking lip/foot mate', 'triage': 'missing_helper', 'reason': 'Requires external standard mating geometry; local single-body checks can verify body inventory and representative openings only.'}"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "{'relationship': 'Heat-set insert retention / screw thread engagement', 'triage': 'missing_helper', 'reason': 'Requires hardware material/thread engagement modelling beyond local mesh geometry.'}"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "{'relationship': 'Exact Gridfinity foot/lip fit against external mate', 'triage': 'missing_helper', 'reason': 'Requires external standard mating geometry or generated proxy; local single-body STL can only check representative openings and inventory.'}"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "thread fit, cap/body screw engagement, silica containment, and fit inside a spool core need helpers/external proxies not implemented"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "body/cap vs filament spool core: contains/fits; external spool proxy missing"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "external spool/enclosure, humidity sensor, hinge/latch behavior, strength, and mounting loads are unmeasured"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "drybox vs spool/enclosure: contains/supports/mounts; external objects missing"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "sensor window vs humidity sensor: clearance-fit; external sensor proxy missing"
+    }
+  ],
+  "low_score_causes": {
+    "printability<8": 23,
+    "physical_correctness<8": 10,
+    "feature_retention<8": 4
+  },
+  "count_mismatch_review_signals": {
+    "assembly_vs_part_count": 3
+  },
+  "next_codex_prompt": "Use the evaluate-cad-reconstruction skill. First evaluate the explicit batch projects listed in this prompt and write one final evaluation_report.json per project. Generate thorough physical manifests from rendered visual context, implement a narrow helper if the batch exposes a local deterministic missing-helper gap, then summarize batch scores, helper usage, remaining missing helpers, and before/after changes."
+}

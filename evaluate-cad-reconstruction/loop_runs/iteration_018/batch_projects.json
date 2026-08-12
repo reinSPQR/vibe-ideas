@@ -1,0 +1,19 @@
+{
+  "iteration": 18,
+  "projects_root": "outputs/reconstructions/step-to-cadquery",
+  "batch_size": 4,
+  "projects": [
+    "outputs/reconstructions/step-to-cadquery/improved-wandering-hour-clock",
+    "outputs/reconstructions/step-to-cadquery/iphone-xr-3d-model-step-file",
+    "outputs/reconstructions/step-to-cadquery/joycon-grip-multiple-variants-step-file-included-t",
+    "outputs/reconstructions/step-to-cadquery/joycon-l-r"
+  ],
+  "excluded_project_names": [
+    "phone-holder",
+    "silica-gel-spool-container",
+    "simple-twist-open-mushroom",
+    "spool-holder-and-drybox-for-enclosure-v2-with-humi",
+    "tablet-and-notebook-stand"
+  ],
+  "codex_returncode": 0
+}

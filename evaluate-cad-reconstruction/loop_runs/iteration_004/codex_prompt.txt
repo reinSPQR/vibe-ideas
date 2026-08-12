@@ -1,0 +1,17 @@
+You are running an automatic improvement iteration for the repo-local evaluate-cad-reconstruction skill.
+
+Iteration: 4
+Loop report: skills/evaluate-cad-reconstruction/loop_runs/iteration_004/loop_report.md
+Projects root: outputs/reconstructions/step-to-cadquery
+
+Follow the loop report's Next Codex Prompt. Keep the iteration narrow:
+- implement at most one helper/proxy/scoring-policy change;
+- update docs/tests when code changes;
+- rerun affected project reports plus a small regression set when feasible;
+- preserve the artifact policy: delete temp evaluation artifacts and leave final reports only;
+- summarize before/after scores and residual risks.
+
+Do not use destructive git commands. Do not commit unless explicitly instructed.
+
+Loop prompt:
+Use the evaluate-cad-reconstruction skill. Read the latest loop report. Focus on this candidate: 'vent holes/grilles: opening presence could be sampled but is unreliable on highly perforated non-watertight STL'. Decide whether it is implement_now or proxy_now. If feasible, implement one narrow deterministic helper in cad_reconstruction_eval/physical_correctness_score.py, document it in references/physical-condition-manifests.md and references/scoring-guide.md, rerun the affected reports under outputs/reconstructions/step-to-cadquery, and summarize before/after scores. Also explain whether these unused checks are truly unused or just absent from this batch: ['part_collision', 'linear_motion_collision', 'linear_motion_clearance', 'rotation_motion_collision', 'relative_pose', 'contact_graph'].

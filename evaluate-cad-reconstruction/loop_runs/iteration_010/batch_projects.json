@@ -1,0 +1,19 @@
+{
+  "iteration": 10,
+  "projects_root": "outputs/reconstructions/step-to-cadquery",
+  "batch_size": 4,
+  "projects": [
+    "outputs/reconstructions/step-to-cadquery/bambu-lab-filament-poop-bin-x1c-p1s-and-p2s",
+    "outputs/reconstructions/step-to-cadquery/bentobox-v20-carbon-filter-for-bambu-lab-x1c-enclo",
+    "outputs/reconstructions/step-to-cadquery/build-tray",
+    "outputs/reconstructions/step-to-cadquery/cable-spool-holder-gridfinity"
+  ],
+  "excluded_project_names": [
+    "phone-holder",
+    "silica-gel-spool-container",
+    "simple-twist-open-mushroom",
+    "spool-holder-and-drybox-for-enclosure-v2-with-humi",
+    "tablet-and-notebook-stand"
+  ],
+  "codex_returncode": 0
+}

@@ -1,0 +1,27 @@
+Completed iteration 8 batch evaluation and one narrow evaluator improvement.
+
+Final project artifacts are present, with temp files removed:
+
+- [3d-printable-jet-engine/evaluation_report.json](/Users/macbookpro/Documents/ai-chain/_hardware/cad-skill-test-2/outputs/reconstructions/step-to-cadquery/3d-printable-jet-engine/evaluation_report.json)
+- [5015-radial-fan.../evaluation_report.json](/Users/macbookpro/Documents/ai-chain/_hardware/cad-skill-test-2/outputs/reconstructions/step-to-cadquery/5015-radial-fan-3d-model-for-conception-step-stl-f/evaluation_report.json)
+- [all-in-one-temperature-bridging-tower/evaluation_report.json](/Users/macbookpro/Documents/ai-chain/_hardware/cad-skill-test-2/outputs/reconstructions/step-to-cadquery/all-in-one-temperature-bridging-tower/evaluation_report.json)
+- [arduino-uno/evaluation_report.json](/Users/macbookpro/Documents/ai-chain/_hardware/cad-skill-test-2/outputs/reconstructions/step-to-cadquery/arduino-uno/evaluation_report.json)
+
+Scores:
+
+| Project | Printability | Physical before | Physical after | Feature |
+|---|---:|---:|---:|---:|
+| `3d-printable-jet-engine` | 0.4 | 6.2 | 6.2 | 8.6 |
+| `5015-radial-fan...` | 9.2 | 8.0 | 8.0 | 8.4 |
+| `all-in-one-temperature-bridging-tower` | 4.0 | 8.4 | 9.2 | 9.2 |
+| `arduino-uno` | 9.9 | 10.0 | 10.0 | 8.8 |
+
+Implemented one evaluator improvement: `clear_path_proxy` in [physical_correctness_score.py](/Users/macbookpro/Documents/ai-chain/_hardware/cad-skill-test-2/skills/evaluate-cad-reconstruction/cad_reconstruction_eval/physical_correctness_score.py). It checks explicit straight paths through holes, slots, windows, and cable passages by triangle intersections, avoiding brittle point-inside sampling from `opening_presence` on non-watertight meshes. Updated skill docs, manifest docs, scoring guide, and tests.
+
+Verification:
+
+- `PYTHONPATH=skills/evaluate-cad-reconstruction python3 -m unittest skills/evaluate-cad-reconstruction/tests/test_physical_correctness_score.py`
+- Result: `Ran 23 tests ... OK`
+- Confirmed no `.eval_tmp`, temp manifests, or raw temp score reports remain in the four evaluated projects.
+
+Residual risks: render generation was blocked because CadQuery was unavailable and network access was restricted, so reports explicitly record that limitation. Remaining missing checks are mostly external/mating-object checks, material behavior, true bridge/overhang print quality, and placed-instance body splitting for the large engine. Unused checks like collision, motion, relative pose, and contact graph were absent because this batch is mostly fused/reference single-solid models, not because the helpers are generally obsolete.

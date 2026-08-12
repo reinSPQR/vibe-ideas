@@ -1,0 +1,19 @@
+{
+  "iteration": 16,
+  "projects_root": "outputs/reconstructions/step-to-cadquery",
+  "batch_size": 4,
+  "projects": [
+    "outputs/reconstructions/step-to-cadquery/gridfinity-sd-card-microsd-card-and-usb-stick-hold",
+    "outputs/reconstructions/step-to-cadquery/gridfinity-under-desk-drawer",
+    "outputs/reconstructions/step-to-cadquery/gridfinity-usb-cablemanager",
+    "outputs/reconstructions/step-to-cadquery/gridfinity-utensil-holder"
+  ],
+  "excluded_project_names": [
+    "phone-holder",
+    "silica-gel-spool-container",
+    "simple-twist-open-mushroom",
+    "spool-holder-and-drybox-for-enclosure-v2-with-humi",
+    "tablet-and-notebook-stand"
+  ],
+  "codex_returncode": 0
+}

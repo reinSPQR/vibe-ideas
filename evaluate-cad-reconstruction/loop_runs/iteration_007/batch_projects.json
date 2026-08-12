@@ -1,0 +1,18 @@
+{
+  "iteration": 7,
+  "projects_root": "outputs/reconstructions/step-to-cadquery",
+  "batch_size": 4,
+  "projects": [
+    "outputs/reconstructions/step-to-cadquery/3d-printable-jet-engine",
+    "outputs/reconstructions/step-to-cadquery/5015-radial-fan-3d-model-for-conception-step-stl-f",
+    "outputs/reconstructions/step-to-cadquery/all-in-one-temperature-bridging-tower",
+    "outputs/reconstructions/step-to-cadquery/arduino-uno"
+  ],
+  "excluded_project_names": [
+    "phone-holder",
+    "silica-gel-spool-container",
+    "simple-twist-open-mushroom",
+    "spool-holder-and-drybox-for-enclosure-v2-with-humi",
+    "tablet-and-notebook-stand"
+  ]
+}

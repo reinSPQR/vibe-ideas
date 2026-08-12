@@ -1,0 +1,173 @@
+{
+  "generated_at": "2026-07-09T04:47:06.766107+00:00",
+  "root": "outputs/reconstructions/step-to-cadquery",
+  "project_count": 5,
+  "scores": [
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/phone-holder",
+      "printability": 4.0,
+      "physical_correctness": 10.0,
+      "feature_retention": 5.5
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/silica-gel-spool-container",
+      "printability": 3.6,
+      "physical_correctness": 6.0,
+      "feature_retention": 8.0
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/simple-twist-open-mushroom",
+      "printability": 4.0,
+      "physical_correctness": 4.0,
+      "feature_retention": 9.1
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/spool-holder-and-drybox-for-enclosure-v2-with-humi",
+      "printability": 4.0,
+      "physical_correctness": 4.0,
+      "feature_retention": 7.6
+    },
+    {
+      "project": "outputs/reconstructions/step-to-cadquery/tablet-and-notebook-stand",
+      "printability": 4.0,
+      "physical_correctness": 10.0,
+      "feature_retention": 8.7
+    }
+  ],
+  "used_checks": {
+    "part_component_count": 20,
+    "part_contact": 9,
+    "assembly_component_count": 5,
+    "feature_count": 4,
+    "opening_presence": 4,
+    "cylindrical_fit": 4,
+    "part_clearance": 2,
+    "axis_alignment": 2,
+    "assembly_sequence": 1
+  },
+  "unused_checks": [
+    "part_collision",
+    "linear_motion_collision",
+    "linear_motion_clearance",
+    "rotation_motion_collision",
+    "relative_pose",
+    "contact_graph"
+  ],
+  "failed_checks": {
+    "part_component_count": 2,
+    "assembly_component_count": 2
+  },
+  "missing_helper_notes": {
+    "thread fit, cap/body screw engagement, silica containment, and fit inside a spool core need helpers/external proxies not implemented": 1,
+    "body vs cap: cylindrical/threaded fit and rotation-motion; current helper cannot validate helical thread": 1,
+    "body/cap vs filament spool core: contains/fits; external spool proxy missing": 1,
+    "vent holes/grilles: opening presence could be sampled but is unreliable on highly perforated non-watertight STL": 1,
+    "cap/body pairs: rotation-motion/thread or bayonet engagement, missing twist-cam helper": 1,
+    "dot/eye inserts vs body sockets: clearance-fit/contact/glue seating, missing socket proxy/clearance helper": 1,
+    "external spool/enclosure, humidity sensor, hinge/latch behavior, strength, and mounting loads are unmeasured": 1,
+    "drybox vs spool/enclosure: contains/supports/mounts; external objects missing": 1,
+    "sensor window vs humidity sensor: clearance-fit; external sensor proxy missing": 1,
+    "True screw thread engagement and torque retention are not implemented.": 1,
+    "Snap/press-fit compliance for bracket slots and beam tabs is not implemented.": 1,
+    "Load-bearing stiffness, tipping stability, and device weight support are not implemented.": 1,
+    "Full folding motion path for the linkage needs joint-aware kinematic helpers; current rotation helper is too coarse for seated hinge geometry.": 1
+  },
+  "missing_helper_classes": {
+    "missing_helper": {
+      "thread fit, cap/body screw engagement, silica containment, and fit inside a spool core need helpers/external proxies not implemented": 1,
+      "body/cap vs filament spool core: contains/fits; external spool proxy missing": 1,
+      "external spool/enclosure, humidity sensor, hinge/latch behavior, strength, and mounting loads are unmeasured": 1,
+      "drybox vs spool/enclosure: contains/supports/mounts; external objects missing": 1,
+      "sensor window vs humidity sensor: clearance-fit; external sensor proxy missing": 1
+    },
+    "proxy_now": {
+      "body vs cap: cylindrical/threaded fit and rotation-motion; current helper cannot validate helical thread": 1,
+      "cap/body pairs: rotation-motion/thread or bayonet engagement, missing twist-cam helper": 1,
+      "True screw thread engagement and torque retention are not implemented.": 1,
+      "Load-bearing stiffness, tipping stability, and device weight support are not implemented.": 1
+    },
+    "implement_now": {
+      "vent holes/grilles: opening presence could be sampled but is unreliable on highly perforated non-watertight STL": 1,
+      "dot/eye inserts vs body sockets: clearance-fit/contact/glue seating, missing socket proxy/clearance helper": 1,
+      "Snap/press-fit compliance for bracket slots and beam tabs is not implemented.": 1,
+      "Full folding motion path for the linkage needs joint-aware kinematic helpers; current rotation helper is too coarse for seated hinge geometry.": 1
+    },
+    "review": {}
+  },
+  "ranked_improvement_candidates": [
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "vent holes/grilles: opening presence could be sampled but is unreliable on highly perforated non-watertight STL"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "dot/eye inserts vs body sockets: clearance-fit/contact/glue seating, missing socket proxy/clearance helper"
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "Snap/press-fit compliance for bracket slots and beam tabs is not implemented."
+    },
+    {
+      "class": "implement_now",
+      "count": 1,
+      "note": "Full folding motion path for the linkage needs joint-aware kinematic helpers; current rotation helper is too coarse for seated hinge geometry."
+    },
+    {
+      "class": "proxy_now",
+      "count": 1,
+      "note": "body vs cap: cylindrical/threaded fit and rotation-motion; current helper cannot validate helical thread"
+    },
+    {
+      "class": "proxy_now",
+      "count": 1,
+      "note": "cap/body pairs: rotation-motion/thread or bayonet engagement, missing twist-cam helper"
+    },
+    {
+      "class": "proxy_now",
+      "count": 1,
+      "note": "True screw thread engagement and torque retention are not implemented."
+    },
+    {
+      "class": "proxy_now",
+      "count": 1,
+      "note": "Load-bearing stiffness, tipping stability, and device weight support are not implemented."
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "thread fit, cap/body screw engagement, silica containment, and fit inside a spool core need helpers/external proxies not implemented"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "body/cap vs filament spool core: contains/fits; external spool proxy missing"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "external spool/enclosure, humidity sensor, hinge/latch behavior, strength, and mounting loads are unmeasured"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "drybox vs spool/enclosure: contains/supports/mounts; external objects missing"
+    },
+    {
+      "class": "missing_helper",
+      "count": 1,
+      "note": "sensor window vs humidity sensor: clearance-fit; external sensor proxy missing"
+    }
+  ],
+  "low_score_causes": {
+    "printability<8": 5,
+    "physical_correctness<8": 3,
+    "feature_retention<8": 2
+  },
+  "count_mismatch_review_signals": {
+    "assembly_vs_part_count": 2
+  },
+  "next_codex_prompt": "Use the evaluate-cad-reconstruction skill. Read the latest loop report. Focus on this candidate: 'vent holes/grilles: opening presence could be sampled but is unreliable on highly perforated non-watertight STL'. Decide whether it is implement_now or proxy_now. If feasible, implement one narrow deterministic helper in cad_reconstruction_eval/physical_correctness_score.py, document it in references/physical-condition-manifests.md and references/scoring-guide.md, rerun the affected reports under outputs/reconstructions/step-to-cadquery, and summarize before/after scores. Also explain whether these unused checks are truly unused or just absent from this batch: ['part_collision', 'linear_motion_collision', 'linear_motion_clearance', 'rotation_motion_collision', 'relative_pose', 'contact_graph']."
+}

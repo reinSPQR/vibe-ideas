@@ -1,0 +1,19 @@
+{
+  "iteration": 15,
+  "projects_root": "outputs/reconstructions/step-to-cadquery",
+  "batch_size": 4,
+  "projects": [
+    "outputs/reconstructions/step-to-cadquery/gridfinity-micro-sd-card-holder-1x1x3-added-step-f",
+    "outputs/reconstructions/step-to-cadquery/gridfinity-plain-bin",
+    "outputs/reconstructions/step-to-cadquery/gridfinity-screw-together-baseplate",
+    "outputs/reconstructions/step-to-cadquery/gridfinity-sd-card-holder"
+  ],
+  "excluded_project_names": [
+    "phone-holder",
+    "silica-gel-spool-container",
+    "simple-twist-open-mushroom",
+    "spool-holder-and-drybox-for-enclosure-v2-with-humi",
+    "tablet-and-notebook-stand"
+  ],
+  "codex_returncode": 0
+}

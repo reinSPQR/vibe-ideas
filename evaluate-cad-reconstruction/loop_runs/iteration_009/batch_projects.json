@@ -1,0 +1,19 @@
+{
+  "iteration": 9,
+  "projects_root": "outputs/reconstructions/step-to-cadquery",
+  "batch_size": 4,
+  "projects": [
+    "outputs/reconstructions/step-to-cadquery/articulated-snowman-fidget",
+    "outputs/reconstructions/step-to-cadquery/articulated-tie-step-file-included",
+    "outputs/reconstructions/step-to-cadquery/aspire-planter",
+    "outputs/reconstructions/step-to-cadquery/astronomical-telescope-hadley-an-easy-assembly-hig"
+  ],
+  "excluded_project_names": [
+    "phone-holder",
+    "silica-gel-spool-container",
+    "simple-twist-open-mushroom",
+    "spool-holder-and-drybox-for-enclosure-v2-with-humi",
+    "tablet-and-notebook-stand"
+  ],
+  "codex_returncode": 0
+}

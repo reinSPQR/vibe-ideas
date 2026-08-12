@@ -1,259 +1,224 @@
 ---
-description: Run the board-game-ideator self-improvement loop (ideate → CAD build → evaluate → revise) until the average sellability score hits 80+, or a turn cap is reached.
+description: Run the board-game vision-fidelity loop (vision → translate → build → repair → score → audit → learn) until the built objects reliably match the vision they were designed from, or a turn cap is reached.
 argument-hint: "[max-turns, default 6]"
 ---
 
-# /goal — board-game-ideator self-improvement loop
+# /goal — board-game vision-fidelity loop
 
-You are the orchestrator for the loop described in `idea.md`. The endgoal is
-not a good set of ideas — it's a `board-game-ideator` agent
-(`.claude/agents/board-game-ideator.md`) that reliably produces idea sets
-whose *built, photographed* picks average **80+/100** on the sellability
-rubric (Differentiation /50, Producibility /50). Drive the loop below using
-the Task tool to invoke the
-`board-game-ideator` and `board-game-evaluator` subagents. Do not do their
-jobs yourself — delegate and orchestrate. The one exception is the new
-pain-point triage step below, which is explicitly your own job, not a
-subagent's.
+You are the orchestrator. The endgoal is not a good set of ideas and no
+longer a sellability score: it is a pair of agents —
+`board-game-ideator` (vision) and `board-game-cad-writer` (translation) —
+that reliably produce **built objects matching the vision they were designed
+from, first shot, with no human intervention.**
 
-Parse `$ARGUMENTS` as an optional max-turn cap; default to **6** if not
-given or not a number.
+Drive the loop with the Task tool. Do not do the subagents' jobs yourself.
+The exceptions, which are explicitly yours: pain-point triage (step 14),
+merging the question corpus (step 12), and the mechanical audit (step 11).
 
-**Buyability / the 20-persona purchase-intent panel is paused as of
-2026-08-11** — three straight turns produced a unanimous 0/20 verdict on
-the single built idea each time, driven almost entirely by unpainted/
-monochrome prototype photos rather than genuine desirability signal (see
-`board-game/BOARD.md` Turn 11-13 notes). Step 4 below is skipped
-entirely while paused, and the rubric is Differentiation/50 +
-Producibility/50 (`board-game-evaluator` already reflects this). If a
-later `/goal` invocation is meant to re-enable the panel, that must be an
-explicit instruction here, not an automatic revival.
+Parse `$ARGUMENTS` as an optional max-turn cap; default **6**.
+
+## What changed, and why (read before running)
+
+The previous rubric (Differentiation/50 + Producibility/50, 10 ideas, 3
+built) stalled for three turns on a problem it could not see: **5 of 9
+builds parked on clarifying questions and scored zero, and the builds that
+finished lost the design** — parts fused, components absent. The loop was
+spending its effort on prior-art search discipline while the actual failure
+was the vision→CAD gap.
+
+So: differentiation is now a one-search pass/fail gate. Every turn builds
+**3 ideas — one `new`, one `twist`, one `reskin`** — with the production
+concept phase, question-answering, and one repair round each. Scoring is
+**Vision Fidelity /60 + Build Reliability /25 + Vision Ambition /15**.
+
+**There is no colour anywhere in this pipeline.** The CAD stack has no
+colour-assignment step, so every build returns in one uniform material. The
+ideator designs in form only, the vision renders are pinned to an unpainted
+single-material look so the comparison stays honest, and nothing is scored
+on colour. Do not reintroduce it.
 
 ## Setup
 
-1. Ensure `board-game/BOARD.md` exists (it should already — if missing,
-   stop and tell the user something is wrong with the project setup rather
-   than recreating it yourself).
-2. Determine the next turn number `N`: look at `board-game/history/` and
-   use `(number of existing `turn-*` subdirectories) + 1`. Start at 1 if the
-   directory is empty or doesn't exist.
-3. **Verify the local CAD build infra is reachable — required, not
-   optional.** Under the current rubric, Producibility is scored entirely
-   from a real CAD build, so this loop cannot produce a valid score
-   without that infra running. Issue a lightweight GET against the client
-   API base URL (default
-   `http://localhost:4320`) via Bash/curl — the same reachability
-   convention `generate_cad_builds.py` uses internally (any HTTP response,
-   even an error status, counts as reachable; a connection failure does
-   not). If unreachable: **stop here, before spending an ideation pass.**
-   Tell the user plainly that the local-worker Docker stack
+1. Confirm `board-game/BOARD.md` exists. If missing, stop and tell the user
+   the project setup is wrong rather than recreating it.
+2. Next turn number `N` = (count of `board-game/history/turn-*` dirs) + 1.
+3. **Verify the CAD infra is reachable — required, not optional.** Curl the
+   client API (default `http://localhost:4320`); any HTTP response counts as
+   reachable, a connection failure does not. If unreachable, **stop before
+   spending an ideation pass**: the local-worker Docker stack
    (`docker-compose.local-worker.yml`) and `panda-social-cc-agent`'s
-   `tools/client` API server need to be running, and that this loop never
-   starts them itself. Do not proceed to the Loop below until infra is
-   confirmed up.
+   `tools/client` API server must already be running. This loop never starts
+   them.
+4. Snapshot agent-file hashes to `board-game/history/turn-<N>/AGENT_HASHES.json`
+   — a JSON object mapping each filename in `.claude/agents/` to its sha256.
+   `audit_turn.py` uses it to detect mid-turn tampering.
 
-## Loop (repeat until stopping condition below)
+## Phase A — Vision
 
-For the current turn `N`:
+1. **Ideate.** Invoke `board-game-ideator` in **generate mode**. Tell it only
+   the turn number and the mode. Do not paste, summarize, or reference
+   `BOARD.md`, `CAD_GRAMMAR.md`, prior `IDEAS.json`, or any past turn — clean
+   context is by design (see the agent's own hard rule); you are the one place
+   that constraint can leak. Capture its trailing `PAIN_POINTS:` section and
+   append it to `board-game/PAIN_POINTS.md` under a new `### Turn <N>` heading
+   as an **Ideator:** subsection, right away.
+2. **Vision renders.** `python3 board-game/tools/generate_images.py --turn <N>`.
+   These are no longer cosmetic — they are the reference the builds get
+   compared against, and the ambition judgment is made from them. If the
+   script fails (e.g. no `OPENROUTER_API_KEY`), that is a real degradation:
+   note it prominently, since ambition and the visual check both get weaker
+   without renders. Continue anyway.
+3. **Lock ambition.** Invoke `board-game-evaluator` in **ambition mode** for
+   turn `N`. It writes `board-game/AMBITION.json` from the specs and renders,
+   before any build exists. Never run this after the builds — the entire point
+   is that a build outcome cannot contaminate it.
+4. **Translate.** Invoke `board-game-cad-writer` in **write mode** for turn
+   `N`. It writes `board-game/CAD_PROMPTS.json`. Append its `PAIN_POINTS:` to
+   this turn's heading as a **CAD-writer:** subsection.
+5. **Back-translation pre-flight.** Run:
+   ```
+   python3 board-game/tools/generate_images.py --turn <N> \
+       --ideas-file board-game/CAD_PROMPTS.json --field cad_prompt \
+       --out-dir board-game/history/turn-<N>/backtranslation \
+       --latest-dir board-game/backtranslation
+   ```
+   This renders each `cad_prompt` alone, with no theme text and no sight of
+   the vision render. Compare each against its vision render and the idea's
+   `must_survive` list. For any feature clearly absent from the
+   back-translation, invoke `board-game-cad-writer` in **patch mode** naming
+   that specific gap. One patch round only. Twenty seconds here beats thirty
+   minutes of CAD discovering the same thing.
 
-1. **Ideate.** Invoke the `board-game-ideator` subagent in **generate
-   mode**: tell it only that this is turn `N`, generate mode, and to follow
-   its own instructions. Do **not** paste, summarize, or reference
-   `board-game/BOARD.md`, past `IDEAS.json`/`SCORES.md`, or any prior turn's
-   content in the prompt you give it — generate mode must run with a clean
-   context, by design (see the agent's own "Hard rule" under Generate
-   mode). You are the one place that constraint could leak through
-   accidentally, so keep this prompt minimal. Its reply ends with a
-   `PAIN_POINTS:` section (outside the `IDEAS.json` it wrote) — capture it
-   and append it to `board-game/PAIN_POINTS.md` right away, under a new
-   `### Turn <N>` heading, as an **Ideator:** subsection (create the file
-   with a "# PAIN POINTS — Pipeline Execution Log" header if it doesn't
-   exist yet). Doing this now, before step 6, means the evaluator's own
-   pain-points write-up lands under the same heading instead of creating a
-   duplicate.
-2. **Visualize (best-effort, non-blocking).** Run
-   `python3 board-game/tools/generate_images.py --turn <N>` via Bash. This
-   renders each idea's `prompt` field to a PNG with `openai/gpt-image-2`
-   (via OpenRouter) purely so the user can eyeball the set — it is not part
-   of scoring and must never gate or fail the turn. Read the script's
-   summary line (`IMAGES: x/10 generated`) and mention it in your progress
-   report; if it exits non-zero (e.g. `OPENROUTER_API_KEY` isn't set), note
-   that previews were skipped and continue the loop exactly as if this step
-   didn't exist. Images land in `board-game/history/turn-<N>/images/`, with
-   a "latest turn" convenience copy mirrored into `board-game/images/`.
-3. **Run CAD builds — required, not best-effort.** Run
-   `python3 board-game/tools/generate_cad_builds.py --turn <N>` via Bash.
-   This submits the ideator's `cad_build_picks` (3 ideas) as real `create`
-   jobs through `panda-social-cc-agent`'s local-worker Docker stack, polls
-   them to completion, and downloads each build's plain CAD render, QA
-   sheet, and a photoreal product photo (via the real production
-   `ai_thumbnail` code, shelled out to inside the worker container) into
-   `board-game/history/turn-<N>/cad-builds/`. Read its
-   `CAD_BUILDS: x/3 done, y parked, z failed` summary line and mention it
-   in your progress report.
-   - Under the current rubric this step's output is not optional context —
-     it *is* what gets scored. If it exits non-zero because **zero**
-     builds completed: retry it once (transient infra hiccups happen). If
-     it still produces zero successful builds on retry, **stop the loop**
-     — do not proceed to evaluate, do not fabricate or skip a score for
-     this turn. Report to the user with the exact error/park output so
-     they can diagnose (infra down mid-run, a Docker worker crashed,
-     etc.), and let them decide whether to fix infra and resume with
-     `/goal` or investigate further. This is a real behavior change from
-     the old best-effort treatment of this step — the CAD reality check
-     used to be a bonus signal you could silently skip; now it's the
-     scoring mechanism itself.
-   - If 1-3 builds completed, proceed normally — the turn's average is
-     computed over however many builds actually succeeded (see step 8).
-   - Every pick now gets a `manifest.json` in its build directory
-     regardless of outcome, including parks/timeouts/failures — its
-     `status` field gives the real outcome and, for non-`done` outcomes,
-     its `error`/`raw_job` fields carry whatever diagnostic detail the job
-     API returned. You don't need to read these yourself; the evaluator
-     reads them directly in step 6.
-4. **Purchase-intent panel — PAUSED as of 2026-08-11.** Skip this step
-   entirely; do not spawn persona agents and do not write
-   `purchase-intent.json`. (See the note near the top of this file for
-   why, and Turn 11-13 in `board-game/BOARD.md` for the data.)
-5. **Snapshot the ideator file.** Before evaluating, note the current
-   content/hash of `.claude/agents/board-game-ideator.md` so you can detect
-   if it changes when it shouldn't.
-6. **Evaluate.** Invoke the `board-game-evaluator` subagent: tell it this is
-   turn `N`, and to score `board-game/IDEAS.json`, write
-   `board-game/SCORES.md`, and update `board-game/BOARD.md` per its
-   instructions — Producibility for the built ideas now comes directly
-   from `cad-builds/` (its own instructions already reflect the paused
-   panel and the Differentiation/50 + Producibility/50 rubric — you don't
-   need to repeat that in your invocation prompt). It also appends its own
-   **Evaluator:** subsection to `board-game/PAIN_POINTS.md` under this
-   turn's `### Turn <N>` heading (already created in step 1).
-7. **Verify the ideator was untouched.** Compare
-   `.claude/agents/board-game-ideator.md` against the snapshot from step 5.
-   If it changed, the evaluator violated its hard rule — stop the loop,
-   revert the unauthorized change (the evaluator's only legitimate writes
-   are `SCORES.md`/`BOARD.md`/`PAIN_POINTS.md`), and report this to the
-   user as a pipeline bug rather than continuing as if nothing happened.
-8. **Parse the score.** Extract the `AVERAGE_SCORE: <XX.X or N/A>` line
-   from the evaluator's reply. If it's missing or unparseable, read
-   `board-game/SCORES.md` directly to recover the average instead of
-   guessing. This average is now computed **only over the built ideas**
-   (1-3 of them, per step 3) — the other, unbuilt ideas contribute a
-   Differentiation score for lessons-learned purposes only and are not
-   part of the average. `N/A` should not occur in practice (step 3 already
-   stops the loop before evaluate if zero builds succeeded) — if you see
-   it anyway, treat it the same way: stop and surface it rather than
-   guessing a number.
-9. **Pain-point triage.** This step is yours to execute directly, not a
-   subagent's. Read everything appended to `board-game/PAIN_POINTS.md`
-   since the last `**Triage:**` entry (i.e. this turn's Ideator +
-   Evaluator subsections, plus any leftover un-triaged entries from
-   before). For each individual pain point listed:
-   - **Classify it:**
-     - *Uncontroversial*: a clear, low-risk fix with one obviously-correct
-       resolution — ambiguous wording, a missing example, a script bug, a
-       stale reference to a removed field, a tooling/file-path papercut.
-     - *Controversial*: touches scoring weights or the rubric shape, the
-       80/100 stopping target, the 3-build cap, cost/scope/architecture,
-       or has multiple reasonable fixes with a real tradeoff between them.
-     - *Not actionable*: an inherent constraint with no fix (e.g. "builds
-       take ~20 minutes") — acknowledge and move on.
-   - **Uncontroversial items**: fix them directly via Edit, in whichever
-     file is implicated — `.claude/agents/board-game-ideator.md` (outside
-     its Learned Heuristics section, which is the ideator's own to edit in
-     revise mode — you may still fix other sections here, since that's
-     exactly the "explicit triage instruction" carve-out the ideator's
-     revise-mode rule allows), `.claude/agents/board-game-evaluator.md`,
-     this file (`.claude/commands/goal.md`), `board-game/tools/*.py`, or
-     `board-game/tools/customer_personas.json`. **Cap yourself at 3
-     auto-fixes per turn** to bound blast radius; if there are more
-     uncontroversial candidates than that, apply the 3 most impactful and
-     log the rest as deferred for a future turn's triage pass.
-   - **Controversial items**: use `AskUserQuestion` — present the pain
-     point, your recommended fix if you have one, and 1-2 alternatives.
-     Only apply a change if the user approves it.
-   - **Every item**, regardless of disposition, gets one line appended
-     under a new `**Triage:**` subsection of this turn's `### Turn <N>`
-     heading in `board-game/PAIN_POINTS.md`:
-     `- [AUTO-FIXED|DEFERRED|ASKED-APPROVED|ASKED-DECLINED|NOT-ACTIONABLE] <pain point> — <what was done and why>`.
-   - **Guardrails**: never touch `board-game/IDEAS.json`, `SCORES.md`, or
-     `BOARD.md` content in this step — those are the agents' own scoring
-     outputs. Never change a scoring weight, threshold, or the pipeline's
-     shape (Differentiation/50, Producibility/50, whether the panel is
-     paused or active, the 80/100 target, the 3-build cap) without explicit
-     user approval, even if a pain point seems to argue for it — that's
-     always controversial by definition, never an auto-fix. If you edit
-     this file (`goal.md`) mid-run, note that it only affects the *next*
-     `/goal` invocation — this run's instructions are already loaded and
-     won't change retroactively mid-loop.
-10. **Archive the turn.** Copy the turn's `board-game/IDEAS.json` and
-    `board-game/SCORES.md` into `board-game/history/turn-<N>/` (create the
-    directory) — images from step 2 and `cad-builds/` from step 3 are
-    already written directly there and need no separate top-level "latest"
-    mirror, unlike `IDEAS.json`/`SCORES.md`. Do **not** archive
-    `board-game/tools/` (the ideator's persistent toolkit) or
-    `board-game/PAIN_POINTS.md` (a running cross-turn log, like `BOARD.md`
-    — never per-turn-copied).
-11. **Report progress** to the user in one short line, e.g.:
-    `Turn 3: avg 71.2/100 (3/3 built, target 80), 10/10 previews rendered. Pain-points: 2 auto-fixed, 1 asked (declined). Continuing…`
-    (Adjust the built-count and pain-points clauses to what actually
-    happened — omit "Pain-points: ..." entirely if there were none this
-    turn. Omit any buyability/panel clause while the panel is paused.)
-12. **Check the stopping condition:**
-   - If average score **>= 80**: stop the loop. Report success — final
-     score, turn number, and point the user at
-     `.claude/agents/board-game-ideator.md` (the "Learned Heuristics"
-     section) as the durable artifact this pipeline was built to produce.
-     Do not run a revise step for this turn — there is nothing left to
-     improve for.
-   - If `N >= max-turns`: stop the loop. Report that the cap was hit
-     without reaching 80, show the score trend from `board-game/BOARD.md`'s
-     Score History table, and suggest either raising the cap
-     (`/goal <higher-number>`) or reviewing `BOARD.md`/`PAIN_POINTS.md`
-     manually — don't just silently keep going past the cap.
-   - Otherwise: **Revise.** Invoke `board-game-ideator` in **revise mode**:
-     tell it to read `board-game/BOARD.md` and update its own "Learned
-     Heuristics" section in `.claude/agents/board-game-ideator.md`
-     accordingly. Its reply ends with its own `PAIN_POINTS:` section too —
-     append it to `board-game/PAIN_POINTS.md` under this same turn's
-     `### Turn <N>` heading, as an **Ideator (revise pass):** subsection
-     (it'll get triaged at the start of the *next* turn's step 9, along
-     with whatever fresh pain points that turn produces). Then increment
-     `N` and go back to step 1.
+## Phase B — Build (3 pilots in parallel)
+
+6. **Spawn three `board-game-cad-pilot` agents in a single message** (three
+   tool uses in one turn, so they actually run concurrently), one per idea.
+   Give each only its turn number and idea id; its own instructions cover the
+   rest. Each drives concept phase → build → question answering → capture →
+   deterministic scoring → one repair round, and returns a JSON build report.
+7. **Canary (every 4th turn only: N ≡ 0 mod 4).** In the same message, spawn a
+   fourth pilot for the control specimen: idea id `0`, prompt file
+   `board-game/tools/canary_prompt.txt`, no concept phase, no repair round.
+   It is a fixed prompt that never changes, so any movement in its result is
+   pipeline drift rather than agent improvement. Skip on other turns.
+8. **If zero of the three ideas reached `done`:** stop the loop before
+   evaluating. Do not fabricate or skip scores. Report the pilots' terminal
+   statuses and reasons so the user can decide whether to fix infra and
+   resume. If 1–2 finished, continue — the average covers however many did.
+
+## Phase C — Score
+
+9. **Evaluate.** Invoke `board-game-evaluator` in **score mode** for turn `N`.
+   It merges the deterministic measurements with its own visual judgment,
+   writes `SCORES.json` + `SCORES.md`, and updates `BOARD.md`,
+   `CAD_GRAMMAR.md` and `PAIN_POINTS.md`. Parse its final
+   `AVERAGE_SCORE:` line; if unparseable, read `SCORES.json` rather than
+   guessing.
+10. **Contact sheet.** `python3 board-game/tools/contact_sheet.py --turn <N>`.
+    One image: vision | first shot | QA views | after repair, per idea. This
+    is the five-second human check on the turn — mention its path in your
+    report.
+
+## Phase D — Integrity
+
+11. **Mechanical audit (yours).** `python3 board-game/tools/audit_turn.py --turn <N>`.
+    Exit 0 green, 1 amber, 2 red.
+12. **Judged audit.** Invoke `board-game-auditor` for turn `N`. It reads the
+    mechanical findings plus raw artifacts and appends its own verdict to
+    `board-game/INTEGRITY.md`.
+13. **Act on the verdict.**
+    - **RED from either audit: stop the loop.** Report the finding verbatim.
+      A red means the turn's numbers cannot be trusted or an agent did
+      something it was forbidden to do; running another turn on top of it
+      compounds the problem. Do not attempt to fix a red yourself beyond
+      reverting an unauthorized file change.
+    - **AMBER:** continue, and feed every amber finding into triage (step 14).
+    - **GREEN:** continue.
+
+## Phase E — Learn
+
+14. **Question corpus (yours).** Read every `answer` event in this turn's
+    `board-game/history/turn-<N>/builds/idea-*/session.json` and append them
+    to `board-game/CAD_QUESTIONS.md` under `### Turn <N>`: the question
+    verbatim, the answer given, the `source_field` cited, and which recurring
+    category it belongs to (create the file with a
+    `# CAD QUESTIONS — what the pipeline asks when a prompt leaves a gap`
+    header if absent). Group by category, not by idea — the categories are
+    what the cad-writer's template has to pre-answer, and the metric that
+    matters is questions-asked trending to zero.
+15. **Pain-point triage (yours).** Read everything appended to
+    `PAIN_POINTS.md` since the last `**Triage:**` entry, plus every AMBER
+    audit finding. For each item:
+    - *Uncontroversial* (one obviously-correct fix: ambiguous wording, a
+      script bug, a stale field reference, a path papercut) — fix it directly
+      via Edit, in `.claude/agents/*.md` (outside any Learned Heuristics
+      section, which belongs to that agent's own revise mode),
+      `.claude/commands/goal.md`, or `board-game/tools/*`. **Cap: 3 auto-fixes
+      per turn**; log the rest as deferred.
+    - *Controversial* (scoring weights, the rubric shape, the ambition floor,
+      the 3-idea mix, the repair-round cap, cost/architecture, or anything
+      with a real tradeoff) — use `AskUserQuestion` with your recommendation
+      and 1–2 alternatives. Apply only what the user approves. Never change a
+      weight, threshold, or the pipeline's shape without explicit approval,
+      however strongly a pain point argues for it.
+    - *Not actionable* — acknowledge and move on.
+    - Every item gets one line under a `**Triage:**` subsection of this turn's
+      heading: `- [AUTO-FIXED|DEFERRED|ASKED-APPROVED|ASKED-DECLINED|NOT-ACTIONABLE] <item> — <what and why>`.
+    - Never edit `IDEAS.json`, `SCORES.*`, `BOARD.md`, `CAD_GRAMMAR.md` or
+      `INTEGRITY.md` content here — those are outputs, not inputs. Edits to
+      this file take effect on the *next* invocation, not mid-run.
+16. **Archive.** Copy `IDEAS.json`, `CAD_PROMPTS.json`, `SCORES.json`,
+    `SCORES.md` and `AMBITION.json` into `board-game/history/turn-<N>/`.
+    Builds, images and the contact sheet are already written there. Never
+    archive `board-game/tools/`, `BOARD.md`, `CAD_GRAMMAR.md`,
+    `CAD_QUESTIONS.md`, `PAIN_POINTS.md` or `INTEGRITY.md` — those are
+    running cross-turn records.
+17. **Report** in one or two lines, e.g.:
+    `Turn 14: avg 72.3/100, first-shot survival 73% (3/3 built, 4 questions). Audit AMBER (1 provenance finding). Contact sheet: .../contact-sheet-turn-14.png. Continuing…`
+
+## Phase F — Stop or revise
+
+18. **Stopping condition.** Stop and report success when **two consecutive
+    turns** have every built idea at **≥80% rank-weighted `must_survive`
+    survival on the first shot**, with every idea clearing the 8/15 ambition
+    floor. This is deliberately not an average: an average lets one clean
+    reskin carry two failures, and the thing being proven is reliability.
+    On success, point the user at the Learned Heuristics sections of
+    `board-game-ideator.md` and `board-game-cad-writer.md`, and at
+    `CAD_GRAMMAR.md` — those three are the durable artifacts this pipeline
+    exists to produce.
+19. **Cap reached** (`N >= max-turns`): stop, show the Score History trend
+    from `BOARD.md`, and suggest raising the cap or reviewing
+    `BOARD.md`/`CAD_GRAMMAR.md`/`INTEGRITY.md` by hand. Do not silently
+    continue past the cap.
+20. **Otherwise, revise — two separate passes, in this order:**
+    - `board-game-cad-writer` in **revise mode** (folds `CAD_QUESTIONS.md`
+      and `CAD_GRAMMAR.md` into its prompt template).
+    - `board-game-ideator` in **revise mode** (folds `BOARD.md` and
+      `CAD_GRAMMAR.md` into its vision heuristics).
+    Append each one's `PAIN_POINTS:` under this turn's heading as
+    **CAD-writer (revise):** / **Ideator (revise):** — they get triaged next
+    turn. Then increment `N` and go to Phase A.
 
 ## Notes
 
-- Each subagent invocation should be a fresh Task call — don't try to reuse
-  conversation state between turns; all cross-turn memory must flow through
-  `board-game/BOARD.md`, `board-game/PAIN_POINTS.md`, and the ideator's own
-  file, by design (that's the point of the pipeline: the improvement has to
-  survive as an artifact, not as your context).
-- If a Task invocation fails or a subagent doesn't produce the expected
-  file, stop and surface the failure rather than fabricating scores or
-  silently retrying in a loop.
-- Keep your own narration terse — one line of progress per turn plus a
-  final summary. The interesting output is the files, not your commentary.
-- Image previews (step 2) need `OPENROUTER_API_KEY` in the environment (or
-  a `.env` at the repo root). If it's missing, `generate_images.py` prints
-  a clear message and exits non-zero — treat that as informational, not an
-  error to fix or escalate; it's cosmetic and doesn't affect scoring.
-- CAD builds (step 3) need `panda-social-cc-agent`'s local-worker Docker
-  stack (`docker-compose.local-worker.yml`) and its `tools/client` API
-  server already running — this loop never starts either itself, and Setup
-  step 3 already checks for this before the turn begins. If infra goes
-  down *mid-turn* (after Setup's check passed), step 3's own retry-then-
-  stop handling covers it.
-- The purchase-intent panel is paused (step 4) — when it's re-enabled by an
-  explicit instruction, it's 20 parallel `Agent` calls; send them as one
-  message with 20 tool uses so they actually run concurrently, not 20
-  sequential Task calls.
-- Every CAD build pick (step 3) now gets a `manifest.json`, including
-  parked/timed-out/failed ones, carrying an `error`/`raw_job` diagnostic —
-  this replaced the old "missing directory = parked, no other signal"
-  behavior on 2026-08-11 so the evaluator (and future triage passes) can
-  see *why* a pick didn't complete instead of just that it didn't.
-- The pain-point triage step (step 9) is bounded by design: at most 3
-  auto-fixes per turn, and anything touching scoring/architecture always
-  goes through `AskUserQuestion` rather than being auto-applied. If triage
-  starts feeling like it's making the same kind of edit turn after turn,
-  that's itself worth surfacing to the user as an observation, not just
-  quietly repeating the fix.
+- Every subagent invocation is a fresh Task call. Cross-turn memory flows
+  only through the files — that is the point: improvement has to survive as
+  an artifact, not as your context.
+- Wall clock is roughly 1.5–2 h per turn (concept ~5 min, build ~30 min,
+  repair ~30 min, three ideas in parallel). If that is too slow, the repair
+  round is the first thing to cut — it is diagnostic, never scored.
+- The three pilots must be spawned in **one message with three tool uses**,
+  or they run sequentially and the turn takes three times as long.
+- Attribution is the loop's most valuable output. Every fidelity loss is
+  either a translation failure (cad-writer), a vision failure (ideator), or a
+  pipeline limitation (neither — design around it). The evaluator is required
+  to attribute each one; if `BOARD.md` entries stop doing that, raise it.
+- If triage finds itself making the same kind of edit turn after turn,
+  surface that to the user as an observation rather than quietly repeating it.
+- Retired on 2026-08-11: `generate_cad_builds.py` (fire-and-wait, could not
+  answer parks) is superseded by `cad_session.py` + `board-game-cad-pilot`,
+  and the 20-persona purchase-intent panel stays paused — three straight
+  turns of unanimous 0/20 driven by prototype-render appearance rather than
+  desirability. Re-enabling either requires an explicit instruction here, not
+  an automatic revival.

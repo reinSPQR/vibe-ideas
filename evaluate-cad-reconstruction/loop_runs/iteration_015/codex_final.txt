@@ -1,0 +1,33 @@
+Completed iteration 15.
+
+Evaluated exactly the four requested projects and wrote final reports only at each project’s `evaluation_report.json`. Temporary `.eval_tmp` artifacts were removed.
+
+Scores:
+
+| Project | Printability | Physical | Feature |
+|---|---:|---:|---:|
+| `gridfinity-micro-sd-card-holder-1x1x3-added-step-f` | 10.0 | 10.0 | 9.2 |
+| `gridfinity-plain-bin` | 10.0 | 10.0 | 9.4 |
+| `gridfinity-screw-together-baseplate` | 10.0 | 8.0 | 8.6 |
+| `gridfinity-sd-card-holder` | 10.0 | 10.0 | 9.1 |
+
+Applied one narrow evaluator improvement: `clear_path_proxy` now prefilters candidate triangles by each sampled segment’s bounding box before running exact segment-triangle intersection, and reports candidate triangle counts. This fixed the local deterministic gap exposed by the dense baseplate mesh.
+
+Before/after:
+- Before: baseplate physical run was interrupted after 60+ seconds scanning all 290,602 triangles per path.
+- After: same baseplate manifest completed in 6.84s.
+- Score impact: no intended scoring-policy change; baseplate now completes and reports physical score `8.0`, with a failed representative magnet/screw boss-axis clear-path check.
+
+Updated:
+- `skills/evaluate-cad-reconstruction/cad_reconstruction_eval/physical_correctness_score.py`
+- `skills/evaluate-cad-reconstruction/tests/test_physical_correctness_score.py`
+- `skills/evaluate-cad-reconstruction/references/physical-condition-manifests.md`
+- `skills/evaluate-cad-reconstruction/loop_runs/iteration_015/loop_report.md`
+- `skills/evaluate-cad-reconstruction/loop_runs/iteration_015/loop_report.json`
+
+Verification:
+- `PYTHONPATH=skills/evaluate-cad-reconstruction python3 -m unittest skills/evaluate-cad-reconstruction/tests/test_physical_correctness_score.py -k clear_path_proxy`
+- `python3 -m py_compile skills/evaluate-cad-reconstruction/cad_reconstruction_eval/physical_correctness_score.py`
+- Confirmed no `.eval_tmp` or temporary scorer JSON remains under the four projects.
+
+Residual risks: `cadquery` is unavailable, so fresh `render_views.py` renders could not be generated; existing renders were used where present. Gridfinity external mating geometry was not generated, so exact foot/lip fit remains a missing-helper note. The baseplate boss-axis failure needs follow-up to distinguish a true blocked passage from proxy sensitivity around counterbore/countersink transitions.

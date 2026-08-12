@@ -79,9 +79,12 @@ photo worth judging; `board-game/tools/customer_personas.json` and the
 `/goal` step that spawns the 20 persona agents both still exist for when
 it's re-enabled.
 
-### Current — CAD-build rubric, Buyability paused (Differentiation/50, Producibility/50)
+### Archived — never used (Differentiation/50, Producibility/50)
 
-As of Turn 14, Producibility absorbs Buyability's former 10 points (0-25
+Defined for Turn 14 but superseded before any turn ran under it, by the
+vision-fidelity rubric below.
+
+Producibility absorbed Buyability's former 10 points (0-25
 Printability + 0-25 Concept fidelity, both scaled up from /20 each). "Avg
 Differentiation (built)" below is the average Differentiation score of the
 3 `cad_build_picks` specifically (not all 10); "Avg Producibility"
@@ -93,6 +96,29 @@ CAD-pipeline pass rate is never hidden inside a diluted average.
 
 | Turn | Avg Total /100 (over completed builds) | Avg Differentiation /50 (of the 3 built) | Avg Producibility /50 (0 for non-done) | Builds completed |
 |------|-------------------------------------------|---------------------------------------------|--------------------------------------------|-------------------|
+
+### Current — vision fidelity (Fidelity/60 + Reliability/25 + Ambition/15)
+
+From Turn 14. The loop stopped asking "would this sell?" and started asking
+"did the built object match the vision it was designed from?" — because
+turns 11-13 showed the binding constraint was the vision→CAD gap, not idea
+quality: 5 of 9 builds parked on clarifying questions and scored zero, and
+the ones that finished came back with parts fused and components missing.
+
+Three ideas per turn (one `new`, one `twist`, one `reskin`), all built.
+Differentiation is now a one-search pass/fail gate, not a scored axis.
+Colour is gone entirely from the pipeline — the CAD stack has no
+colour-assignment step, so distinction must be carried by geometry.
+
+"First-shot survival" is the headline number: the rank-weighted fraction of
+each idea's five `must_survive` conditions that the **first** build
+satisfied, before any repair round. The stopping condition is two
+consecutive turns with every idea at ≥80%, not an average — an average lets
+one clean reskin carry two failures, and what is being proven is
+reliability.
+
+| Turn | Avg Total /100 | Avg Ambition /15 | First-shot survival | Builds completed | Questions asked |
+|------|-----------------|--------------------|----------------------|-------------------|------------------|
 
 ## Lessons Learned
 
