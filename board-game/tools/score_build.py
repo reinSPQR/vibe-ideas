@@ -103,15 +103,23 @@ def compile_conditions(must_survive: list[dict], bindings: dict, assembly_rel: s
         rank = entry.get("rank")
         if not geometric:
             continue
+        inputs = geometric.get("inputs") or {}
         # Part references appear under several input key spellings across the
         # check vocabulary — part_a/part_b, moving_part/obstacle_part, part.
+        # `part_name_prefix` is not one of these: it is a prefix pattern that
+        # _check_feature_count matches against bindings with startswith(), so
+        # it is never itself a literal binding key and must not be checked
+        # for exact membership the way part_a/part_b are.
         referenced = {
-            v for k, v in (geometric.get("inputs") or {}).items()
-            if isinstance(v, str) and "part" in k
+            v for k, v in inputs.items()
+            if isinstance(v, str) and "part" in k and k != "part_name_prefix"
         }
         missing = sorted(referenced - part_names)
+        prefix = inputs.get("part_name_prefix")
+        if prefix and not any(name.startswith(prefix) for name in part_names):
+            missing.append(prefix)
         if missing:
-            unbindable.append({"rank": rank, "feature": entry.get("feature"), "missing_parts": missing})
+            unbindable.append({"rank": rank, "feature": entry.get("feature"), "missing_parts": sorted(missing)})
             continue
         conditions.append(
             {

@@ -1,234 +1,242 @@
 {
-  "turn": 14,
+  "turn": 15,
   "ideas": [
     {
       "id": 1,
-      "title": "Keyhold",
+      "title": "Lockstep Canals",
       "differentiation_path": "new",
-      "novelty": "Ownership of a placed tile is expressed purely by which physical tooth-key family its tab/notch edges belong to (a single wide tooth vs. a pair of narrow teeth), so tiles only mechanically interlock with same-owner neighbors and merely abut opposing ones -- no prior product encodes territorial ownership as a proprietary interlocking key profile. Search run: 'board game interlocking tiles proprietary tab notch key ownership physical fit no color' turned up laser-cut tile generators and generic interlocking-tile patents, none of which tie the tooth profile itself to player ownership as a game mechanic.",
-      "concept": "Two players fill a fixed 7x7 grid of raised platforms with square keyed tiles, one per turn, trying to grow the longest unbroken chain of their own tiles that are all physically interlocked tab-into-notch. Every tile edge is either a tab or a notch, and every tile belongs to one of two tooth families -- a single wide tooth or a pair of narrow teeth -- so a tab only truly seats into a notch of its own family; edges that meet the wrong family, or an empty gap, simply sit flush without locking. A turn is just 'place a tile, choose its rotation to try to lock onto your own chain.' At game end both players trace their longest all-locked chain by feel and count; longest chain wins.",
+      "novelty": "Legal tile-to-tile connection is decided entirely by comparing carved edge notch counts (a 'water level' 0-3) that must match or differ by exactly one, so the drafting/placement rule itself is physically readable and self-enforcing from the carved geometry rather than from a rulebook table. Search run: 'board game canal tile laying edge notch water level lock matching' surfaced classic edge-matching connection games (Tantrix/Serpentiles, Oceania) that match colour or land/water type across edges, but none use a graduated notch-count level-difference rule for a lock mechanic.",
+      "concept": "2-4 players draft carved lock-stones from a shared market and extend a stone canal outward from their own spring, obeying a simple physical rule: a new stone's grooved edge may only join a placed neighbour's grooved edge if the tally notches cut into each edge match or differ by exactly one. One turn is a quick market pick, a legality check by eye and touch, and a placement; the tension is drafting stones whose levels will still connect to your growing network later.",
       "art_direction": {
-        "form_language": "Blocky, puzzle-piece geometry throughout -- thick square tiles with chunky mating teeth, no thin webs or filigree, everything reads as machined key-stock.",
-        "silhouette": "A flat square board bristling with a tidy 7x7 array of raised square pedestals, each topped by a slightly overhanging keyed tile so the whole thing reads as a shallow waffle grid from across the table.",
-        "part_vocabulary": "Board (one flat slab with 49 square pedestal bosses, immovable); Family-A tile (square block, tab/notch edges cut with one 10mm-wide central tooth); Family-B tile (square block, tab/notch edges cut with two 4mm teeth separated by a 2mm gap) -- the two tile families are told apart purely by tooth count, never by size or color.",
-        "surface_treatment": "Tabs protrude 4mm proud of the tile edge face; notches are cut 4mm deep into the edge face at matching width; no decorative engraving beyond the functional teeth.",
-        "scale": "Board footprint 220x220x10mm; each pedestal boss 24x24mm standing 3mm proud with 4mm gaps between bosses; each tile 22x22x8mm, handled easily between two fingers.",
-        "hero_shot": "Overhead product shot of the fully filled 7x7 grid mid-game, showing two visibly distinct tooth patterns snapped together into interlocking runs across the board, with a few tiles lifted just off their pedestals to show the tab/notch profiles in the air."
+        "form_language": "Thick quarry-cut stone slabs with chiselled water channels and heavy 2mm 45-degree chamfered edges throughout, reading as hand-tooled canal masonry, never as a flat printed board.",
+        "silhouette": "A sunken square stone basin with four small spouts projecting from its outer edges, ringed by a scatter of loose carved lock-stones and a stubby loading sill of five cupped slots, like a mason's yard mid-project rather than a game box.",
+        "part_vocabulary": "Canal board = a sunken basin block whose grid is a field of shallow square sockets with a scoop bin let into one corner. Lock-stones = flat quarried slabs, each cut with a single trench connecting two, three, or four edges to a center hub, with a row of tally notches along every grooved edge counting its water level; the trench pattern alone tells straight from corner from tee from cross at a glance. Font-stones (4) = the player spring markers, distinguished from ordinary lock-stones by a round scooped basin at the center and a punched row of 1-4 owner holes near one corner, reading as a mason's signature mark. Loading sill = a shallow ledged plank with five cupped slots, reading as a presentation rail, not a tray.",
+        "surface_treatment": "Channel trench 5mm wide x 3mm deep with a rounded floor; tally notches 2mm wide x 1.5mm deep triangular cuts spaced 3mm apart along a grooved edge's rim; all outer edges of every stone carry a 2mm x 45-degree chamfer so the trench and notches read as deliberately tooled relief, not machine-flat.",
+        "scale": "Board footprint approx 366 x 366 x 15mm including the four edge spurs; lock-stones and font-stones are 40 x 40 x 8mm, comfortably a one-hand pinch; the corner draw bin is an open-topped 170 x 90 x 36mm pocket for a loose reserve, reached from directly above with nothing overhanging it.",
+        "hero_shot": "Overhead three-quarter shot showing the basin board mid-game with several connected lock-stones forming a visible carved channel from one font-stone toward the board edge, notch counts readable along the seams, loose stones and the five-slot loading sill beside it."
       },
-      "rules": "Players: 2. Setup: place the board on the table; each player takes 20 identical-family tiles (Player Single takes 20 single-wide-tooth tiles, Player Twin takes 20 double-narrow-tooth tiles). The 7x7 grid has 49 empty pedestals. Turn structure: starting with Player Single, players alternate placing exactly one tile from their hand onto any empty pedestal, choosing the tile's rotation (0/90/180/270 degrees). Whenever a placed tile's edge lies flush against an already-placed tile of the SAME family, and one edge shows a tab and the other shows a matching notch, that seam is considered locked (physically, the tab is seated in the notch). Edges that meet an opposing-family tile, an empty pedestal, or a tab-against-tab/notch-against-notch pairing remain unlocked but the tiles may still occupy adjacent pedestals with no penalty. Play continues until both players have placed all 20 tiles (40 tiles total on the 49-pedestal board, 9 pedestals remain empty). Scoring: each player identifies their own single longest chain of tiles that are ALL mutually locked in one unbroken connected group (a tile counts toward the chain only if every connection to its chain neighbors is a true locked tab/notch seam). The player with the longer chain wins; ties are broken by the count of the second-longest chain, then by total number of locked seams overall.",
-      "components": "1 board slab, 220x220x10mm, with a fixed 7x7 array of 49 square pedestal bosses (24x24mm, 3mm proud, 4mm gaps), permanently part of the board. 20 Family-Single tiles, 22x22x8mm, each edge cut with either a single 10mm-wide, 4mm-proud tab or a matching 4mm-deep notch. 20 Family-Twin tiles, 22x22x8mm, each edge cut with either a pair of 4mm-wide, 4mm-proud tabs (2mm gap between them) or the matching pair of notches. No cards, no rulebook, no color.",
+      "rules": "Players: 2-4. Setup: place the canal board centrally. Each player takes the font-stone matching their assigned owner-hole count (1, 2, 3, or 4 holes) and seats it in the matching spur well at the board's edge. Shuffle the 36 lock-stones and place them loose in the corner draw bin. Draw 5 lock-stones from the bin and seat one in each of the five loading-sill slots, face up. The player with the fewest owner holes goes first; turns proceed clockwise. On your turn: choose one lock-stone from the loading sill and seat it into any empty grid well that is orthogonally adjacent to a stone already on the board (a font-stone counts as already on the board). The placement is legal only if: (a) at least one of the new stone's grooved edges lines up with a grooved edge of an already-placed neighbour, and (b) for every such grooved-to-grooved alignment, the two stones' notch counts are equal or differ by exactly 1. A grooved edge lining up against a plain (ungrooved) neighbour edge is allowed and simply seals with no water link. After placing, immediately refill the loading sill from the draw bin. If you cannot legally place any of the 5 sill stones, discard one sill stone of your choice to the side and pass. The game ends when the draw bin and loading sill are both empty and no player has a legal placement, or the grid is full. Scoring: for each player, trace the single longest unbroken chain of grooved-to-grooved links starting at their own font-stone. Score 1 point per stone in that chain, plus 1 bonus point for every link in the chain where the two notch counts were exactly equal (a level pour) rather than differing by 1 (a lock). Highest total score wins; ties favour the player with fewer owner holes.",
+      "components": "1 canal board (approx 366 x 366 x 15mm): a rigid slab with a 6x6 grid of 36 square wells (each 42 x 42 x 4mm deep on a 44mm pitch), one 42 x 42 x 4mm spur well projecting from the midpoint of each of the four outer edges, and an open-topped rectangular draw bin (170 x 90 x 36mm interior) recessed into one corner. 36 lock-stones (40 x 40 x 8mm each): four shape families told apart purely by which edges carry a carved trench to the center hub - Straight (9, two opposite edges), Corner (9, two adjacent edges), Tee (9, three edges), Cross (9, all four edges); each family exists in three level variants (1, 2, or 3 tally notches cut into every grooved edge of that stone), three copies per shape-and-level combination (4 shapes x 3 levels x 3 copies = 36). 4 font-stones (40 x 40 x 8mm each): one grooved edge at level 0 (no notches) leading to an 8mm-diameter, 3mm-deep scooped reservoir at the tile center, plus 1-4 pierced 3mm-diameter owner holes near the corner opposite the grooved edge, one count per player. 1 loading sill (240 x 60 x 12mm): a plank with five 44 x 44 x 3mm square cupped slots spaced 46mm apart, holding the face-up market row.",
       "must_survive": [
         {
           "rank": 1,
-          "feature": "All 40 tiles are separate loose bodies distinct from the board and from each other, not fused into the pedestal grid.",
+          "feature": "The board, the loading sill, and all 40 stones (36 lock-stones + 4 font-stones) exist as 42 separate, freely liftable components, not fused into the board or into each other.",
           "geometric": {
             "check": "assembly_component_count",
             "category": "separation_correctness",
             "severity": "critical",
-            "thresholds": {"expected_components": 41}
+            "thresholds": {"expected_components": 42}
           },
-          "visual": "ortho_TOP_+Z: 40 discrete square tiles visibly resting on separate pedestals with a visible gap or seam line at every edge, not a continuous printed grid."
+          "visual": "iso_front: 40 individually distinguishable stones sitting loose in the board's wells and the sill's slots, each with a visible gap at its edges, not a continuous poured slab."
         },
         {
           "rank": 2,
-          "feature": "The board carries exactly 49 raised square pedestal bosses arranged in a 7x7 grid, each a distinct stepped-up platform.",
+          "feature": "Each font-stone carries the correct count of pierced owner holes, so player ownership is readable by hole count alone.",
           "geometric": {
             "check": "feature_count",
-            "category": "surface_relief",
-            "severity": "critical",
-            "thresholds": {"expected_count": 49, "min_relief_mm": 3}
+            "category": "functional_feature_preservation",
+            "severity": "major",
+            "inputs": {"part_name_prefix": "font_stone_D_owner_hole"},
+            "thresholds": {"expected_count": 4}
           },
-          "visual": "ortho_TOP_+Z: a 7x7 array of 49 square bosses, each with a visible stepped edge separating it from the base slab and from its neighbors."
+          "visual": "ortho_TOP_+Z close-up on font-stone D: 4 distinct pierced through-holes in a row near one corner, clearly separate from the tile's grooved edge and center basin."
         },
         {
           "rank": 3,
-          "feature": "Family-Single tiles show one wide tooth per keyed edge while Family-Twin tiles show two narrow teeth per keyed edge, so the two ownership families are distinguishable by tooth count alone.",
+          "feature": "A representative lock-stone carries the full tally-notch count its level and shape require, so water level is readable by notch count alone.",
           "geometric": {
             "check": "feature_count",
-            "category": "part_family_geometry",
-            "severity": "critical",
-            "thresholds": {"family_single_tooth_count": 1, "family_twin_tooth_count": 2, "tooth_relief_mm": 4},
-            "parts": ["tile_single_sample", "tile_twin_sample"]
+            "category": "functional_feature_preservation",
+            "severity": "major",
+            "inputs": {"part_name_prefix": "tile_cross_L3_notch"},
+            "thresholds": {"expected_count": 12}
           },
-          "visual": "iso_front close-up on one tile of each family: one shows a single centered tooth per edge, the other shows two smaller teeth with a visible gap between them."
+          "visual": "ortho_TOP_+Z close-up on one cross-shaped, level-3 lock-stone: all four grooved edges each show 3 separate triangular notch cuts along the rim."
         },
         {
           "rank": 4,
-          "feature": "At least one seam between two same-family tiles shows the tab fully seated inside the matching notch, in contact, without collision or a visible gap.",
+          "feature": "The loading sill has 5 distinct cupped slots capable of seating one stone each.",
           "geometric": {
-            "check": "part_contact",
-            "category": "fit_correctness",
-            "severity": "high",
-            "thresholds": {"max_gap_mm": 0.4, "contact_required": true},
-            "parts": ["tile_single_1", "tile_single_2"]
+            "check": "feature_count",
+            "category": "functional_feature_preservation",
+            "severity": "major",
+            "inputs": {"part_name_prefix": "market_slot"},
+            "thresholds": {"expected_count": 5}
           },
-          "visual": "iso_front on one locked seam: the tab of one tile visibly disappears into the notch of its neighbor with no daylight showing between them."
+          "visual": "ortho_TOP_+Z on the loading sill: 5 separate square depressions in a row, each large enough to seat a lock-stone with a visible surrounding lip."
         },
         {
           "rank": 5,
-          "feature": "The tile set splits evenly into 20 Family-Single and 20 Family-Twin bodies, with no tile ambiguous between the two tooth profiles.",
+          "feature": "The corner draw bin is a genuine open cavity a hand can reach into, not filled solid.",
           "geometric": {
-            "check": "part_component_count",
-            "category": "part_family_geometry",
-            "severity": "medium",
-            "thresholds": {"family_single_count": 20, "family_twin_count": 20}
+            "check": "opening_presence",
+            "category": "functional_feature_preservation",
+            "severity": "major",
+            "inputs": {"part": "canal_board", "segment_start": [0.0, 0.0, 40.0], "segment_end": [0.0, 0.0, 2.0]},
+            "thresholds": {"min_clear_fraction": 1.0}
           },
-          "visual": "ortho_TOP_+Z: scanning the full board, every placed tile's edges clearly match one of exactly two tooth patterns, never a mix or a blank edge."
+          "visual": "iso_front on the board's corner bin: an open rectangular pocket with a visible interior floor and side walls, no material blocking the top opening."
         }
       ],
-      "prompt": "A flat square tabletop game board, roughly 220mm across, its top face covered in a tidy 7x7 grid of raised square platforms with visible gaps between them. Sitting on most of the platforms are two families of thick square puzzle-key tiles: one family shows a single wide protruding tooth on each edge, the other shows a pair of narrower protruding teeth on each edge, with matching notch cutouts on their opposite edges. Several tiles are interlocked into a snaking connected chain across the board where the teeth visibly seat into the notches of touching tiles; a few tiles sit unconnected on empty platforms, and a couple of loose tiles are shown lifted just above the board to reveal their tab-and-notch edge profile. Photographed as an unpainted single-material product shot, natural studio lighting, sharp focus on the tooth geometry."
+      "prompt": "Product photo of a tabletop canal-building game: a large square stone-toned board (~370mm) with a sunken 6x6 grid of square recessed wells, four small spout wells projecting from the middle of each outer edge, and an open rectangular scoop bin let into one corner holding a loose jumble of flat carved tiles. Scattered across the board and beside it are dozens of flat 40mm square lock-stones, each carved with a single trench connecting two, three, or four edges to a center hub point, with small triangular tally notches cut along every grooved edge (one, two, or three notches per edge, clearly countable). Four special corner stones show a round scooped basin at center and a short row of punched circular holes near one corner. A narrow rectangular plank with five shallow square cups sits beside the board holding five face-up stones. Unpainted single material, sharp studio lighting, isometric three-quarter product angle, focus on the carved channel and notch relief."
     },
     {
       "id": 2,
-      "title": "Twin Deck Solitaire",
+      "title": "Sluice Row",
       "differentiation_path": "twist",
-      "novelty": "Base game: classic English 33-hole cross-shaped peg solitaire. Genuine rule-level change: two identical boards are stacked with a fixed air gap and hole-for-hole vertical alignment, a new 'transfer' move lets a peg drop straight between the aligned hole on the other layer as an entire turn (no capture), and the game is converted from a single-player 'reduce to one peg' puzzle into a 2-player adversarial contest where the player who runs out of legal moves loses. Search run: 'two-layer 3D peg solitaire board game vertical jumps between stacked boards' returned only theoretical/mathematical treatments of 3D solitaire position classes and no shipped product with a stacked-board transfer-move mechanic.",
-      "concept": "Classic peg solitaire's cross-shaped board is doubled: two identical hole grids sit stacked on posts with a real air gap between them, every hole vertically aligned with its twin below or above. Players alternate turns, and instead of only jumping pegs within one layer, a player may spend a turn 'dropping' a peg straight down (or up) into its empty twin hole on the other layer, opening up jump lines that were previously blocked. Whoever leaves their opponent with no legal jump or transfer loses; reducing the whole rig to a single peg is an instant win either way.",
+      "novelty": "Twist on Mancala (Kalah): standard Kalah pits have unlimited practical capacity and every seed counts equally; here every small pit carries an engraved capacity ring, and once a pit's seed pile reaches that ring it becomes physically 'full' and is skipped entirely during sowing, while seeds themselves come in three graduated sizes worth different scoring values, so final scoring is total seed value, not seed count. Search run: 'mancala variant seeds different sizes pit capacity limit skip full pit' found only conventional Kalah variants changing pit/seed counts or relay-sowing rules; none combine a physical fill-line skip rule with graduated seed values.",
+      "concept": "A two-row sowing race played exactly like classic Kalah, except the pits themselves push back: once a pit's pile reaches its engraved gauge line it is skipped during sowing, forcing players to route around their own bottlenecks, and the three sizes of seed-weights mean a captured pit full of small seeds is worth far less than one big seed.",
       "art_direction": {
-        "form_language": "Two thick cross-shaped plates held apart on stout cylindrical posts, reading as a compact two-story rig; pegs are plain stubby cylinders, nothing tapered or filigreed.",
-        "silhouette": "From the side, two parallel cross-shaped decks with visible daylight between them, connected only at the four corners by posts, like a small equipment rack.",
-        "part_vocabulary": "Top board and bottom board (identical 33-hole cross plates); 4 corner support posts (plain cylinders); 64 pegs (identical plain cylinders) -- the only shape families in the whole game, distinguished from each other purely by which body they are, not by any per-player marking since the game has no owned pieces.",
-        "surface_treatment": "33 through- or blind-holes per board, 12mm diameter, arranged in the standard peg-solitaire cross; no other surface texture.",
-        "scale": "Each board 180x180x12mm; 30mm vertical gap between boards; posts 60mm tall x 10mm diameter; pegs 10mm diameter x 20mm tall, holes 12mm diameter x 8mm deep minimum.",
-        "hero_shot": "Three-quarter product shot of the full stacked rig mid-game, pegs filling most holes on both layers, one peg frozen mid-drop between a top hole and its empty aligned hole below, showing the transfer move in action."
+        "form_language": "A single heavy timber-plank slab with deep dished basins and a soft rolled bullnose edge, reading as an antique grain-weighing trough rather than a printed mancala board.",
+        "silhouette": "A long low trough-board with two oversized end cisterns and a tidy row of small round wells between them, like an old measuring device set out on a table.",
+        "part_vocabulary": "Board = a measuring trough, its two end wells scaled up and unmarked to read as cisterns, its twelve middle wells uniform in size but each ringed with a fine engraved gauge line. Seeds = grain-weights, three graduated squat cylinder families (short, wide vs narrow) that read as a nested set of measuring weights, not tokens - the diameter alone marks its value.",
+        "surface_treatment": "Each small well's interior wall carries a 1mm-wide, 0.5mm-deep engraved gauge ring at a fixed height from the floor; every well opening carries a 2mm rounded fillet so the rim reads as worn-smooth rather than machined-sharp.",
+        "scale": "Board approx 380 x 170 x 24mm; small wells 26mm diameter x 16mm deep; end cisterns 55mm diameter x 20mm deep; seeds range 10-18mm diameter, all 7mm tall, each easily pinched between two fingers.",
+        "hero_shot": "Straight-on three-quarter shot along the trough's long axis showing both end cisterns, the row of gauge-ringed wells between them, and a mix of the three seed-weight sizes both loose beside the board and piled in a couple of wells up to their gauge line."
       },
-      "rules": "Players: 2. Setup: assemble the rig -- two identical 33-hole cross boards held 30mm apart by four corner posts, holes vertically aligned pair-for-pair. Fill every hole on both boards with a peg except the center hole of the top board and the center hole of the bottom board (32 pegs per layer, 64 total; 2 holes start empty, one per layer). Turn structure: players alternate turns; the current player must make exactly one of two legal move types if any exist: (a) Jump move -- within a single layer only, jump one peg orthogonally over an adjacent occupied hole into an empty hole two spaces beyond in a straight line, removing the jumped peg from the board entirely (identical to classic peg solitaire jumps); or (b) Transfer move -- choose a peg sitting in a hole on one layer whose vertically-aligned twin hole on the other layer is currently empty, and move that single peg straight through the gap into the aligned hole; no peg is removed on a transfer. Win conditions: if the total peg count on the whole rig is reduced to exactly 1 by a jump, the player who made that jump wins immediately. Otherwise, if a player has no legal jump on either layer and no legal transfer available at the start of their turn, that player loses immediately. Passing is not allowed if a legal move exists.",
-      "components": "2 identical cross-shaped boards, 180x180x12mm, each with 33 holes (12mm diameter, minimum 8mm deep) in the standard English peg-solitaire cross layout, holes on the two boards vertically aligned to each other. 4 corner support posts, 10mm diameter x 60mm tall, press-fit between the two boards to hold a fixed 30mm gap. 64 identical cylindrical pegs, 10mm diameter x 20mm tall. No cards, no rulebook, no color.",
+      "rules": "Players: 2. Setup: the board has two rows of 6 small wells facing each player, plus one store well at each end belonging to the player on that side. Shuffle 48 seed-weights (16 small, value 1; 16 medium, value 2; 16 large, value 3) and place 4 at random into each of the 12 small wells. Stores start empty. Turn: on your turn, pick a non-empty well on your own side (you may pick up a full well; picking it up always empties it), lift out every seed-weight in it, and sow them one at a time counter-clockwise into each following well in turn, including your own store but skipping your opponent's store entirely, and skipping any well that is currently full (its pile at or above its gauge ring) as if that well did not exist. If your very last sown seed-weight lands in an empty well on your own side and the well directly opposite it (on your opponent's side) contains any seed-weights, capture: move every seed-weight from that opposite well plus your last sown seed-weight into your own store. If your last sown seed-weight lands in your own store, take another turn. The game ends the instant a player's entire row is empty at the start of their turn; the other player then sweeps every remaining seed-weight on their own side into their own store. Scoring: sum the VALUE (not the count) of every seed-weight in your store (small=1, medium=2, large=3). Whoever has the higher total value wins; equal totals are a draw.",
+      "components": "1 trough board (approx 380 x 170 x 24mm) with 12 small wells (2 rows of 6, each 26mm diameter x 16mm deep, with a 1mm x 0.5mm engraved capacity ring 9mm up from the floor) and 2 store wells (one at each short end, 55mm diameter x 20mm deep, no capacity ring). 48 seed-weights: 16 small cylinders (10mm diameter x 7mm tall, value 1), 16 medium cylinders (14mm diameter x 7mm tall, value 2), 16 large cylinders (18mm diameter x 7mm tall, value 3) - all equal height so pile height against the gauge ring is a reliable visual cue regardless of which sizes fill a well.",
       "must_survive": [
         {
           "rank": 1,
-          "feature": "The two boards are held in a fixed parallel stack with a clear open air gap between them, not touching or fused into one solid block.",
-          "geometric": {
-            "check": "part_clearance",
-            "category": "assembly_gap",
-            "severity": "critical",
-            "thresholds": {"min_gap_mm": 25, "max_gap_mm": 35},
-            "parts": ["board_top", "board_bottom"]
-          },
-          "visual": "iso_front: two distinct flat boards visibly separated by open space, connected only by four slender posts at the corners, daylight clearly visible between the plates."
-        },
-        {
-          "rank": 2,
-          "feature": "Each board carries 33 genuinely pierced or drilled holes in the standard cross layout (66 total), not shallow decorative dimples.",
-          "geometric": {
-            "check": "opening_presence",
-            "category": "hole_correctness",
-            "severity": "critical",
-            "thresholds": {"expected_openings": 66, "min_depth_mm": 8, "diameter_mm": 12}
-          },
-          "visual": "ortho_TOP_+Z on each board: 33 clearly visible circular holes arranged in the classic peg-solitaire cross pattern."
-        },
-        {
-          "rank": 3,
-          "feature": "64 pegs exist as separate loose cylindrical bodies, not fused to a board or to each other.",
+          "feature": "The board and all 48 seed-weights exist as 49 discrete, freely liftable components, not fused into the board floor or into each other.",
           "geometric": {
             "check": "assembly_component_count",
             "category": "separation_correctness",
             "severity": "critical",
-            "thresholds": {"expected_components": 70}
+            "thresholds": {"expected_components": 49}
           },
-          "visual": "iso_front: 64 individually distinguishable cylindrical pegs visibly seated in holes, each one appearing liftable and separate from the board body."
+          "visual": "iso_front: 48 individually distinguishable loose seed-weights sitting in the wells with visible gaps between adjacent pieces, not a solid poured mass."
+        },
+        {
+          "rank": 2,
+          "feature": "Every small well carries its own visible engraved capacity ring, distinct from the well's rim.",
+          "geometric": {
+            "check": "feature_count",
+            "category": "functional_feature_preservation",
+            "severity": "major",
+            "inputs": {"part_name_prefix": "capacity_ring"},
+            "thresholds": {"expected_count": 12}
+          },
+          "visual": "ortho_TOP_+Z close-up on one small well: a clear engraved ring line partway down the interior wall, separate from the well's outer rim edge."
+        },
+        {
+          "rank": 3,
+          "feature": "The full set of 16 small-diameter seed-weights is present and distinguishable by diameter from the medium and large sets.",
+          "geometric": {
+            "check": "feature_count",
+            "category": "functional_feature_preservation",
+            "severity": "major",
+            "inputs": {"part_name_prefix": "seed_small"},
+            "thresholds": {"expected_count": 16}
+          },
+          "visual": "iso_front on a loose cluster of seed-weights: three clearly different cylinder diameters visible side by side, all the same height."
         },
         {
           "rank": 4,
-          "feature": "Every one of the 33 hole positions on the top board sits in true vertical alignment with its twin hole on the bottom board, forming a real straight-through transfer channel.",
+          "feature": "Two store wells exist and are visibly larger than the twelve small wells.",
           "geometric": {
-            "check": "axis_alignment",
-            "category": "hole_alignment",
-            "severity": "high",
-            "thresholds": {"max_offset_mm": 1.0, "positions_checked": 33}
+            "check": "feature_count",
+            "category": "functional_feature_preservation",
+            "severity": "major",
+            "inputs": {"part_name_prefix": "store_pit"},
+            "thresholds": {"expected_count": 2}
           },
-          "visual": "ortho_FRONT: a peg dropped through one transfer channel lines up with no visible lateral offset between its top-board and bottom-board holes."
+          "visual": "ortho_TOP_+Z whole board: two markedly larger circular wells at the two ends versus the twelve uniform smaller wells between them."
         },
         {
           "rank": 5,
-          "feature": "Each peg is a snug, removable friction fit in the 12mm holes -- close enough to stay seated, loose enough to lift out by hand.",
+          "feature": "The largest seed-weight sits inside a small well with genuine finger clearance rather than a press fit.",
           "geometric": {
-            "check": "cylindrical_fit",
-            "category": "fit_correctness",
-            "severity": "medium",
-            "thresholds": {"hole_diameter_mm": 12, "peg_diameter_mm": 11.4, "clearance_mm": 0.3}
+            "check": "part_clearance",
+            "category": "fit_clearance",
+            "severity": "major",
+            "inputs": {"part_a": "seed_large_sample", "part_b": "pit_wall_sample"},
+            "thresholds": {"min_clearance_mm": 3.0}
           },
-          "visual": "iso_front: pegs sit flush and level across both boards at a consistent height, none tilted or proud, none jammed."
+          "visual": "iso_front close-up: one large seed-weight resting inside a small well with a visible gap ring between the seed's edge and the well wall."
         }
       ],
-      "prompt": "A compact two-story tabletop game rig: two identical thick cross-shaped plates, each about 180mm across and pierced with 33 round holes in the classic peg-solitaire cross pattern, held one above the other on four short cylindrical posts with a clear open air gap of about 30mm between the plates. Most holes on both plates are filled with plain stubby cylindrical pegs standing upright, a few holes left empty, and one peg is shown frozen mid-drop in the open gap directly between a hole on the top plate and its empty aligned hole on the bottom plate, illustrating a vertical transfer move. Photographed as an unpainted single-material product shot, clean studio lighting, camera angle low enough to show the gap between the two decks clearly."
+      "prompt": "Product photo of a tabletop mancala-style game: a long low rectangular trough board (~380x170mm) with two rows of six small round dished wells between two much larger round end wells. Inside each small well a fine engraved ring line is visible partway down the interior wall. Scattered in and around the wells are small stout cylindrical seed-weights in three clearly different diameters (roughly 10mm, 14mm, and 18mm) all the same short height, some piled loosely inside a couple of wells up to the engraved ring line. Unpainted single material, soft studio lighting, isometric three-quarter angle, close enough to read the engraved gauge ring inside one open well."
     },
     {
       "id": 3,
-      "title": "Eclipse",
+      "title": "Tidepool Stones",
       "differentiation_path": "reskin",
-      "novelty": "Reskin of Othello/Reversi with zero rule change: the two 'colors' Othello normally needs are replaced by a single reversible disc shape whose two faces are geometrically opposite -- one a raised dome, one a sunken dish -- so flipping a disc during a capture is a literal physical inversion of relief rather than a color swap, which is the most literal geometry-only translation of Othello's flip mechanic possible. Search run: 'Othello Reversi tactile edition discs convex dome vs flat instead of color' returned only standard black/white retail editions and generic tactile-accessibility discussions, no shipped product using a dome/dish relief pair as the flip mechanic.",
-      "concept": "Eclipse is Othello/Reversi played exactly by the book, restyled so ownership lives in relief instead of color: every disc has a domed 'sun' face and a dished 'crater' face, and flipping a disc during a flanking capture physically inverts which relief faces up. One turn is a placement that sandwiches a straight line of opposing-face discs between the new disc and another same-face disc, flipping the whole line's relief.",
+      "novelty": "Reskin of Othello/Reversi with no rule change: ownership, normally carried by a black/white disc face, is instead carried by two distinct carved relief motifs on the same disc's two faces (concentric rings vs radial grooves), so flipping a disc physically swaps which motif is exposed exactly as it would swap colour. Search run: 'Othello Reversi wooden disc reskin textured relief instead of black white' found only conventional black/white or wood-species (walnut vs maple) commercial sets; no textured dual-relief disc adaptation for the no-colour case.",
+      "concept": "Standard Reversi play, restyled as a beachcombed tidepool: every disc is a thick stone lens carved with concentric barnacle rings on one face and a radiating mussel-shell fan on the other, seated in a scalloped stone basin. Flipping a captured disc turns the shell over, exactly the way Reversi always worked, just carried by carved relief instead of paint.",
       "art_direction": {
-        "form_language": "A single flat plate perforated with a grid of shallow round sockets, filled with thick lens-shaped discs whose two faces bulge and dish in mirror image -- smooth, continuous curvature, no sharp ornamentation.",
-        "silhouette": "From across the table it reads as a checkerboard grid of small bumps and craters rather than a flat mosaic, the relief itself doing the work color normally does.",
-        "part_vocabulary": "Board (one flat slab with an 8x8 grid of 64 shallow circular sockets); disc (64 identical reversible pieces, one face a proud dome, the opposite face a recessed dish) -- only two shape families exist in the whole game, and the second is really one shape read two ways.",
-        "surface_treatment": "Dome face rises 4mm proud of the disc's flat rim; dish face sinks 4mm below the same rim; both are smooth continuous curves, no engraving.",
-        "scale": "Board footprint 220x220x12mm; sockets 24mm diameter, 5mm deep, 2mm gap between neighboring sockets; discs 24mm diameter x 8mm thick overall (rim to rim), each face's relief adding roughly 4mm beyond the flat rim.",
-        "hero_shot": "Overhead shot of a mid-game board with a mix of dome-up and dish-up discs scattered across the grid in a clear flanking pattern, one disc held above an empty socket about to be placed, lighting raking across the surface so the relief pattern is unmistakable even without any color."
+        "form_language": "A low tide-pool basin slab with a grid of shallow scalloped hollows, each cradling a thick biconvex-edged stone lens; everything reads as beach-worn rock, no flat plastic sheen implied.",
+        "silhouette": "A square tide-pool slab studded with 64 fat pebble-lenses sitting in individual scooped hollows, like a collected tray of shells rather than an abstract board.",
+        "part_vocabulary": "Board = a tide basin, its grid carried by raised dividing ridges between hollows rather than printed lines. Discs = shell-lenses, a single thick biconvex-profile puck family where one face is carved with concentric barnacle rings and the reverse with a radiating mussel-shell fan - both motifs live on every disc, so ownership reads from which face is up, not from a second part.",
+        "surface_treatment": "Ridge face: 4 concentric engraved rings, 1mm wide x 0.8mm deep, spaced 2mm apart, centered on the disc. Fan face: 8 straight radial grooves, 1mm wide x 0.8mm deep, fanning evenly from center to rim. Board grid ridges stand 2mm proud between hollows with a 1mm fillet.",
+        "scale": "Board approx 260 x 260 x 18mm; discs 28mm diameter x 7mm tall, seated in 30mm-diameter x 3mm-deep hollows so each disc sits 4mm proud of the surrounding ridge for an easy two-finger pinch-and-flip.",
+        "hero_shot": "Overhead three-quarter shot of the full basin mid-game, most hollows filled, with two adjacent discs deliberately shown mid-flip (one ring-face-up, one fan-face-up beside it) so both carved motifs are legible in the same frame."
       },
-      "rules": "Players: 2 (Dome and Dish). Setup: place the board with its empty 8x8 socket grid. Seat 4 discs in the four center sockets in a diagonal pattern: two opposite corners of the center 2x2 block show dome face up, the other two opposite corners show dish face up. Dome moves first. Turn structure: on your turn you must place one disc from the shared supply into any empty socket, oriented with your face up (Dome player places dome-face-up, Dish player places dish-face-up), such that the new disc flanks one or more straight unbroken lines (horizontal, vertical, or diagonal) of the opponent's face-up discs, with one of your own face-up discs anchoring the far end of each such line. Every opposing disc in each flanked line is then physically flipped over in place so it now shows your face up. If a player has no legal flanking placement, they must pass; if neither player can move, or the board fills, the game ends. Scoring: count discs showing dome face up versus dish face up across the whole board; whichever face has more discs showing wins the game. Ties are a draw.",
-      "components": "1 board slab, 220x220x12mm, with a fixed 8x8 grid of 64 shallow circular sockets (24mm diameter, 5mm deep, 2mm gaps). 64 identical reversible discs, 24mm diameter, roughly 8mm total thickness at the rim, one face a smooth dome rising 4mm proud of the rim, the opposite face a smooth dish sinking 4mm below the rim. No cards, no rulebook, no color.",
+      "rules": "Players: 2, Ridge and Fan. Setup: place the tide basin between players. Seed the four center hollows in the standard Reversi diagonal pattern: two discs Ridge-face-up and two discs Fan-face-up, arranged so each player's two starting discs sit diagonally opposite each other. Ridge moves first. Turn: on your turn, place one disc from the shared supply, your face up, into any empty hollow such that it forms at least one straight line (horizontal, vertical, or diagonal) in which your placed disc and an existing disc of your face at the far end sandwich one or more consecutive opposing-face discs with no empty hollow between them. Turn over (flip) every sandwiched opposing disc in place so your face now shows on top of each. If you have no legal placement, you pass and play continues with your opponent; if neither player has a legal placement, the game ends. The game also ends when the basin is full. Whichever face shows on more discs at game end wins; equal counts are a draw.",
+      "components": "1 tide basin board (approx 260 x 260 x 18mm) with an 8x8 grid of 64 shallow circular hollows (each 30mm diameter x 3mm deep on a 32mm pitch), separated by a continuous raised dividing ridge standing 2mm proud between adjacent hollows. 64 shell-lens discs (28mm diameter x 7mm tall each): every disc identical, with one face carved with 4 concentric engraved rings (Ridge face) and the opposite face carved with 8 straight radial grooves fanning from center to rim (Fan face).",
       "must_survive": [
         {
           "rank": 1,
-          "feature": "All 64 discs are separate loose bodies, distinct from the board and each other, not fused into the socket grid.",
+          "feature": "The board and all 64 discs exist as 65 discrete, freely liftable components, not fused into the board or into each other.",
           "geometric": {
             "check": "assembly_component_count",
             "category": "separation_correctness",
             "severity": "critical",
             "thresholds": {"expected_components": 65}
           },
-          "visual": "ortho_TOP_+Z: 64 discrete circular discs visibly resting in sockets, each appearing individually liftable, not printed as a continuous surface."
+          "visual": "iso_front: 64 individually distinguishable loose discs sitting in the basin's hollows with a visible gap around each disc's edge, not fused to the board or to each other."
         },
         {
           "rank": 2,
-          "feature": "Each disc has one face carrying a dome that protrudes above its flat rim and the opposite face carrying a dish recessed below that same rim, so the two faces are unmistakably different in relief.",
+          "feature": "The Ridge face of a disc carries the correct count of concentric engraved rings.",
           "geometric": {
             "check": "feature_count",
-            "category": "part_geometry",
-            "severity": "critical",
-            "thresholds": {"relief_faces_per_disc": 2, "dome_height_mm": 4, "dish_depth_mm": 4},
-            "parts": ["disc_sample"]
+            "category": "functional_feature_preservation",
+            "severity": "major",
+            "inputs": {"part_name_prefix": "ridge"},
+            "thresholds": {"expected_count": 4}
           },
-          "visual": "iso_front close-up on a single disc shown from both sides: one face clearly bulges outward into a dome, the other clearly sinks inward into a dish."
+          "visual": "ortho_TOP_+Z close-up on one disc's Ridge face: 4 clearly separated concentric engraved rings centered on the disc."
         },
         {
           "rank": 3,
-          "feature": "The board carries exactly 64 shallow circular sockets arranged in an 8x8 grid, each sized to seat one disc.",
+          "feature": "The Fan face of the same disc carries the correct count of radial grooves.",
           "geometric": {
-            "check": "opening_presence",
-            "category": "hole_correctness",
-            "severity": "critical",
-            "thresholds": {"expected_openings": 64, "depth_mm": 5, "diameter_mm": 24}
+            "check": "feature_count",
+            "category": "functional_feature_preservation",
+            "severity": "major",
+            "inputs": {"part_name_prefix": "groove_radial"},
+            "thresholds": {"expected_count": 8}
           },
-          "visual": "ortho_TOP_+Z: an unmistakable 8x8 grid of 64 circular depressions across the board's top face."
+          "visual": "ortho_TOP_+Z close-up on the same disc flipped over: 8 straight grooves radiating evenly from center to rim."
         },
         {
           "rank": 4,
-          "feature": "A disc seated in its socket, whichever face is up, does not collide with the board or with discs in neighboring sockets, and can be lifted back out by hand.",
+          "feature": "The board presents 64 distinct hollows separated by a continuous raised grid ridge, not a smooth flat plate.",
           "geometric": {
-            "check": "part_clearance",
-            "category": "fit_correctness",
-            "severity": "high",
-            "thresholds": {"min_clearance_mm": 0.3, "socket_to_socket_gap_mm": 2}
+            "check": "feature_count",
+            "category": "functional_feature_preservation",
+            "severity": "major",
+            "inputs": {"part_name_prefix": "board_socket"},
+            "thresholds": {"expected_count": 64}
           },
-          "visual": "iso_front: discs sit level in their sockets with a visible gap to every neighboring socket, no overlap or wedging between adjacent discs."
+          "visual": "ortho_TOP_+Z whole board: an 8x8 grid of round recessed hollows with visible raised ridges running between them."
         },
         {
           "rank": 5,
-          "feature": "The board is a single flat square slab with the 8x8 socket grid centered and symmetric, reading clearly as a Reversi-style board despite carrying no color cues.",
+          "feature": "A disc seated in its hollow has enough radial clearance to be pinched and flipped by hand, not a press fit.",
           "geometric": {
-            "check": "axis_alignment",
-            "category": "grid_layout",
-            "severity": "medium",
-            "thresholds": {"rows": 8, "cols": 8, "symmetry_tolerance_mm": 1}
+            "check": "part_clearance",
+            "category": "fit_clearance",
+            "severity": "major",
+            "inputs": {"part_a": "disc_sample", "part_b": "socket_wall_sample"},
+            "thresholds": {"min_clearance_mm": 0.8}
           },
-          "visual": "ortho_TOP_+Z: the socket grid is evenly spaced and centered on the board with equal margins on all four sides."
+          "visual": "iso_front close-up: one disc resting in its hollow, standing proud of the surrounding ridge with a visible edge gap for a fingertip pinch."
         }
       ],
-      "prompt": "A flat square game board about 220mm across, its top face perforated with a clean 8x8 grid of shallow round sockets. Scattered across most of the sockets are thick reversible discs, roughly 24mm across -- about half showing a smooth raised dome face rising proud of the socket, the other half showing a smooth sunken dish face recessed into the socket, arranged in the mid-game flanking pattern of a Reversi match. One extra disc is held just above an empty socket, tilted to show both its domed and dished faces at once. Photographed as an unpainted single-material product shot, raking studio light that makes the dome and dish relief pattern read clearly across the grid without any color."
+      "prompt": "Product photo of a tabletop abstract strategy game: a flat square basin board (~260mm) with an 8x8 grid of shallow round scalloped hollows separated by thin raised dividing ridges, most hollows holding a thick lens-shaped disc standing proud of the ridges. Several visible discs show a face carved with four concentric rings like a target; a couple of discs nearby are shown propped on edge or mid-flip revealing the reverse face carved with eight straight radial grooves fanning from center to rim like a shell. Unpainted single material, isometric three-quarter product angle, sharp studio lighting, focus on the two contrasting carved disc faces side by side."
     }
   ]
 }

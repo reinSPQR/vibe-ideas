@@ -1,26 +1,5 @@
-{
-  "turn": 14,
-  "ideas": [
-    {
-      "id": 1,
-      "title": "Keyhold",
-      "ambition_15": 13,
-      "rationale": "Ownership is encoded purely in mating tooth geometry (1-tooth vs 2-tooth families, 4mm proud/deep) sitting on a genuinely stepped 7x7 pedestal waffle, giving real part-family variety and a tight fit tolerance (0.4mm) that puts actual interlock risk on the table rather than a cosmetic pass/fail; the render already shows chunky, legible puzzle-key geometry rather than flat plates.",
-      "unfalsifiable_conditions": []
-    },
-    {
-      "id": 2,
-      "title": "Twin Deck Solitaire",
-      "ambition_15": 12,
-      "rationale": "A real two-story assembly -- two boards held on posts with a 30mm open air gap and 33 vertically-aligned transfer channels at 1mm tolerance -- is a genuine structural bet with print-fusion and alignment risk, even though the individual part vocabulary (crosses, plain pegs, plain posts) is the least varied of the three ideas.",
-      "unfalsifiable_conditions": []
-    },
-    {
-      "id": 3,
-      "title": "Eclipse",
-      "ambition_15": 9,
-      "rationale": "The dome/dish relief pair is a clean literal translation of Othello's flip but the object is otherwise the flattest of the three -- one flat slab, one socket shape, one disc shape read two ways -- and the render reads as a repetitive grid of shallow bumps and dishes with little silhouette variety beyond that single relief motif.",
-      "unfalsifiable_conditions": [5]
-    }
-  ]
-}
+{"turn": 15, "ideas": [
+  {"id": 1, "ambition_15": 12, "rationale": "Most three-dimensional of the three: four distinct stone-shape families (straight/corner/tee/cross) each carrying trenches, tally notches, and 45-degree chamfers, plus a genuinely different font-stone part (basin + owner holes), a scoop draw bin, and four spur wells break the board's silhouette out of a plain slab. Part vocabulary and silhouette language ('mason's yard mid-project') read as a real object rather than hardware; must_survive conditions (bin opening, hole/notch counts) risk real geometry.", "unfalsifiable_conditions": []},
+  {"id": 2, "ambition_15": 9, "rationale": "The capacity-gauge twist on Kalah is a real mechanical idea, but the object itself is thin: a plain trough of round wells plus one 0.5mm-deep engraved ring and three sizes of plain cylinder is most of the geometry on offer. 'An old measuring device set out on a table' is close to instrument-comparison territory even though it stops short of lab-jig language, and there is only one carved feature family carrying identity.", "unfalsifiable_conditions": []},
+  {"id": 3, "ambition_15": 9, "rationale": "Declared as an exact reskin with no rule change, so the mechanical ambition is zero by design; the object compensates with a nice dual-relief disc (rings vs radial fan) but the board is a single repeated hollow-and-ridge grid with no part-family variety, so most of the piece count is one part type stamped 64 times rather than a built vocabulary.", "unfalsifiable_conditions": []}
+]}

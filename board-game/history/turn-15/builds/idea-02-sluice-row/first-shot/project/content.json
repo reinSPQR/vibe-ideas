@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "title": "Counting Trough Board with Seed-Weights",
+  "tagline": "A tactile counting station where every piece lifts, pours, and stacks by hand.",
+  "description": "A sturdy, workshop-solid trough board lined with recessed counting wells and paired with a set of loose, chunky cylinder weights in three sizes. Each weight drops freely into a well with room to spare, and an engraved ring inside every counting well acts as a built-in fill gauge so pile height reads at a glance.",
+  "purpose": "A hands-on tool for counting, sorting, and measuring small quantities by grouping loose weights into wells and reading their level against each well's capacity ring.",
+  "use_cases": [
+    "classroom counting and place-value practice",
+    "sorting beads, coins, or small hardware",
+    "tabletop game tokens and score tracking",
+    "occupational-therapy pinch-and-place exercises",
+    "desktop tally and inventory station"
+  ],
+  "material_suggestion": "PLA",
+  "print_notes": "Print the board flat with wells facing up and the weights upright on their flat ends; no supports needed.",
+  "tags": [
+    "counting",
+    "montessori",
+    "educational",
+    "sorting",
+    "tray",
+    "manipulatives",
+    "desk-organizer",
+    "tactile",
+    "classroom",
+    "workshop"
+  ],
+  "part_count": 49,
+  "parts": [
+    {
+      "name": "trough_board"
+    },
+    {
+      "name": "seed_small_01"
+    },
+    {
+      "name": "seed_medium_01"
+    },
+    {
+      "name": "seed_large_01"
+    },
+    {
+      "name": "seed_small_02"
+    },
+    {
+      "name": "seed_medium_02"
+    },
+    {
+      "name": "seed_large_02"
+    },
+    {
+      "name": "seed_small_03"
+    },
+    {
+      "name": "seed_medium_03"
+    },
+    {
+      "name": "seed_large_03"
+    },
+    {
+      "name": "seed_small_04"
+    },
+    {
+      "name": "seed_medium_04"
+    },
+    {
+      "name": "seed_large_04"
+    },
+    {
+      "name": "seed_small_05"
+    },
+    {
+      "name": "seed_small_06"
+    },
+    {
+      "name": "seed_small_07"
+    },
+    {
+      "name": "seed_small_08"
+    },
+    {
+      "name": "seed_small_09"
+    },
+    {
+      "name": "seed_small_10"
+    },
+    {
+      "name": "seed_small_11"
+    },
+    {
+      "name": "seed_small_12"
+    },
+    {
+      "name": "seed_small_13"
+    },
+    {
+      "name": "seed_small_14"
+    },
+    {
+      "name": "seed_small_15"
+    },
+    {
+      "name": "seed_small_16"
+    },
+    {
+      "name": "seed_medium_05"
+    },
+    {
+      "name": "seed_medium_06"
+    },
+    {
+      "name": "seed_medium_07"
+    },
+    {
+      "name": "seed_medium_08"
+    },
+    {
+      "name": "seed_medium_09"
+    },
+    {
+      "name": "seed_medium_10"
+    },
+    {
+      "name": "seed_medium_11"
+    },
+    {
+      "name": "seed_medium_12"
+    },
+    {
+      "name": "seed_medium_13"
+    },
+    {
+      "name": "seed_medium_14"
+    },
+    {
+      "name": "seed_medium_15"
+    },
+    {
+      "name": "seed_medium_16"
+    },
+    {
+      "name": "seed_large_05"
+    },
+    {
+      "name": "seed_large_06"
+    },
+    {
+      "name": "seed_large_07"
+    },
+    {
+      "name": "seed_large_08"
+    },
+    {
+      "name": "seed_large_09"
+    },
+    {
+      "name": "seed_large_10"
+    },
+    {
+      "name": "seed_large_11"
+    },
+    {
+      "name": "seed_large_12"
+    },
+    {
+      "name": "seed_large_13"
+    },
+    {
+      "name": "seed_large_14"
+    },
+    {
+      "name": "seed_large_15"
+    },
+    {
+      "name": "seed_large_16"
+    }
+  ],
+  "overall_dimensions_mm": [
+    380.0,
+    266.0,
+    24.0
+  ],
+  "volume_mm3": 1399255.5007274055,
+  "is_solid": true,
+  "warnings_count": 1,
+  "facts_source": "sidecar",
+  "generated": true
+}

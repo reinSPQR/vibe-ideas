@@ -57,6 +57,28 @@ front/side/top, then a selection. It costs minutes of image generation
 instead of half an hour of CAD, so a vision that fails to transmit shows up
 early and cheaply.
 
+**A bare pre-park `create` failure may be retried once.** If the job fails
+before ever reaching any park (`awaiting_concept_input`,
+`awaiting_concept_selection`, `awaiting_questions`, `awaiting_plan_approval`)
+— i.e. it dies within the `create` call itself, with no question, no
+selection, no diagnostic content, typically within the first couple of
+minutes — treat it as a transient infra blip and resubmit once with the
+identical prompt file. If the retry also fails pre-park, stop; do not retry
+a second time, report both as terminal.
+
+This will always produce two `create` jobs in the session ledger, which
+`audit_turn.py`'s ledger check (one `create` per idea) treats as a red flag
+by design — that check exists to force a look at exactly this pattern, and
+retrying does not exempt you from it. What makes a retry legitimate instead
+of a silent resubmission-to-cherry-pick is full disclosure: your final
+report's `notes` must state both job IDs (or timestamps), the first job's
+failure mode/error text, and that a retry was taken, and `pain_points` must
+flag it as a pipeline-reliability finding. Never retry after a job reaches
+`done` or fails *after* a park — that is a different situation (an
+unsatisfying result, not an infra blip) and resubmitting there to get a
+better outcome is exactly the silent-resubmission failure mode the ledger
+check is watching for.
+
 ### 2. Drive every park
 
 Loop: `wait` → read the status → act → `wait` again.

@@ -33,6 +33,8 @@ Rules for maintaining it:
 | 60+ loose cylindrical pegs/pins seated in blind holes at ~0.3mm radial clearance across two or more plates | PRESERVED | t14 (Twin Deck Solitaire, 64/64 pegs separate, 70/70 total components) |
 | a press-fit pin specified into a *blind* bore of a stated depth | LOST — silently rebuilt as a through-bore, pin protrudes past the far face | t14 (Twin Deck Solitaire posts: 15mm-deep blind bore requested, `BORE_D` cut clean through 12mm board instead, ~3mm protrusion) |
 | 40+ loose tiles, 2mm gap in layout | LOST — fuses into a mat | t13 Foghorn; UNTESTED again at t14 (idea 1 Keyhold specified this class but never reached a CAD build — pipeline failure before geometry existed) |
+| sub-1mm engraved ring/groove cut into the *interior wall* of a recess (not a top-face or single-plane feature) | LOST — geometry is genuinely cut (confirmed in source) but never surfaces as a separately-bindable part, and is invisible from a direct ortho-top view since it sits on a vertical wall below the rim | t15 (Sluice Row capacity_ring: 1mm x 0.5mm ring, 9mm up a 16mm-deep wall; unbindable, and absent from the ortho-top close-up render) |
+| a recessed/subtractive feature (pit, well, ring, bore) that a `must_survive` rank names as if it were a separately-addressable part, but the CAD-writer models it as a boolean cut into one monolithic board body | LOST for the geometric check — checker requires a bindable named part; a cavity in a single continuous solid never gets one, regardless of how faithfully it's cut. Visual check can still pass if the feature is large/legible (e.g. a big well next to small ones) | t15 (Sluice Row: capacity_ring and store_pit both unbindable; store_pit still visually legible, capacity_ring is not) |
 
 **Standing note on printability:** a fused, featureless solid is trivially
 printable and has scored 8.97/10 while destroying the design. A high
@@ -63,3 +65,17 @@ class that gets lost in translation, it is the translation never starting.
 Treat a `terminal: failed` event with no plan/manifest as unrelated to
 `cad_prompt` quality unless a later turn shows a pattern tied to prompt
 length, part count, or a specific phrase.
+
+**Standing note on pre-build pipeline failures, continued (t15):** the
+failure point moved. t14's two failures (Keyhold, Eclipse) died *before* a
+CAD job started — `llm_error` at plan-generation, `worker_error` at
+concept-phase. t15's two failures (Lockstep Canals, Tidepool Stones) both
+cleared concept selection and died 35-47 minutes later, mid-CAD-generation,
+with a bare `terminal: failed` event and zero diagnostic text (contrast
+t14, which at least had an error string). One idea (Tidepool Stones) failed
+twice on the identical prompt (once pre-park in ~80s, once post-concept-
+selection at 47min), ruling out a one-off transient blip for that idea
+specifically. 2 of 3 ideas failing this way for a second consecutive turn,
+now later in the pipeline and with less diagnostic signal, raises this from
+"noted" to "recurring" — worth escalating to the user as an infrastructure
+question rather than continuing to treat each turn's instance as isolated.

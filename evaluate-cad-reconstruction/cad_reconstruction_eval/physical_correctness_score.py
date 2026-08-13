@@ -521,6 +521,17 @@ def _check_part_collision(
     )
 
 
+def _filter_triangles_above_z(triangles: np.ndarray, min_z: float) -> np.ndarray:
+    """Drop triangles with any vertex below min_z. Falls back to the
+    unfiltered set if the filter would empty it out, rather than measuring
+    against nothing."""
+    if triangles.size == 0:
+        return triangles
+    keep = np.all(triangles[:, :, 2] >= min_z, axis=1)
+    filtered = triangles[keep]
+    return filtered if filtered.size else triangles
+
+
 def _check_part_clearance(
     condition: dict,
     parts_by_name: dict[str, dict],
@@ -530,6 +541,15 @@ def _check_part_clearance(
     if error is not None:
         return error
     assert name_a is not None and name_b is not None and tri_a is not None and tri_b is not None
+    # Optional: when a check needs one specific sub-region of a part that is
+    # only available as a whole-body proxy (e.g. a well's side wall, when the
+    # wall has no separately-extractable body from the floor it shares with),
+    # `min_z_mm` excludes geometry below that height from both meshes before
+    # measuring, so floor contact doesn't get conflated with wall clearance.
+    min_z = condition.get("inputs", {}).get("min_z_mm")
+    if min_z is not None:
+        tri_a = _filter_triangles_above_z(tri_a, float(min_z))
+        tri_b = _filter_triangles_above_z(tri_b, float(min_z))
     distance = _mesh_min_distance(tri_a, tri_b, assumptions)
     thresholds = condition.get("thresholds", {})
     min_clearance = float(thresholds.get("min_clearance_mm", 0.0))

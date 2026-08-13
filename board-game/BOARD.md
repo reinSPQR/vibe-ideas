@@ -120,6 +120,7 @@ reliability.
 | Turn | Avg Total /100 | Avg Ambition /15 | First-shot survival | Builds completed | Questions asked |
 |------|-----------------|--------------------|----------------------|-------------------|------------------|
 | 14 | 80.68 (1 counted idea) | 11.3 (all 3) | 80% (counted idea); 27% (all 3, incl. 2 pre-build failures) | 1/3 | 3 (1 per idea, all only reached concept-selection) |
+| 15 | 62.23 (1 counted idea) | 10.0 (all 3) | 53% (counted idea); 18% (all 3, incl. 2 pre-build failures) | 1/3 | 3 (1 per idea; idea 3 needed a 2nd submission) |
 
 ## Lessons Learned
 
@@ -1263,3 +1264,68 @@ through-bores instead (pins protrude ~3mm past each board's face) —
 **attribution: pipeline limitation** (the CAD agent silently substituted a
 simpler feature for the one requested), not a spec ambiguity, since the
 depth and "blind" wording were both stated plainly.
+
+### Turn 15
+
+**The pre-build pipeline failure from Turn 14 recurred, later and with less
+diagnostic signal, and is now a two-turn pattern.** 2 of 3 ideas (Lockstep
+Canals, Tidepool Stones) never produced a first-shot build again this turn.
+Unlike Turn 14 — where both failures died *before* a CAD job started
+(`llm_error` at plan-generation, `worker_error` at concept-phase, each with
+at least a diagnostic string) — both Turn 15 failures cleared concept
+selection and died 35-47 minutes later, mid-CAD-generation, with a bare
+`terminal: failed` event and zero error text. Tidepool Stones failed twice
+on the identical prompt (once in ~80s pre-park, once ~47 minutes after a
+successful concept selection on resubmission), which rules out attributing
+it to a one-off transient blip for that idea. Both `cad_prompt`s were fully
+specified (5/5 `must_survive` ranks covered, per `CAD_PROMPTS.json`'s own
+coverage blocks) and both cleared the 8/15 ambition floor (12 and 9).
+**Attribution: pure pipeline limitation, not translation or vision** —
+there is nothing in either idea's prompt content, part count, or geometric
+complexity that distinguishes it from Sluice Row, the one idea that
+finished. Per `CAD_GRAMMAR.md`'s standing note, this has moved from
+"noted" to "recurring" and is worth escalating to the user as an
+infrastructure question rather than treating each turn's instance as
+isolated.
+
+**The one build that finished (Sluice Row) surfaces a real, generalizable
+CAD-translation limit: subtractive detail cut into a single monolithic
+board is invisible to a checker that expects a separately-named part, even
+when the model faithfully attempted it.** 3 of the 4 non-rank-1
+`must_survive` ranks came back geometric `fail` with "no geometry could be
+bound to the named part(s)." Reading `project/main.py` shows two of those
+three (capacity rings, store wells) *are* genuinely modeled — cut as
+boolean subtractions into the single `trough_board` solid — just never
+exposed as separately-named parts, so the part-name-prefix checker
+correctly reports them absent even though the intended geometry exists.
+**Attribution: pipeline limitation** (a subtractive feature on a monolithic
+board is architecturally unable to satisfy a checker built around named
+top-level parts, no matter how the CAD-writer models it) — this is a
+sharper, more specific case of the same class Turn 12's "engraved traces on
+a single plate" row already named, and `CAD_GRAMMAR.md` now has two new
+rows generalizing it. One consequence worth naming for the ideator: don't
+spend a high-ranked `must_survive` check on a feature that is inherently a
+cut into a shared body (a ring, a pocket, a pit) unless the visual instruction
+alone can carry it — the geometric half of that rank is structurally
+unwinnable under the current checker. The third failed rank (seed_small
+diameter count) looks like a different problem entirely: the parts *are*
+present as 16 correctly-named, separate top-level bodies in both
+`content.json` and the STEP manifest, and are clearly distinguishable in
+every render — this reads as a scorer defect, not a modeling failure, and
+is flagged in `SCORES.json`/`PAIN_POINTS.md` for the tooling to investigate
+rather than folded into either agent's heuristics.
+
+**What the one completed build did right, worth repeating:** Sluice Row's
+`main.py` calls a single `small_centers()` function once to place both the
+12 well cavities in the board *and* the corresponding hero-placed
+seed-weights, so well/seed alignment is correct by construction rather than
+by two independently-typed coordinate lists — the same "generate the shared
+pattern once, reuse it" discipline Turn 14 praised for `cross_positions()`,
+now confirmed as a repeatable good habit rather than a one-off. The build
+also has an explicit `validate()` function that asserts the loose-fit
+radial clearance (`gap >= 3.0`) before ever emitting geometry, catching
+tolerance problems at build time instead of leaving them for the evaluator
+to discover — worth noting the independent scorer's rank-5 clearance check
+still measured 0.0mm against this same assertion, a divergence neither this
+build nor prior turns have fully explained and worth watching for a pattern
+across future clearance checks.

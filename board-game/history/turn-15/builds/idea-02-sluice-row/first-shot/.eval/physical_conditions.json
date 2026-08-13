@@ -1,0 +1,50 @@
+{
+  "assembly": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main.stl",
+  "parts": {
+    "seed_small_01": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_small_01.stl",
+    "seed_small_02": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_small_02.stl",
+    "seed_small_03": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_small_03.stl",
+    "seed_small_04": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_small_04.stl",
+    "seed_small_05": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_small_05.stl",
+    "seed_small_06": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_small_06.stl",
+    "seed_small_07": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_small_07.stl",
+    "seed_small_08": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_small_08.stl",
+    "seed_small_09": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_small_09.stl",
+    "seed_small_10": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_small_10.stl",
+    "seed_small_11": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_small_11.stl",
+    "seed_small_12": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_small_12.stl",
+    "seed_small_13": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_small_13.stl",
+    "seed_small_14": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_small_14.stl",
+    "seed_small_15": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_small_15.stl",
+    "seed_small_16": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_small_16.stl",
+    "seed_large_sample": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/seed_large_01.stl",
+    "pit_wall_sample": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/history/turn-15/builds/idea-02-sluice-row/first-shot/project/main_parts/trough_board.stl"
+  },
+  "conditions": [
+    {
+      "id": "ms1",
+      "category": "separation_correctness",
+      "severity": "critical",
+      "check": "assembly_component_count",
+      "description": "The board and all 48 seed-weights exist as 49 discrete, freely liftable components, not fused into the board floor or into each other.",
+      "inputs": {},
+      "thresholds": {
+        "expected_components": 49
+      }
+    },
+    {
+      "id": "ms5",
+      "category": "fit_clearance",
+      "severity": "major",
+      "check": "part_clearance",
+      "description": "The largest seed-weight sits inside a small well with genuine finger clearance rather than a press fit.",
+      "inputs": {
+        "part_a": "seed_large_sample",
+        "part_b": "pit_wall_sample"
+      },
+      "thresholds": {
+        "min_clearance_mm": 3.0
+      }
+    }
+  ]
+}
