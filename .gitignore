@@ -4,4 +4,4 @@ __pycache__/
 board-game/images/
 board-game/history/*/images/
 
-**/.DS_Store
+**/.DS_Store.venv/
