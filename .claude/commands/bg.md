@@ -129,6 +129,36 @@ A rejection reason lands in `board-game/TASTE.md` and is read by every future
 ideation. It is the only signal in this pipeline that does not come from a
 model, which is why it outranks everything an agent has learned on its own.
 
+## Narrate it
+
+`pipeline_queue.py` already narrates every state change to the owner's journal
+channel. Your job is the half a state machine cannot produce: **why**. After
+each action, add one entry:
+
+```bash
+.venv/bin/python board-game/tools/journal.py append <slug> --kind <kind> \
+    --by <agent-or-tool> --title "<game name>" --summary "<one plain line>" \
+    [--body "<verbatim detail>" | --body-file <path>]
+```
+
+What is worth an entry, by action:
+
+| action | narrate |
+|---|---|
+| `propose` | what the ideator was going for, and what its novelty search actually turned up |
+| `rules_gate` | the findings verbatim (`--body-file rules_check.json`), and what the rework changed |
+| `brief` | the dimensions it chose, and every entry in `unstated_in_spec` — those are the places the spec ran out and somebody guessed |
+| `draft` | what the draft looks like and anything that surprised the builder |
+| `build` / `repair` | the gate findings verbatim (`--body-file .../gate.json`), then what the repair actually changed — not "fixed the overhang", but which number moved |
+| `panel` | each lens's verdict line, verbatim |
+
+Write it for a person who was not here. Include what went badly: a guess that
+turned out wrong is the most useful line in the whole story, and nothing in
+this pipeline ever reads the journal back, so there is nobody to impress.
+
+Never summarise a checker's output into your own words when you could paste
+it — the owner is trying to see what the machine actually said.
+
 ## Rules for you
 
 - **Never edit a gate, a threshold, `bill.json`, or a brief to make something

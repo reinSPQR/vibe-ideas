@@ -52,8 +52,12 @@ def creds() -> tuple[str, str]:
             os.environ.get("TELEGRAM_CHAT_DM", "").strip())
 
 
-def send(text: str, photo: Path | None = None) -> None:
-    token, chat = creds()
+def send(text: str, photo: Path | None = None, chat: str | None = None) -> None:
+    """`chat` overrides the destination — the journal uses it to narrate into
+    its own channel, so the gate channel keeps holding only the two messages
+    that need a decision."""
+    token, default_chat = creds()
+    chat = chat or default_chat
     if not (token and chat):
         print("--- telegram not configured; the gate is here instead ---")
         if photo:

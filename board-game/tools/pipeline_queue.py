@@ -30,6 +30,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import journal  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 QUEUE = REPO_ROOT / "board-game" / "QUEUE.json"
 IDEAS = REPO_ROOT / "board-game" / "ideas"
@@ -88,9 +91,20 @@ def entry(data: dict, slug: str) -> dict:
         raise SystemExit(f"no idea '{slug}' in the queue")
 
 
-def log(item: dict, frm: str, to: str, note: str = "") -> None:
+def log(item: dict, frm: str, to: str, note: str = "",
+        by: str = "pipeline", kind: str = "state") -> None:
+    """Record a transition in the queue, and narrate it to the journal channel.
+
+    Both, always, from one place. The queue's log is what the pipeline reads;
+    the journal is what the owner reads, and it lives only in Telegram. Firing
+    them together is the only way the story cannot quietly fall behind the
+    state.
+    """
     item.setdefault("log", []).append(
         {"at": now(), "from": frm, "to": to, "note": note})
+    journal.append(item["slug"], kind, by,
+                   f"{frm} → {to}" + (f"\n{note}" if note else ""),
+                   title=item.get("title", item["slug"]))
 
 
 # ---------------------------------------------------------------------------
@@ -105,6 +119,9 @@ def cmd_add(args) -> int:
     }
     (IDEAS / args.slug).mkdir(parents=True, exist_ok=True)
     save(data)
+    journal.append(args.slug, "proposed", "pipeline",
+                   f"entered the queue as “{args.title or args.slug}”",
+                   title=args.title or args.slug)
     print(f"added {args.slug} (proposed)")
     return 0
 
@@ -135,7 +152,8 @@ def cmd_repair(args) -> int:
     item["repairs_used"] = used + 1
     frm = item["state"]
     item["state"] = "repairing"
-    log(item, frm, "repairing", f"repair round {used + 1}/{REPAIR_BUDGET}")
+    log(item, frm, "repairing", f"repair round {used + 1}/{REPAIR_BUDGET}",
+        kind="repair")
     save(data)
     print(f"{args.slug}: repair round {used + 1}/{REPAIR_BUDGET}")
     return 0
@@ -162,7 +180,8 @@ def cmd_approve(args) -> int:
               f"build will have no visual contract to match")
     frm = item["state"]
     item["state"] = "approved"
-    log(item, frm, "approved", f"owner approved the draft; {copied} renders frozen")
+    log(item, frm, "approved", f"owner approved the draft; {copied} renders frozen",
+        by="owner", kind="owner")
     save(data)
     print(f"{args.slug}: approved — {copied} render(s) frozen as reference/")
     return 0
@@ -189,7 +208,7 @@ def cmd_amend(args) -> int:
     item["state"] = "approved"
     item["repairs_used"] = 0
     log(item, frm, "approved", "owner applied the arbitration amendment; "
-                               "budget reset for the amended design")
+        "budget reset for the amended design", by="owner", kind="owner")
     save(data)
     print(f"{args.slug}: brief amended, repair budget reset")
     return 0
@@ -201,7 +220,7 @@ def cmd_ship(args) -> int:
     frm = item["state"]
     item["state"] = "shipped"
     item["shipped_at"] = now()
-    log(item, frm, "shipped", "owner approved")
+    log(item, frm, "shipped", "owner approved", by="owner", kind="owner")
     save(data)
     print(f"{args.slug}: SHIPPED")
     return 0
@@ -216,7 +235,7 @@ def cmd_reject(args) -> int:
     frm = item["state"]
     item["state"] = "killed"
     item["kill_reason"] = args.reason
-    log(item, frm, "killed", args.reason)
+    log(item, frm, "killed", args.reason, by="owner", kind="owner")
     save(data)
 
     if not TASTE.is_file():
@@ -240,7 +259,8 @@ def cmd_rework(args) -> int:
     frm = item["state"]
     item["state"] = "proposed"
     item["rework_reason"] = args.reason
-    log(item, frm, "proposed", f"owner asked for a rules change: {args.reason}")
+    log(item, frm, "proposed", f"owner asked for a rules change: {args.reason}",
+        by="owner", kind="owner")
     save(data)
     print(f"{args.slug}: back to proposed for rework")
     return 0
