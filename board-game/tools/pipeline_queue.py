@@ -2,14 +2,14 @@
 """queue.py — the pipeline's state, and the only thing allowed to decide what
 happens next.
 
-    python3 board-game/tools/queue.py next          # what should run now
-    python3 board-game/tools/queue.py list
-    python3 board-game/tools/queue.py add <slug> --title "..."
-    python3 board-game/tools/queue.py advance <slug> --to built --note "..."
-    python3 board-game/tools/queue.py repair <slug>        # consume one round
-    python3 board-game/tools/queue.py ship <slug>          # owner: gate 2 yes
-    python3 board-game/tools/queue.py reject <slug> --reason "..."
-    python3 board-game/tools/queue.py rework <slug> --reason "..."
+    python3 board-game/tools/pipeline_queue.py next          # what should run now
+    python3 board-game/tools/pipeline_queue.py list
+    python3 board-game/tools/pipeline_queue.py add <slug> --title "..."
+    python3 board-game/tools/pipeline_queue.py advance <slug> --to built --note "..."
+    python3 board-game/tools/pipeline_queue.py repair <slug>        # consume one round
+    python3 board-game/tools/pipeline_queue.py ship <slug>          # owner: gate 2 yes
+    python3 board-game/tools/pipeline_queue.py reject <slug> --reason "..."
+    python3 board-game/tools/pipeline_queue.py rework <slug> --reason "..."
 
 An idea lives here across many turns. That is the change the whole rebuild
 turns on: for fifteen turns an idea that died of an infrastructure fault was

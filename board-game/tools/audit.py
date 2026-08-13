@@ -65,7 +65,7 @@ def live_thresholds() -> dict:
     sys.path.insert(0, str(TOOLS))
     import ergonomics_check
     import gate
-    import queue as queue_mod
+    import pipeline_queue as queue_mod
 
     values = {}
     for module in (gate, ergonomics_check, queue_mod):

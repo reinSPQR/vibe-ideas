@@ -135,9 +135,31 @@ def run(label: str, fn, cases) -> list:
     return failures
 
 
+def check_no_stdlib_shadowing() -> list:
+    """No tool may be named after a stdlib module.
+
+    Python puts a script's own directory at sys.path[0], so `tools/queue.py`
+    shadowed the stdlib `queue` for every script in that directory. networkx
+    does `from queue import PriorityQueue`, so the whole CAD gate died with an
+    ImportError that named neither the queue nor the gate. Cheap to check,
+    very expensive to debug.
+    """
+    import sys as _sys
+
+    stdlib = getattr(_sys, "stdlib_module_names", frozenset())
+    clashes = [p.name for p in Path(__file__).resolve().parent.glob("*.py")
+               if p.stem in stdlib]
+    return [f"shadowing/{name}: shadows a stdlib module for every script in "
+            f"this directory — rename it" for name in sorted(clashes)]
+
+
 def main() -> int:
     failures = run("rules", rules_check, RULES_CASES)
     failures += run("ergo", ergo_check, ERGO_CASES)
+    shadowing = check_no_stdlib_shadowing()
+    failures += shadowing
+    if not shadowing:
+        print("  ok  tools/no_stdlib_shadowing")
     if failures:
         print("\nFAILED:")
         for f in failures:

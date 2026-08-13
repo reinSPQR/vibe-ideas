@@ -16,7 +16,7 @@ stop — the next invocation picks up the next one.
 ## Decide
 
 ```bash
-.venv/bin/python board-game/tools/queue.py next
+.venv/bin/python board-game/tools/pipeline_queue.py next
 ```
 
 That prints one JSON object naming the `slug` and the `action`. **You do not
@@ -33,7 +33,7 @@ Invoke `board-game-ideator` in **propose** mode. It writes
 `board-game/ideas/<slug>/idea.json` and runs `rules_check.py` itself. Then:
 
 ```bash
-.venv/bin/python board-game/tools/queue.py add <slug> --title "<title>"
+.venv/bin/python board-game/tools/pipeline_queue.py add <slug> --title "<title>"
 ```
 
 Append its `PAIN_POINTS:` to `board-game/PAIN_POINTS.md` under a dated heading.
@@ -42,7 +42,7 @@ Append its `PAIN_POINTS:` to `board-game/PAIN_POINTS.md` under a dated heading.
 ```bash
 .venv/bin/python board-game/tools/rules_check.py board-game/ideas/<slug>/idea.json
 ```
-PASS → `queue.py advance <slug> --to rules_ok`.
+PASS → `pipeline_queue.py advance <slug> --to rules_ok`.
 FAIL → invoke `board-game-ideator` in **rework** mode with the findings
 verbatim; leave the state at `proposed` so the gate runs again next step.
 
@@ -84,7 +84,7 @@ silhouette. Then:
 ```
 
 `GATE PASS` → `advance --to built`.
-`GATE FAIL` → `queue.py repair <slug>`:
+`GATE FAIL` → `pipeline_queue.py repair <slug>`:
 - exit 0 → invoke `board-game-builder` in **repair** mode with the gate's
   findings verbatim, then re-run `gate.py`.
 - exit 1 (budget exhausted) → **arbitration**: read `brief.json`, `gate.json`
@@ -103,7 +103,7 @@ run concurrently and cannot see each other's reasoning:
 `board-game-lens-playability`.
 
 All three PASS → `advance --to reviewed`.
-Any FAIL → treat exactly like a gate failure: `queue.py repair <slug>`, then
+Any FAIL → treat exactly like a gate failure: `pipeline_queue.py repair <slug>`, then
 builder **repair** mode with the failing verdicts, then re-run only the lenses
 that failed. Budget exhausted → arbitration, as above.
 
@@ -112,7 +112,7 @@ that failed. Budget exhausted → arbitration, as above.
 .venv/bin/python board-game/tools/telegram.py gate2 <slug>
 ```
 Then `advance --to awaiting_ship` and stop. The pipeline never publishes
-anything itself; the owner's `queue.py ship` is what makes a game shipped.
+anything itself; the owner's `pipeline_queue.py ship` is what makes a game shipped.
 
 ## The owner's replies
 
@@ -120,9 +120,9 @@ These are commands the owner runs; the Telegram messages contain them ready to
 paste. Never run them on the owner's behalf.
 
 ```bash
-.venv/bin/python board-game/tools/queue.py ship   <slug>
-.venv/bin/python board-game/tools/queue.py reject <slug> --reason "..."
-.venv/bin/python board-game/tools/queue.py rework <slug> --reason "..."
+.venv/bin/python board-game/tools/pipeline_queue.py ship   <slug>
+.venv/bin/python board-game/tools/pipeline_queue.py reject <slug> --reason "..."
+.venv/bin/python board-game/tools/pipeline_queue.py rework <slug> --reason "..."
 ```
 
 A rejection reason lands in `board-game/TASTE.md` and is read by every future
@@ -137,6 +137,6 @@ model, which is why it outranks everything an agent has learned on its own.
 - **Never fabricate a stage.** If a build failed, the state stays where it is
   and the failure is reported. An idea that dies of a tooling fault is retried,
   not replaced — that is the whole reason the queue exists.
-- Repair budget and state transitions belong to `queue.py`. Do not track them
+- Repair budget and state transitions belong to `pipeline_queue.py`. Do not track them
   in your own head, and do not work around a refusal.
 - Report in one or two lines: what ran, what it produced, what is next.

@@ -33,7 +33,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 IDEAS = REPO_ROOT / "board-game" / "ideas"
 HEARTBEAT = REPO_ROOT / "board-game" / ".heartbeat"
 PY = ".venv/bin/python"
-Q = "board-game/tools/queue.py"
+Q = "board-game/tools/pipeline_queue.py"
 
 
 def load_env() -> None:
