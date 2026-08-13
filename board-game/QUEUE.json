@@ -1,0 +1,65 @@
+{
+  "ideas": {
+    "armillary": {
+      "slug": "armillary",
+      "title": "Armillary",
+      "state": "proposed",
+      "repairs_used": 0,
+      "created": "2026-08-13T10:12:04.748670+00:00",
+      "log": [
+        {
+          "at": "2026-08-13T10:42:59.187007+00:00",
+          "from": "proposed",
+          "to": "rules_ok",
+          "note": ""
+        },
+        {
+          "at": "2026-08-13T10:51:26.575918+00:00",
+          "from": "rules_ok",
+          "to": "briefed",
+          "note": ""
+        },
+        {
+          "at": "2026-08-13T11:12:11.449362+00:00",
+          "from": "briefed",
+          "to": "drafted",
+          "note": ""
+        },
+        {
+          "at": "2026-08-13T11:18:32.110783+00:00",
+          "from": "drafted",
+          "to": "awaiting_owner",
+          "note": ""
+        },
+        {
+          "at": "2026-08-13T11:35:15.551352+00:00",
+          "from": "awaiting_owner",
+          "to": "proposed",
+          "note": "owner asked for a rules change: you can see the holes before dropping, defeat the purpose of luck here"
+        }
+      ],
+      "rework_reason": "you can see the holes before dropping, defeat the purpose of luck here"
+    },
+    "deep-claim": {
+      "slug": "deep-claim",
+      "title": "Deep Claim",
+      "state": "briefed",
+      "repairs_used": 0,
+      "created": "2026-08-13T11:30:09.967254+00:00",
+      "log": [
+        {
+          "at": "2026-08-13T11:32:17.537192+00:00",
+          "from": "proposed",
+          "to": "rules_ok",
+          "note": ""
+        },
+        {
+          "at": "2026-08-13T11:42:11.450817+00:00",
+          "from": "rules_ok",
+          "to": "briefed",
+          "note": ""
+        }
+      ]
+    }
+  }
+}

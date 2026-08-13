@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "engine": "cadquery",
+  "entrypoint": {
+    "path": "main.py",
+    "callable": "gen_step"
+  },
+  "parameters": "params.py",
+  "specification": "spec.md",
+  "model": {
+    "kind": "assembly",
+    "primaryPose": "assembled",
+    "parts": [
+      {"id": "plinth_axle", "source": "parts/plinth_axle.py"},
+      {"id": "tier_disc_a", "source": "parts/tier_disc.py"},
+      {"id": "tier_disc_b", "source": "parts/tier_disc.py"},
+      {"id": "tier_disc_c", "source": "parts/tier_disc.py"},
+      {"id": "marker_peg_tri", "source": "parts/marker_peg.py"},
+      {"id": "marker_peg_square", "source": "parts/marker_peg.py"},
+      {"id": "marker_peg_penta", "source": "parts/marker_peg.py"},
+      {"id": "marker_peg_hex", "source": "parts/marker_peg.py"},
+      {"id": "probe_pin", "source": "parts/probe_pin.py"}
+    ],
+    "assembly": "assemblies/product.py"
+  },
+  "artifactStem": "armillary"
+}

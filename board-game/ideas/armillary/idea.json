@@ -1,0 +1,48 @@
+{
+  "slug": "armillary",
+  "title": "Armillary",
+  "concept": "Three notched discs are stacked on a central post above a ring of eight sockets, each disc pierced with its own fixed pattern of windows; rotate them and you are physically opening and closing a set of vertical shafts down to the sockets below. A turn is: twist one disc one notch, then gamble a shared probe pin down into a socket you believe is now a clear shaft all the way through — the pin either seats flush, and you plant one of your own pegs there forever, or it perches visibly on top of whichever disc blocked it, and you have burned your next rotation for nothing.",
+  "players": {"min": 2, "max": 4},
+  "playtime_min": 30,
+
+  "novelty": "The genuinely new part is the win condition riding on a physically falsifiable claim: players compute where a vertical shaft through three independently-rotating, differently-windowed discs should be open, then a single shared probe pin gives a binary, tactile, unambiguous verdict (flush vs. proud) instead of a rules-adjudicated check — and a correct guess is rewarded with permanent territory (a peg seated in that socket forever), turning the alignment puzzle into a claiming/blocking race. Ran board-game/tools/prior_art_search.sh on the mechanism phrase plus the working title. Closest real precedent found is US patent 5,494,292, a never-retailed 'marble maze game device' of stacked rotating disc tiers — but that is a real-time gravity/dexterity toy (roll a marble down through whichever passage stays open) with no claiming, no ownership, no turn structure and no verification tool; nothing found combines discrete indexed rotation, a pass/fail verification peg, and permanent socket-claiming territory control. 'Armillary' as a title returned no matching game (only an unrelated publisher name and the differently-spelled 'Armello'); 'Syzygy' was checked and rejected as a title for returning three unrelated existing games of that name (a crossword game, a domino game, and an alignment tile game called Syzygy Four), none sharing this mechanism but close enough on the name itself to avoid.",
+
+  "art_direction": {
+    "form_language": "A squat, deliberately instrument-like tower: a broad drum-shaped plinth carved with a dense constellation-dot relief, topped by three flush-stacked disc tiers of identical diameter so the whole thing reads as one solid bronze-cast cylinder interrupted only by three thin grip-tabs and a sunburst finial cap. No thin walls, no lattice — every disc is a full 10mm-thick slab, only pierced where a window is deliberate.",
+    "silhouette": "From across a table it reads as a tabletop orrery or astrolabe stand — a tiered ceremonial instrument someone would consult, not a mechanism someone would service.",
+    "part_vocabulary": "plinth_axle is the fixed base, told apart by sheer bulk and its ring of eight socket mouths; the three tier_discs share one outer silhouette but are told apart from each other purely by their grip-tab shape — a broad rounded paddle, a pointed triangular fin, a notched double-prong — so a hand can identify which disc it is touching without looking; the four marker_peg families are told apart by cross-section alone (triangular, square, pentagonal, hexagonal prism, each domed on top); probe_pin is unmistakably a tool, not a board piece, being the only long slender part with a flared disc head.",
+    "surface_treatment": "1mm-deep radial tick grooves ring the plinth rim (the eight index marks discs are rotated against); a 0.8mm relief constellation-dot-and-line motif fills the plinth's top face between sockets; each tier disc carries a shallow 1mm witness notch on its own rim to read its position against the plinth ticks by touch.",
+    "hero_shot": "An overhead three-quarter shot mid-turn: the probe pin held just above one socket, its flared head visibly floating proud on the top disc at a blocked position beside another socket where an already-planted peg shows a successful claim, with the tab shapes and tick grooves all legible."
+  },
+
+  "components": [
+    {"name": "plinth_axle", "qty": 1, "desc": "~190mm-diameter, 22mm-tall round base drum with a central 40mm axle post and eight 14mm-diameter, 10mm-deep sockets sunk around a 75mm-radius ring on its top face; rim carries eight 1mm-deep radial index grooves; top face between sockets carries a 0.8mm relief constellation motif."},
+    {"name": "tier_disc_a", "qty": 1, "desc": "Bottom tier: 190mm-diameter, 10mm-thick disc with a 13mm center bore, free-spinning on the axle post. Pierced with three 9mm windows at three of the eight ring positions. Broad rounded paddle grip-tab, 18mm wide, projecting 16mm past the rim."},
+    {"name": "tier_disc_b", "qty": 1, "desc": "Middle tier: same 190mm/10mm disc profile as tier_disc_a, stacking directly on top of it. Pierced with three 9mm windows in a different fixed pattern than tier_disc_a. Pointed triangular fin grip-tab, 16mm projection."},
+    {"name": "tier_disc_c", "qty": 1, "desc": "Top tier: same 190mm/10mm disc profile, stacking on tier_disc_b. Pierced with three 9mm windows in a third fixed pattern, distinct from both discs below. Notched double-prong grip-tab, 16mm projection."},
+    {"name": "marker_peg_tri", "qty": 4, "desc": "Triangular-prism marker peg, ~11mm across the base, 20mm tall with a domed grip top; seats in an empty plinth socket to claim it permanently."},
+    {"name": "marker_peg_square", "qty": 4, "desc": "Square-prism marker peg, ~11mm across the base, 20mm tall with a domed grip top; same claiming function, different player."},
+    {"name": "marker_peg_penta", "qty": 4, "desc": "Pentagonal-prism marker peg, ~11mm across the base, 20mm tall with a domed grip top; same claiming function, different player."},
+    {"name": "marker_peg_hex", "qty": 4, "desc": "Hexagonal-prism marker peg, ~11mm across the base, 20mm tall with a domed grip top; same claiming function, different player."},
+    {"name": "probe_pin", "qty": 1, "desc": "Shared 62mm verification rod: 6mm-diameter shaft under a 16mm flared head. Shaft length is calibrated to the plinth's exact socket-to-tier_disc_c depth, so a fully open shaft seats the head flush against tier_disc_c's top face, and any blocked tier leaves the head visibly proud above the surface."}
+  ],
+
+  "rules": {
+    "setup": [
+      {"text": "Stack the tower on the plinth's axle post: tier_disc_a first (resting on the plinth), then tier_disc_b on top of it, then tier_disc_c on top of that.", "uses": ["plinth_axle", "tier_disc_a", "tier_disc_b", "tier_disc_c"]},
+      {"text": "Rotate each tier disc clockwise, counting its grip-tab past the plinth's index grooves, to its fixed starting position: tier_disc_a past 2 grooves, tier_disc_b past 4 grooves, tier_disc_c past 6 grooves. This gives every game the same known, asymmetric opening layout.", "uses": ["plinth_axle", "tier_disc_a", "tier_disc_b", "tier_disc_c"]},
+      {"text": "Each player takes one full set of marker pegs of a single shape: with 2 players, take triangular and square; with 3, add pentagonal; with 4, add hexagonal.", "uses": ["marker_peg_tri", "marker_peg_square", "marker_peg_penta", "marker_peg_hex"]},
+      {"text": "Set the probe_pin beside the tower, within reach of every seat.", "uses": ["probe_pin"]}
+    ],
+    "turn": [
+      {"text": "Rotate exactly one tier disc of your choice, in either direction, until its grip-tab passes exactly one index groove on the plinth rim (a single step). This is the only way the shared alignment ever changes, and every player can see and track it.", "uses": ["plinth_axle", "tier_disc_a", "tier_disc_b", "tier_disc_c"]},
+      {"text": "You may then attempt at most one claim, unless you are skipping this step due to a prior failed claim (see below). Choose one plinth socket that holds no marker peg yet, and lower the probe_pin straight down through the tower at that position.", "uses": ["plinth_axle", "probe_pin", "tier_disc_a", "tier_disc_b", "tier_disc_c"]},
+      {"text": "If the probe_pin's flared head seats flush against tier_disc_c's top face, the claim succeeds: lift the probe_pin back out and press one of your own marker pegs into that socket, claiming it for the rest of the game.", "uses": ["probe_pin", "plinth_axle", "marker_peg_tri", "marker_peg_square", "marker_peg_penta", "marker_peg_hex"]},
+      {"text": "If the probe_pin's head instead rests visibly proud on top of whichever disc blocked it, the claim fails: lift it back out, the socket stays open, and you must skip your rotation step on your next turn (you may still attempt a claim that turn if the shared layout has changed by then).", "uses": ["probe_pin", "plinth_axle"]}
+    ],
+    "end": [
+      {"text": "The game ends the instant any player seats their third marker peg into a plinth socket, or the instant all eight plinth sockets hold a marker peg with no player yet holding three.", "uses": ["plinth_axle", "marker_peg_tri", "marker_peg_square", "marker_peg_penta", "marker_peg_hex"]}
+    ],
+    "win": {"text": "The first player to have three of their own marker pegs seated in plinth sockets wins immediately. If all eight sockets fill before anyone reaches three, whoever has seated the most pegs wins; a tie is a shared win.", "uses": ["plinth_axle", "marker_peg_tri", "marker_peg_square", "marker_peg_penta", "marker_peg_hex"]}
+  }
+}
