@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
@@ -32,8 +33,20 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 IDEAS = REPO_ROOT / "board-game" / "ideas"
 HEARTBEAT = REPO_ROOT / "board-game" / ".heartbeat"
+OFFSET_FILE = REPO_ROOT / "board-game" / ".telegram_offset"
+PENDING_FILE = REPO_ROOT / "board-game" / ".telegram_pending.json"
+MESSAGES_FILE = REPO_ROOT / "board-game" / ".telegram_messages.json"
 PY = ".venv/bin/python"
 Q = "board-game/tools/pipeline_queue.py"
+PY_ABS = REPO_ROOT / ".venv" / "bin" / "python"
+QUEUE_SCRIPT = REPO_ROOT / "board-game" / "tools" / "pipeline_queue.py"
+
+# The four gate-reply verbs a Telegram message ever asks the owner to run,
+# plus `amend` (arbitration's one reply). Deliberately not the full
+# pipeline_queue.py surface — `poll` only ever executes what a gate message
+# itself offered, button or pasted text.
+ALLOWED_VERBS = {"approve", "reject", "rework", "ship", "amend"}
+NEEDS_REASON = {"reject", "rework"}
 
 
 def load_env() -> None:
@@ -52,10 +65,42 @@ def creds() -> tuple[str, str]:
             os.environ.get("TELEGRAM_CHAT_DM", "").strip())
 
 
-def send(text: str, photo: Path | None = None, chat: str | None = None) -> None:
+def split_for_caption(text: str, limit: int = 1024) -> tuple[str, str]:
+    """Split `text` so the photo caption ends on a clean boundary instead of
+    wherever character 1024 happens to land — a hard character cut regularly
+    lands mid-word (a caption ending "...w)." with the rest starting "w) — an
+    open shelf") and reads as broken. Prefer a paragraph break, then a line
+    break, then a word boundary, only falling back to a hard cut if none of
+    those exist within the limit."""
+    if len(text) <= limit:
+        return text, ""
+    cut = text.rfind("\n\n", 0, limit)
+    if cut == -1:
+        cut = text.rfind("\n", 0, limit)
+    if cut == -1:
+        cut = text.rfind(" ", 0, limit)
+    if cut == -1:
+        cut = limit
+    return text[:cut].rstrip(), text[cut:].lstrip()
+
+
+def _message_id(raw: str) -> int | None:
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    return (data.get("result") or {}).get("message_id") if data.get("ok") else None
+
+
+def send(text: str, photo: Path | None = None, chat: str | None = None,
+          buttons: list[list[dict]] | None = None) -> int | None:
     """`chat` overrides the destination — the journal uses it to narrate into
     its own channel, so the gate channel keeps holding only the two messages
-    that need a decision."""
+    that need a decision. `buttons` is an inline-keyboard row list
+    (`[[{"text": ..., "callback_data": ...}, ...]]`) — attached to the photo
+    when there is one, otherwise to the text message. Returns the sent
+    message's id (the button-bearing one, if there is one) so a caller can
+    track it for later — see `track_message`/`disable_stale`."""
     token, default_chat = creds()
     chat = chat or default_chat
     if not (token and chat):
@@ -63,25 +108,80 @@ def send(text: str, photo: Path | None = None, chat: str | None = None) -> None:
         if photo:
             print(f"[render] {photo}")
         print(text)
-        return
+        return None
+    markup = json.dumps({"inline_keyboard": buttons}) if buttons else None
+    message_id = None
     if photo and photo.is_file():
-        subprocess.run(["curl", "-s", "-o", "/dev/null",
-                        f"https://api.telegram.org/bot{token}/sendPhoto",
-                        "-F", f"chat_id={chat}", "-F", f"photo=@{photo}",
-                        "-F", f"caption={text[:1024]}"], timeout=120)
-        if len(text) > 1024:
-            send_text_only(token, chat, text[1024:])
+        caption, rest = split_for_caption(text)
+        cmd = ["curl", "-s", f"https://api.telegram.org/bot{token}/sendPhoto",
+               "-F", f"chat_id={chat}", "-F", f"photo=@{photo}",
+               "-F", f"caption={caption}"]
+        if markup:
+            cmd += ["-F", f"reply_markup={markup}"]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        message_id = _message_id(result.stdout)
+        if rest:
+            send_text_only(token, chat, rest)
     else:
-        send_text_only(token, chat, text)
-    print(f"sent ({len(text)} chars{', with render' if photo else ''})")
+        message_id = send_text_only(token, chat, text, buttons=buttons)
+    print(f"sent ({len(text)} chars"
+          f"{', with render' if photo else ''}"
+          f"{', with buttons' if buttons else ''})")
+    return message_id
 
 
-def send_text_only(token: str, chat: str, text: str) -> None:
-    for chunk in (text[i:i + 3500] for i in range(0, len(text), 3500)):
-        subprocess.run(["curl", "-s", "-o", "/dev/null",
-                        f"https://api.telegram.org/bot{token}/sendMessage",
-                        "-d", f"chat_id={chat}",
-                        "--data-urlencode", f"text={chunk}"], timeout=60)
+def send_text_only(token: str, chat: str, text: str,
+                    buttons: list[list[dict]] | None = None) -> int | None:
+    chunks = [text[i:i + 3500] for i in range(0, len(text), 3500)] or [""]
+    message_id = None
+    for i, chunk in enumerate(chunks):
+        cmd = ["curl", "-s", f"https://api.telegram.org/bot{token}/sendMessage",
+               "-d", f"chat_id={chat}",
+               "--data-urlencode", f"text={chunk}"]
+        if buttons and i == len(chunks) - 1:
+            markup = json.dumps({"inline_keyboard": buttons})
+            cmd += ["--data-urlencode", f"reply_markup={markup}"]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        message_id = _message_id(result.stdout)
+    return message_id
+
+
+def load_messages() -> dict:
+    return json.loads(MESSAGES_FILE.read_text()) if MESSAGES_FILE.is_file() else {}
+
+
+def save_messages(data: dict) -> None:
+    MESSAGES_FILE.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+
+def track_message(slug: str, chat: str, message_id: int | None) -> None:
+    """Remember the last button-bearing message sent for `slug`, so a later
+    gate (or `disable`) can strip its buttons instead of leaving a stale
+    decision point live in chat history."""
+    if message_id is None:
+        return
+    data = load_messages()
+    data[slug] = {"chat": chat, "message_id": message_id}
+    save_messages(data)
+
+
+def disable_stale(slug: str) -> bool:
+    """Strip the buttons off the last tracked message for `slug`. Called
+    automatically before a new gate message goes out for the same slug, and
+    exposed as `telegram.py disable <slug>` for a manual one-off. Only works
+    for messages sent after this tracking existed — anything older has no
+    recorded message_id and has to be deleted by hand in the client."""
+    data = load_messages()
+    entry = data.pop(slug, None)
+    if not entry:
+        return False
+    token, _ = creds()
+    if token:
+        api_call(token, "editMessageReplyMarkup", {
+            "chat_id": entry["chat"], "message_id": entry["message_id"],
+            "reply_markup": json.dumps({"inline_keyboard": []})})
+    save_messages(data)
+    return True
 
 
 def read_json(path: Path) -> dict:
@@ -122,23 +222,34 @@ def rules_summary(idea: dict) -> str:
 
 
 def cmd_gate1(args) -> int:
+    """Two messages, deliberately: the photo caption is a short, fixed-length
+    header (title + one-liner) so it always fits Telegram's 1024-char caption
+    cap, and the buttons live there. The full rules text — which regularly
+    runs past that cap on its own — goes out as a plain follow-up message
+    instead of being cut wherever the caption limit happens to land."""
     slug = args.slug
+    disable_stale(slug)
     idea = read_json(IDEAS / slug / "idea.json")
     title = idea.get("title", slug)
-    text = (f"BOARD GAME — worth building?\n"
-            f"{title} ({slug})\n\n"
-            f"{rules_summary(idea)}\n\n"
-            f"This is a real CadQuery draft, not an illustration. If you say "
-            f"yes, the final build is held to matching it.\n\n"
-            f"YES:  {PY} {Q} approve {slug}\n"
-            f"NO:   {PY} {Q} reject {slug} --reason \"...\"\n"
-            f"RULES:{PY} {Q} rework {slug} --reason \"...\"")
-    send(text, find_hero(slug))
+    header = f"BOARD GAME — worth building?\n{title} ({slug})"
+    body = (f"{rules_summary(idea)}\n\n"
+            f"Real CadQuery draft, not an illustration — a yes holds the "
+            f"final build to matching it.")
+    buttons = [[
+        {"text": "✅ Approve", "callback_data": f"approve:{slug}"},
+        {"text": "❌ Reject", "callback_data": f"reject:{slug}"},
+        {"text": "🔧 Rework", "callback_data": f"rework:{slug}"},
+    ]]
+    mid = send(header, find_hero(slug), buttons=buttons)
+    _, chat = creds()
+    track_message(slug, chat, mid)
+    send(body)
     return 0
 
 
 def cmd_gate2(args) -> int:
     slug = args.slug
+    disable_stale(slug)
     idea = read_json(IDEAS / slug / "idea.json")
     gate = read_json(IDEAS / slug / "project" / "gate.json")
     verdicts = []
@@ -153,20 +264,25 @@ def cmd_gate2(args) -> int:
     sliced = [v for v in (gate.get("slice") or {}).values() if v.get("print_min")]
     hours = sum(v["print_min"] for v in sliced) / 60.0 if sliced else None
 
-    text = (f"BOARD GAME — ship it?\n"
-            f"{idea.get('title', slug)} ({slug})\n\n"
-            f"GATE PASS · {parts} pieces, {shapes} distinct shapes"
+    header = f"BOARD GAME — ship it?\n{idea.get('title', slug)} ({slug})"
+    body = (f"GATE PASS · {parts} pieces, {shapes} distinct shapes"
             + (f" · ~{hours:.1f}h of printing\n" if hours else "\n")
             + "\n".join(verdicts)
-            + f"\n\nFiles: board-game/ideas/{slug}/project/\n\n"
-              f"SHIP: {PY} {Q} ship {slug}\n"
-              f"NO:   {PY} {Q} reject {slug} --reason \"...\"")
-    send(text, find_hero(slug))
+            + f"\n\nFiles: board-game/ideas/{slug}/project/")
+    buttons = [[
+        {"text": "🚀 Ship", "callback_data": f"ship:{slug}"},
+        {"text": "❌ Reject", "callback_data": f"reject:{slug}"},
+    ]]
+    mid = send(header, find_hero(slug), buttons=buttons)
+    _, chat = creds()
+    track_message(slug, chat, mid)
+    send(body)
     return 0
 
 
 def cmd_arbitration(args) -> int:
     slug = args.slug
+    disable_stale(slug)
     proposal = read_json(IDEAS / slug / "brief_proposed.json")
     amendments = proposal.get("amendments") or []
     text = (f"ARBITRATION — {slug}\n\n"
@@ -177,7 +293,10 @@ def cmd_arbitration(args) -> int:
             + f"\n\nDetails: board-game/ideas/{slug}/brief_proposed.json\n\n"
               f"APPLY:  {PY} {Q} amend {slug}\n"
               f"DROP:   rm board-game/ideas/{slug}/brief_proposed.json")
-    send(text)
+    buttons = [[{"text": "✅ Apply amendment", "callback_data": f"amend:{slug}"}]]
+    mid = send(text, buttons=buttons)
+    _, chat = creds()
+    track_message(slug, chat, mid)
     return 0
 
 
@@ -216,6 +335,165 @@ def cmd_watchdog(args) -> int:
     return 0
 
 
+def api_call(token: str, method: str, data: dict | None = None) -> dict:
+    cmd = ["curl", "-s", f"https://api.telegram.org/bot{token}/{method}"]
+    for k, v in (data or {}).items():
+        cmd += ["--data-urlencode", f"{k}={v}"]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return {"ok": False, "raw": result.stdout}
+
+
+def load_offset() -> int:
+    return int(OFFSET_FILE.read_text().strip()) if OFFSET_FILE.is_file() else 0
+
+
+def save_offset(update_id: int) -> None:
+    OFFSET_FILE.write_text(str(update_id), encoding="utf-8")
+
+
+def load_pending() -> dict:
+    return json.loads(PENDING_FILE.read_text()) if PENDING_FILE.is_file() else {}
+
+
+def save_pending(pending: dict) -> None:
+    PENDING_FILE.write_text(json.dumps(pending, indent=2), encoding="utf-8")
+
+
+def run_pipeline(cmd_args: list[str]) -> str:
+    """Run one pipeline_queue.py command exactly as the owner would paste it,
+    and return its combined output — this is the only thing `poll` is allowed
+    to execute, and only with a verb from ALLOWED_VERBS."""
+    result = subprocess.run([str(PY_ABS), str(QUEUE_SCRIPT)] + cmd_args,
+                             cwd=REPO_ROOT, capture_output=True, text=True,
+                             timeout=60)
+    return (result.stdout + result.stderr).strip()
+
+
+def send_reply_prompt(token: str, chat: str, action: str, slug: str) -> int | None:
+    label = "rejection" if action == "reject" else "rework"
+    resp = api_call(token, "sendMessage", {
+        "chat_id": chat,
+        "text": f"Reply with the {label} reason for {slug}:",
+        "reply_markup": json.dumps({"force_reply": True, "selective": True}),
+    })
+    return resp.get("result", {}).get("message_id") if resp.get("ok") else None
+
+
+def handle_callback(token: str, chat: str, cq: dict, pending: dict) -> bool:
+    """One button tap. Always answers the callback (Telegram leaves the button
+    spinning otherwise) and strips the keyboard off the original message so
+    it cannot be tapped twice."""
+    cq_id = cq["id"]
+    msg_id = (cq.get("message") or {}).get("message_id")
+    action, _, slug = (cq.get("data") or "").partition(":")
+
+    if action not in ALLOWED_VERBS or not slug:
+        api_call(token, "answerCallbackQuery",
+                 {"callback_query_id": cq_id, "text": "unrecognized button"})
+        return False
+
+    if msg_id is not None:
+        api_call(token, "editMessageReplyMarkup", {
+            "chat_id": chat, "message_id": msg_id,
+            "reply_markup": json.dumps({"inline_keyboard": []})})
+    messages = load_messages()
+    if messages.pop(slug, None) is not None:
+        save_messages(messages)
+
+    if action in NEEDS_REASON:
+        prompt_id = send_reply_prompt(token, chat, action, slug)
+        if prompt_id is not None:
+            pending[str(prompt_id)] = {"action": action, "slug": slug}
+        api_call(token, "answerCallbackQuery",
+                 {"callback_query_id": cq_id, "text": "reply with your reason below"})
+        return True
+
+    out = run_pipeline([action, slug])
+    api_call(token, "answerCallbackQuery",
+             {"callback_query_id": cq_id, "text": (out or action)[:200]})
+    send(out or f"{action} {slug}: done", chat=chat)
+    return True
+
+
+def cmd_poll(args) -> int:
+    """One poll of Telegram for new owner replies — button taps and, for
+    reject/rework, the free-text reason that follows — run as pipeline_queue.py
+    commands. One pass per invocation, no long-lived process and no webhook,
+    matching the rest of this pipeline's one-action-then-stop shape; call this
+    from a loop step or a cron tick.
+
+    Still accepts a raw pasted command line too (`approve armillary`, or the
+    full line a gate message prints) — the button is a shortcut, not a
+    replacement for the paste-it-yourself path the pipeline started with."""
+    token, chat = creds()
+    if not (token and chat):
+        print("telegram not configured; nothing to poll")
+        return 0
+
+    offset = load_offset()
+    resp = api_call(token, "getUpdates", {"offset": str(offset + 1), "timeout": "0"})
+    if not resp.get("ok"):
+        print(f"getUpdates failed: {resp}")
+        return 1
+
+    pending = load_pending()
+    handled = 0
+    for update in resp.get("result", []):
+        offset = update["update_id"]
+
+        cq = update.get("callback_query")
+        if cq:
+            if handle_callback(token, chat, cq, pending):
+                handled += 1
+            continue
+
+        msg = update.get("message")
+        if not msg or str(msg.get("chat", {}).get("id", "")) != chat:
+            continue
+        text = (msg.get("text") or "").strip()
+        if not text:
+            continue
+
+        reply_to = (msg.get("reply_to_message") or {}).get("message_id")
+        if reply_to is not None and str(reply_to) in pending:
+            entry = pending.pop(str(reply_to))
+            out = run_pipeline([entry["action"], entry["slug"], "--reason", text])
+            send(out or f"{entry['action']} {entry['slug']}: done", chat=chat)
+            handled += 1
+            continue
+
+        try:
+            tokens = shlex.split(text)
+        except ValueError:
+            tokens = text.split()
+        verb_idx = next((i for i, t in enumerate(tokens) if t in ALLOWED_VERBS), None)
+        if verb_idx is not None:
+            out = run_pipeline(tokens[verb_idx:])
+            send(out or f"{tokens[verb_idx]}: done", chat=chat)
+            handled += 1
+
+    save_offset(offset)
+    save_pending(pending)
+    print(f"polled, {handled} update(s) handled")
+    return 0
+
+
+def cmd_disable(args) -> int:
+    """Strip the buttons off the last tracked gate message for a slug, on
+    demand — for a message that's no longer the live decision point but is
+    still sitting in chat history with tappable buttons."""
+    if disable_stale(args.slug):
+        print(f"{args.slug}: buttons removed from its last tracked message")
+    else:
+        print(f"{args.slug}: no tracked message on record — it may predate "
+              f"this feature, or was already handled; delete it by hand in "
+              f"the client if it still has live buttons")
+    return 0
+
+
 def main() -> int:
     load_env()
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -229,6 +507,10 @@ def main() -> int:
     p = sub.add_parser("watchdog")
     p.add_argument("--max-hours", type=float, default=28.0)
     p.set_defaults(fn=cmd_watchdog)
+    sub.add_parser("poll").set_defaults(fn=cmd_poll)
+    p = sub.add_parser("disable")
+    p.add_argument("slug")
+    p.set_defaults(fn=cmd_disable)
     args = ap.parse_args()
     return args.fn(args)
 

@@ -65,7 +65,7 @@ PIPELINE: dict[str, tuple[str | None, str]] = {
 
 # Ideas closest to shipping go first: finishing something beats starting
 # something. `proposed` sits last so a backlog never crowds out a build.
-PRIORITY = ["reviewed", "built", "repairing", "approved", "briefed",
+PRIORITY = ["reviewed", "built", "repairing", "approved", "drafted", "briefed",
             "rules_ok", "proposed"]
 
 
@@ -89,6 +89,31 @@ def entry(data: dict, slug: str) -> dict:
         return data["ideas"][slug]
     except KeyError:
         raise SystemExit(f"no idea '{slug}' in the queue")
+
+
+# Which state each owner-reply command is only ever valid from. A one-tap
+# Telegram button makes it far easier to act on a stale message (one sitting
+# in chat history from days ago, already superseded) than a pasted command
+# ever was — these commands used to mutate state unconditionally regardless
+# of where the idea actually was, so a stray tap could silently corrupt it
+# (e.g. `approve` freezing a pre-rework render as the reference). Refuse
+# instead of guessing.
+EXPECTED_STATE = {
+    "approve": {"awaiting_owner"},
+    "rework":  {"awaiting_owner"},
+    "reject":  {"awaiting_owner", "awaiting_ship"},
+    "ship":    {"awaiting_ship"},
+    "amend":   {"blocked"},
+}
+
+
+def require_state(item: dict, slug: str, cmd: str) -> None:
+    allowed = EXPECTED_STATE[cmd]
+    if item["state"] not in allowed:
+        raise SystemExit(
+            f"{slug} is '{item['state']}', not {sorted(allowed)} — refusing "
+            f"'{cmd}'. This is usually a reply to a stale message; check "
+            f"`pipeline_queue.py list` for the current state.")
 
 
 def log(item: dict, frm: str, to: str, note: str = "",
@@ -168,6 +193,7 @@ def cmd_approve(args) -> int:
     """
     data = load()
     item = entry(data, args.slug)
+    require_state(item, args.slug, "approve")
     home = IDEAS / args.slug
     reference = home / "reference"
     reference.mkdir(parents=True, exist_ok=True)
@@ -197,6 +223,7 @@ def cmd_amend(args) -> int:
     """
     data = load()
     item = entry(data, args.slug)
+    require_state(item, args.slug, "amend")
     home = IDEAS / args.slug
     proposed = home / "brief_proposed.json"
     if not proposed.is_file():
@@ -217,6 +244,7 @@ def cmd_amend(args) -> int:
 def cmd_ship(args) -> int:
     data = load()
     item = entry(data, args.slug)
+    require_state(item, args.slug, "ship")
     frm = item["state"]
     item["state"] = "shipped"
     item["shipped_at"] = now()
@@ -232,6 +260,7 @@ def cmd_reject(args) -> int:
     into TASTE.md where every future ideation reads it."""
     data = load()
     item = entry(data, args.slug)
+    require_state(item, args.slug, "reject")
     frm = item["state"]
     item["state"] = "killed"
     item["kill_reason"] = args.reason
@@ -256,6 +285,7 @@ def cmd_reject(args) -> int:
 def cmd_rework(args) -> int:
     data = load()
     item = entry(data, args.slug)
+    require_state(item, args.slug, "rework")
     frm = item["state"]
     item["state"] = "proposed"
     item["rework_reason"] = args.reason

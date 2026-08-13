@@ -13,6 +13,21 @@ command is meant to be run under `/loop /bg`, and a step that quietly does
 three things is a step nobody can inspect. If the action finishes early, still
 stop — the next invocation picks up the next one.
 
+## Poll first
+
+```bash
+.venv/bin/python board-game/tools/telegram.py poll
+```
+
+One pass, always, before deciding anything — the owner may have tapped a
+button or answered a reply-reason since the last step, and that can change
+what `next` should return (an `approve` moves an idea out of
+`awaiting_owner`, for instance). `poll` only ever executes what a gate
+message itself offered (`approve`/`reject`/`rework`/`ship`/`amend`), gated
+by `pipeline_queue.py`'s own state check, so this is safe to run every time
+even when nothing is waiting. If Telegram isn't configured it prints
+"nothing to poll" and this is a no-op.
+
 ## Decide
 
 ```bash
@@ -39,6 +54,17 @@ Invoke `board-game-ideator` in **propose** mode. It writes
 Append its `PAIN_POINTS:` to `board-game/PAIN_POINTS.md` under a dated heading.
 
 ### `rules_gate`
+First check whether this idea is at `proposed` because the owner sent it back
+for rework (`QUEUE.json`'s entry has a non-empty `rework_reason`) rather than
+because it is new or just failed the gate. If so, invoke `board-game-ideator`
+in **rework** mode with the owner's `rework_reason` verbatim *before* running
+the gate — an owner rework must actually change the idea, not just re-pass an
+unmodified `idea.json` and walk it straight back to the same render the owner
+already sent back. No separate bookkeeping needed afterward: the next
+successful `rules_gate` run below moves the idea out of `proposed` anyway,
+and a later owner rework overwrites `rework_reason` with its own new reason.
+
+Then:
 ```bash
 .venv/bin/python board-game/tools/rules_check.py board-game/ideas/<slug>/idea.json
 ```
