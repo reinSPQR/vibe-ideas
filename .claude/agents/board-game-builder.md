@@ -69,9 +69,10 @@ nothing worth having.
 
 ## draft
 
-A fast, visually honest draft. A human is about to look at two renders and
-decide whether this game gets built at all, so your job is the right
-silhouette with every component visibly present — not perfect fillets.
+Build in `board-game/ideas/<slug>/draft/`. A fast, visually honest draft. A
+human is about to look at two renders and decide whether this game gets built
+at all, so your job is the right silhouette with every component visibly
+present — not perfect fillets.
 
 1. Build the project: correct proportions, every part from the bill present
    and separately named, sane sizes.
@@ -85,7 +86,8 @@ Do not chase gate metrics here. Reply `DRAFT-READY <hero png path>`.
 
 ## build
 
-The real thing.
+The real thing, in `board-game/ideas/<slug>/project/`. The draft stays where
+it is: it is the thing the owner said yes to, and you will be compared to it.
 
 The renders in `board-game/ideas/<slug>/reference/` are a **visual contract**:
 the owner approved that design. Read every image there before writing code,

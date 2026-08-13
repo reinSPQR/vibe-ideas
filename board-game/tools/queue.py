@@ -141,6 +141,60 @@ def cmd_repair(args) -> int:
     return 0
 
 
+def cmd_approve(args) -> int:
+    """Gate 1: the owner looked at the draft and said build it.
+
+    The approved renders become `reference/` — a visual contract the final
+    build is held to. This is the one moment a human agrees the design is
+    worth making, so it is worth freezing rather than remembering.
+    """
+    data = load()
+    item = entry(data, args.slug)
+    home = IDEAS / args.slug
+    reference = home / "reference"
+    reference.mkdir(parents=True, exist_ok=True)
+    copied = 0
+    for png in sorted((home / "draft").rglob("*.png")):
+        (reference / png.name).write_bytes(png.read_bytes())
+        copied += 1
+    if not copied:
+        print(f"warning: no draft renders found under {home / 'draft'} — the "
+              f"build will have no visual contract to match")
+    frm = item["state"]
+    item["state"] = "approved"
+    log(item, frm, "approved", f"owner approved the draft; {copied} renders frozen")
+    save(data)
+    print(f"{args.slug}: approved — {copied} render(s) frozen as reference/")
+    return 0
+
+
+def cmd_amend(args) -> int:
+    """Apply an arbitration proposal the owner accepted.
+
+    This resets the repair budget, and that is not a loophole: an amended
+    brief is a different design, not a fourth attempt at the old one. The
+    reset happens only because a human read the proposal and applied it — an
+    agent cannot reach this path on its own.
+    """
+    data = load()
+    item = entry(data, args.slug)
+    home = IDEAS / args.slug
+    proposed = home / "brief_proposed.json"
+    if not proposed.is_file():
+        raise SystemExit(f"no brief_proposed.json for '{args.slug}'")
+    (home / "brief.json").write_text(proposed.read_text(encoding="utf-8"),
+                                     encoding="utf-8")
+    proposed.unlink()
+    frm = item["state"]
+    item["state"] = "approved"
+    item["repairs_used"] = 0
+    log(item, frm, "approved", "owner applied the arbitration amendment; "
+                               "budget reset for the amended design")
+    save(data)
+    print(f"{args.slug}: brief amended, repair budget reset")
+    return 0
+
+
 def cmd_ship(args) -> int:
     data = load()
     item = entry(data, args.slug)
@@ -246,6 +300,8 @@ def main() -> int:
     p.add_argument("--to", required=True); p.add_argument("--note")
     p.set_defaults(fn=cmd_advance)
     p = sub.add_parser("repair"); p.add_argument("slug"); p.set_defaults(fn=cmd_repair)
+    p = sub.add_parser("approve"); p.add_argument("slug"); p.set_defaults(fn=cmd_approve)
+    p = sub.add_parser("amend"); p.add_argument("slug"); p.set_defaults(fn=cmd_amend)
     p = sub.add_parser("ship"); p.add_argument("slug"); p.set_defaults(fn=cmd_ship)
     p = sub.add_parser("reject"); p.add_argument("slug")
     p.add_argument("--reason", required=True); p.set_defaults(fn=cmd_reject)
