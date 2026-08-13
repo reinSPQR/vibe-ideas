@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """journal.py — narrates what happens to an idea, to a Telegram channel of its
-own. Nothing is written to disk.
+own, and to a local log file kept solely for `dashboard.py`.
 
     python3 board-game/tools/journal.py append <slug> --kind gate --by gate.py \\
         --summary "GATE FAIL — 3 findings" --body-file gate.json
@@ -11,21 +11,26 @@ separate channel from the approval gates on purpose — the gate channel holds
 the two messages that need you to press something, and burying those under
 fifteen progress notes is how a gate stops being read.
 
-**Nothing in the pipeline reads any of this**, and now that is not a rule
-anyone has to keep: there is no file. No agent, no `improve.py`, no
-`audit.py` can consult it, because it exists only as messages in your chat.
-That matters more than it sounds. A log that feeds back into the system stops
-being a record of what happened and becomes another surface to optimise —
-agents write for the reader they expect, and the unflattering detail, the
-guess that turned out wrong, the finding that was waved away, is exactly what
-disappears first.
+**Nothing in the pipeline reads any of this.** `JOURNAL_LOG` below exists for
+exactly one reader: `dashboard.py`, generating a page for the owner to look
+at. No agent, no `improve.py`, no `audit.py` may open it — if you are adding
+code to this pipeline and you are tempted to `open(JOURNAL_LOG)` from
+anywhere other than `dashboard.py`, stop. That matters more than it sounds. A
+log that feeds back into the system stops being a record of what happened and
+becomes another surface to optimise — agents write for the reader they
+expect, and the unflattering detail, the guess that turned out wrong, the
+finding that was waved away, is exactly what disappears first. Keeping this
+to one reader, who never talks back to the pipeline, is what keeps that
+boundary free instead of a rule someone has to remember.
 
 So: write plainly, include what went badly, and never round a failure up into
 something tidier than it was.
 
 Configure `TELEGRAM_CHAT_JOURNAL` in `.env` (a second chat or channel; the
 same bot token works for both). Without it, entries print to stdout, which is
-also how you read them before any bot exists.
+also how you read them before any bot exists. Either way, every entry is also
+appended to `JOURNAL_LOG` (one JSON object per line, untruncated) for the
+dashboard to read.
 
 `pipeline_queue.py` narrates every state transition on its own, so the
 skeleton is automatic. The interesting entries are the ones the driver and the
@@ -35,12 +40,16 @@ repair actually changed.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+JOURNAL_LOG = REPO_ROOT / "board-game" / ".journal_log.jsonl"
 
 # Kept short and concrete on purpose — a vocabulary nobody can remember gets
 # used as `note` for everything, and then the story stops being skimmable.
@@ -61,12 +70,28 @@ KINDS = {
 MAX_BODY = 2500
 
 
+def record(slug: str, kind: str, by: str, summary: str,
+           body: str, title: str, at: str) -> None:
+    """Append one untruncated entry to `JOURNAL_LOG`, for `dashboard.py` only —
+    see the module docstring before adding another reader."""
+    JOURNAL_LOG.parent.mkdir(parents=True, exist_ok=True)
+    line = json.dumps({
+        "at": at, "slug": slug, "kind": kind, "by": by,
+        "title": title or slug, "summary": summary.strip(), "body": body.strip(),
+    })
+    with JOURNAL_LOG.open("a", encoding="utf-8") as fh:
+        fh.write(line + "\n")
+
+
 def append(slug: str, kind: str, by: str, summary: str,
            body: str = "", title: str = "") -> None:
     import telegram  # deferred: telegram owns the transport, journal owns the voice
 
     telegram.load_env()
-    stamp = datetime.now(timezone.utc).strftime("%H:%M")
+    now = datetime.now(timezone.utc)
+    stamp = now.strftime("%H:%M")
+    record(slug, kind, by, summary, body, title, now.isoformat())
+
     head = f"{title or slug} · {kind}\n{stamp} · {by}\n\n{summary.strip()}"
     if body.strip():
         detail = body.strip()

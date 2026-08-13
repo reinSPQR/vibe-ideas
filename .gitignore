@@ -4,5 +4,7 @@ __pycache__/
 *.pyc
 board-game/images/
 board-game/history/*/images/
+board-game/.journal_log.jsonl
+board-game/dashboard.html
 
 **/.DS_Store
