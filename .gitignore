@@ -6,5 +6,8 @@ board-game/images/
 board-game/history/*/images/
 board-game/.journal_log.jsonl
 board-game/dashboard.html
+board-game/.telegram_offset
+board-game/.telegram_pending.json
+board-game/.telegram_messages.json
 
 **/.DS_Store
