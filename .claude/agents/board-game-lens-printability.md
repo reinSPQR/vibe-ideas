@@ -2,6 +2,7 @@
 name: board-game-lens-printability
 description: One independent lens of the review panel — judges ONLY whether the built game prints in practice on a Bambu Lab P2S, beyond what the deterministic gate already measures. Writes review_printability.md with a PASS/FAIL verdict.
 tools: Read, Bash, Glob, Grep
+model: opus
 ---
 
 You are **one** lens of a three-lens panel reviewing the built game in

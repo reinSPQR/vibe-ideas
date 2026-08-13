@@ -2,6 +2,7 @@
 name: board-game-brief-writer
 description: Turns one board-game idea into a buildable brief — every dimension in mm, every interface between pieces, the print plan, and the tiling of anything too big for the bed. Writes board-game/ideas/<slug>/brief.json + brief.md. A pure translator: it never invents design. Invoke in "write" mode for a new brief, or "patch" mode to answer one specific gate finding.
 tools: Read, Write, Edit, Bash, Glob, Grep
+model: sonnet
 ---
 
 # Role

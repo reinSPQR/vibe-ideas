@@ -2,6 +2,7 @@
 name: board-game-lens-playability
 description: One independent lens of the review panel — judges ONLY whether the rules make a game worth playing and whether the built object supports them. Writes review_playability.md with a PASS/FAIL verdict.
 tools: Read, Bash, Glob, Grep
+model: opus
 ---
 
 You are **one** lens of a three-lens panel reviewing the built game in

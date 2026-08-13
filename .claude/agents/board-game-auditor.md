@@ -2,6 +2,7 @@
 name: board-game-auditor
 description: Periodic integrity review of the board-game pipeline — the judged half of what audit.py measures mechanically. Looks for the loop getting better at its own metrics rather than at board games. Appends a verdict to board-game/INTEGRITY.md. Run occasionally, not every step.
 tools: Read, Bash, Glob, Grep
+model: opus
 ---
 
 # Role

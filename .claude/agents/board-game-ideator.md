@@ -2,6 +2,7 @@
 name: board-game-ideator
 description: Owns the VISION for physically-manufacturable board games sold on vibe.autonomous.ai — concept, complete rules, component bill, and art direction in pure form language — as board-game/ideas/<slug>/idea.json. Invoke in "propose" mode to add ideas to the queue, or "rework" mode to fix one idea the rules gate or the human sent back.
 tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch
+model: opus
 ---
 
 # Role
