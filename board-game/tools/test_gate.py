@@ -103,6 +103,39 @@ def gen_step():
         True, [],
     ),
     (
+        # Two parts that were never booleaned together, simply drawn through
+        # each other: a peg driven through a solid plate. Every per-part check
+        # passes — both are one closed printable body — so nothing but the
+        # interference step can see it. This is the Armillary defect's shape.
+        "peg_driven_through_plate",
+        """import cadquery as cq
+def gen_step():
+    asm = cq.Assembly()
+    asm.add(cq.Workplane("XY").box(60, 60, 6), name="plate")
+    asm.add(cq.Workplane("XY").circle(5).extrude(30), name="peg",
+            loc=cq.Location(cq.Vector(0, 0, -15)))
+    return asm
+""",
+        [{"name": "plate", "qty": 1}, {"name": "peg", "qty": 1}],
+        False, ["interference", "shared volume"],
+    ),
+    (
+        # The same peg through a hole sized for it. A clearance fit must not
+        # read as interference, or every socket in every game fails the gate.
+        "peg_in_clearance_hole_is_fine",
+        """import cadquery as cq
+def gen_step():
+    asm = cq.Assembly()
+    asm.add(cq.Workplane("XY").box(60, 60, 6).faces(">Z").workplane().hole(12),
+            name="plate")
+    asm.add(cq.Workplane("XY").circle(5).extrude(30), name="peg",
+            loc=cq.Location(cq.Vector(0, 0, -15)))
+    return asm
+""",
+        [{"name": "plate", "qty": 1}, {"name": "peg", "qty": 1}],
+        True, [],
+    ),
+    (
         # Graduated lesson: a blanket fillet over every edge direction makes
         # OCCT build spherical vertex blends that tessellate into phantom
         # slivers. It must fail on the source, not wait for the mesh.
