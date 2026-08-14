@@ -140,8 +140,9 @@ works at `players.max`.
 ## Rules quality
 
 `rules_check.py` proves the rules and the bill agree. It cannot tell whether
-the game is any good — a separate playability lens judges that later, and it
-is looking for:
+the game is any good — `board-game-lens-rules` judges that independently right
+after, before a single hour of brief or build time is spent on the idea, and
+it is looking for:
 
 - a **dominant strategy**: one line of play that is simply correct every time;
 - **fake decisions**: choices where the options are not meaningfully different;

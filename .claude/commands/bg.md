@@ -104,10 +104,21 @@ Then:
 ```bash
 .venv/bin/python board-game/tools/rules_check.py board-game/ideas/<slug>/idea.json
 ```
-PASS → `pipeline_queue.py advance <slug> --to rules_ok`.
 FAIL → invoke `board-game-ideator` in **rework** mode with the findings
 verbatim; leave the state at `proposed` so the gate runs again next step, and
 `release <slug>` so the next step can actually pick it up.
+
+PASS → before this idea costs a single hour of `brief-writer` or `builder`
+time, invoke `board-game-lens-rules` against `idea.json` — an independent
+opinion on whether the game is worth playing at all (dominant strategy, fake
+decisions, reachable ending, length, player count), not just internally
+consistent.
+
+FAIL → invoke `board-game-ideator` in **rework** mode with the verdict
+verbatim; leave the state at `proposed` and `release <slug>`, exactly like a
+mechanical `rules_check.py` failure.
+
+PASS → `pipeline_queue.py advance <slug> --to rules_ok`.
 
 ### `brief`
 Invoke `board-game-brief-writer` in **write** mode. It writes `brief.json` +
@@ -128,13 +139,30 @@ it produces becomes the visual contract if the owner says yes.
 `advance --to drafted`.
 
 ### `owner_gate_1`
+Before spending the owner's attention, run the same object-vs-rules lens
+`panel` runs much later, but now: invoke `board-game-lens-playability`
+against the **draft** — point it at `board-game/ideas/<slug>/draft/` for
+renders (there is no `reference/` yet; this is pre-approval) and
+`brief.json`. The rules were already judged independently at `rules_gate`, by
+`board-game-lens-rules`; this lens only judges whether the object itself —
+legibility, distinguishability, handling — supports them.
+
+FAIL → the fault is in the geometry, not the rules, so invoke
+`board-game-builder` in **repair** mode with the verdict verbatim, re-render,
+and re-run the lens. If it now passes, continue to the PASS branch below. If
+it still fails and you are stopping here, `release <slug>` — state stays at
+`drafted` so the next tick tries again, the same way a `brief` gate failure is
+handled.
+
+PASS →
 ```bash
 .venv/bin/python board-game/tools/telegram.py gate1 <slug>
 ```
 Sends the hero render, a one-screen rules summary and the bill, with the three
 reply commands. Then `advance --to awaiting_owner` and **stop**. Do not guess
 what the owner would say; the whole point of this gate is that a human decides
-which games are worth making.
+which games are worth making — this lens only filters what should never have
+reached them in the first place.
 
 ### `build`
 Invoke `board-game-builder` in **build** mode. It must read every image in
@@ -212,10 +240,11 @@ What is worth an entry, by action:
 | action | narrate |
 |---|---|
 | `propose` | what the ideator was going for, and what its novelty search actually turned up |
-| `rules_gate` | the findings verbatim (`--body-file rules_check.json`), and what the rework changed |
+| `rules_gate` | the `rules_check.py` findings verbatim, the `board-game-lens-rules` verdict line, and what the rework changed (either one triggers) |
 | `brief` | the dimensions it chose, and every entry in `unstated_in_spec` — those are the places the spec ran out and somebody guessed |
 | `draft` | what the draft looks like and anything that surprised the builder |
 | `build` / `repair` | the gate findings verbatim (`--body-file .../gate.json`), then what the repair actually changed — not "fixed the overhang", but which number moved |
+| `owner_gate_1` | the `board-game-lens-playability` verdict line, verbatim; on FAIL, what the repair changed |
 | `panel` | each lens's verdict line, verbatim |
 
 Write it for a person who was not here. Include what went badly: a guess that
