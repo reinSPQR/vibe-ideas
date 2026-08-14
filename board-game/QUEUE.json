@@ -3,8 +3,8 @@
     "armillary": {
       "slug": "armillary",
       "title": "Armillary",
-      "state": "approved",
-      "repairs_used": 0,
+      "state": "blocked",
+      "repairs_used": 2,
       "created": "2026-08-13T10:12:04.748670+00:00",
       "log": [
         {
@@ -66,6 +66,78 @@
           "from": "awaiting_owner",
           "to": "approved",
           "note": "owner approved the draft; 0 renders frozen"
+        },
+        {
+          "at": "2026-08-14T02:14:09.982688+00:00",
+          "from": "approved",
+          "to": "built",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T02:28:56.757269+00:00",
+          "from": "built",
+          "to": "repairing",
+          "note": "repair round 1/2"
+        },
+        {
+          "at": "2026-08-14T04:10:38.912853+00:00",
+          "from": "repairing",
+          "to": "repairing",
+          "note": "repair round 2/2"
+        },
+        {
+          "at": "2026-08-14T04:18:22.438643+00:00",
+          "from": "repairing",
+          "to": "blocked",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T04:30:10.226653+00:00",
+          "from": "blocked",
+          "to": "approved",
+          "note": "owner applied the arbitration amendment; budget reset for the amended design"
+        },
+        {
+          "at": "2026-08-14T04:41:27.862637+00:00",
+          "from": "approved",
+          "to": "repairing",
+          "note": "repair round 1/2"
+        },
+        {
+          "at": "2026-08-14T04:49:27.116467+00:00",
+          "from": "repairing",
+          "to": "repairing",
+          "note": "repair round 2/2"
+        },
+        {
+          "at": "2026-08-14T04:56:42.476993+00:00",
+          "from": "repairing",
+          "to": "blocked",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T05:06:39.876244+00:00",
+          "from": "blocked",
+          "to": "approved",
+          "note": "owner applied the arbitration amendment; budget reset for the amended design"
+        },
+        {
+          "at": "2026-08-14T05:25:41.385498+00:00",
+          "from": "approved",
+          "to": "repairing",
+          "note": "repair round 1/2"
+        },
+        {
+          "at": "2026-08-14T05:27:21.260851+00:00",
+          "from": "repairing",
+          "to": "repairing",
+          "note": "repair round 2/2"
+        },
+        {
+          "at": "2026-08-14T05:28:58.660644+00:00",
+          "from": "repairing",
+          "to": "blocked",
+          "note": ""
         }
       ],
       "rework_reason": "you can see the holes before dropping, defeat the purpose of luck here"
@@ -113,8 +185,8 @@
     "millbind": {
       "slug": "millbind",
       "title": "Millbind",
-      "state": "briefed",
-      "repairs_used": 0,
+      "state": "shipped",
+      "repairs_used": 2,
       "created": "2026-08-13T17:23:26.092499+00:00",
       "log": [
         {
@@ -127,6 +199,127 @@
           "at": "2026-08-14T01:22:08.424946+00:00",
           "from": "rules_ok",
           "to": "briefed",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T02:07:25.938156+00:00",
+          "from": "briefed",
+          "to": "drafted",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T02:08:25.018391+00:00",
+          "from": "drafted",
+          "to": "awaiting_owner",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T02:40:12.565800+00:00",
+          "from": "awaiting_owner",
+          "to": "approved",
+          "note": "owner approved the draft; 68 renders frozen"
+        },
+        {
+          "at": "2026-08-14T04:24:49.281738+00:00",
+          "from": "approved",
+          "to": "built",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T04:34:17.097061+00:00",
+          "from": "built",
+          "to": "repairing",
+          "note": "repair round 1/2"
+        },
+        {
+          "at": "2026-08-14T05:06:09.898914+00:00",
+          "from": "repairing",
+          "to": "repairing",
+          "note": "repair round 2/2"
+        },
+        {
+          "at": "2026-08-14T05:35:06.575996+00:00",
+          "from": "repairing",
+          "to": "reviewed",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T05:35:38.504687+00:00",
+          "from": "reviewed",
+          "to": "awaiting_ship",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T05:38:26.473153+00:00",
+          "from": "awaiting_ship",
+          "to": "shipped",
+          "note": "owner approved"
+        }
+      ],
+      "shipped_at": "2026-08-14T05:38:26.472873+00:00"
+    },
+    "spineward": {
+      "slug": "spineward",
+      "title": "Spineward",
+      "state": "approved",
+      "repairs_used": 0,
+      "created": "2026-08-14T05:58:41.711020+00:00",
+      "log": [
+        {
+          "at": "2026-08-14T08:22:50.768050+00:00",
+          "from": "proposed",
+          "to": "rules_ok",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T08:37:13.518784+00:00",
+          "from": "rules_ok",
+          "to": "briefed",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T08:58:46.309179+00:00",
+          "from": "briefed",
+          "to": "drafted",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T09:48:49.313112+00:00",
+          "from": "drafted",
+          "to": "awaiting_owner",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T10:45:24.187005+00:00",
+          "from": "awaiting_owner",
+          "to": "approved",
+          "note": "owner approved the draft; 55 renders frozen"
+        }
+      ]
+    },
+    "blindcap": {
+      "slug": "blindcap",
+      "title": "Blindcap",
+      "state": "drafted",
+      "repairs_used": 0,
+      "created": "2026-08-14T10:04:58.903705+00:00",
+      "log": [
+        {
+          "at": "2026-08-14T10:10:32.628888+00:00",
+          "from": "proposed",
+          "to": "rules_ok",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T10:22:33.581321+00:00",
+          "from": "rules_ok",
+          "to": "briefed",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T10:57:32.774248+00:00",
+          "from": "briefed",
+          "to": "drafted",
           "note": ""
         }
       ]
