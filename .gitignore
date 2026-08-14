@@ -6,6 +6,8 @@ board-game/images/
 board-game/history/*/images/
 board-game/.journal_log.jsonl
 board-game/dashboard.html
+board-game/.queue.lock
+board-game/QUEUE.json.tmp.*
 board-game/.telegram_offset
 board-game/.telegram_pending.json
 board-game/.telegram_messages.json

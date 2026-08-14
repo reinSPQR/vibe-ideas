@@ -3,10 +3,12 @@
 happens next.
 
     python3 board-game/tools/pipeline_queue.py next          # what should run now
+    python3 board-game/tools/pipeline_queue.py next --peek   # ...without claiming it
     python3 board-game/tools/pipeline_queue.py list
     python3 board-game/tools/pipeline_queue.py add <slug> --title "..."
     python3 board-game/tools/pipeline_queue.py advance <slug> --to built --note "..."
     python3 board-game/tools/pipeline_queue.py repair <slug>        # consume one round
+    python3 board-game/tools/pipeline_queue.py release <slug>       # step ended, no move
     python3 board-game/tools/pipeline_queue.py ship <slug>          # owner: gate 2 yes
     python3 board-game/tools/pipeline_queue.py reject <slug> --reason "..."
     python3 board-game/tools/pipeline_queue.py rework <slug> --reason "..."
@@ -21,13 +23,30 @@ Why this is Python and not instructions in a prompt: the repair budget lives
 here. An agent that can read its own budget in its own prompt is an agent that
 will negotiate with it. Same for state transitions — a stage is complete when
 this file says so, not when a model reports success.
+
+Two drivers can run at once — `/loop /bg` on a short interval is enough on its
+own, since a step that spawns an agent takes minutes and the loop does not
+wait for it. So the queue guards itself twice:
+
+  * a **lock** around every read-modify-write, because two unsynchronised
+    load/save pairs lose one of the two transitions outright; and
+  * a **claim** on whatever `next` hands out, because `state` does not change
+    until a step *finishes* — so without one, every tick during a running step
+    is handed the same work again and spawns a second agent onto the same
+    files. A claim is a lease with an expiry, so a driver that dies mid-step
+    releases its idea instead of stranding it.
 """
 from __future__ import annotations
 
 import argparse
+import contextlib
+import fcntl
 import json
+import os
+import socket
 import sys
-from datetime import datetime, timezone
+import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -35,6 +54,7 @@ import journal  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 QUEUE = REPO_ROOT / "board-game" / "QUEUE.json"
+LOCK = REPO_ROOT / "board-game" / ".queue.lock"
 IDEAS = REPO_ROOT / "board-game" / "ideas"
 TASTE = REPO_ROOT / "board-game" / "TASTE.md"
 
@@ -42,6 +62,22 @@ TASTE = REPO_ROOT / "board-game" / "TASTE.md"
 # evidence is that past two rounds the problem is usually the spec rather than
 # the code, and more repair rounds spend effort at the wrong address.
 REPAIR_BUDGET = 2
+
+# How long a claim taken by `next` stays valid without being advanced or
+# released. The whole point of a claim is that `next` stops handing the same
+# work to a second driver while the first one's agent is still running — but a
+# claim that never expires would strand an idea forever the moment a driver
+# crashes mid-step, which is a worse failure than doing the work twice. So a
+# claim is a *lease*: long enough that no honest step outlives it (the slowest
+# real step, a full build with two repair rounds, runs well under this), short
+# enough that a dead driver's work is picked back up the same hour.
+CLAIM_TTL_SECONDS = 45 * 60
+
+# How long to wait for the queue lock before giving up. Every holder does
+# local file I/O only — the journal's network calls are deliberately flushed
+# *after* the lock is released — so real contention is milliseconds and
+# anything approaching this timeout means a stuck process, not a busy one.
+LOCK_TIMEOUT_SECONDS = 30.0
 
 # state -> (what to run next, state it moves to on success)
 # `None` action means the pipeline is waiting on the owner and this idea is
@@ -73,6 +109,14 @@ def now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def parse_ts(stamp: str) -> datetime | None:
+    try:
+        parsed = datetime.fromisoformat(stamp)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
 def load() -> dict:
     if not QUEUE.is_file():
         return {"ideas": {}}
@@ -80,8 +124,77 @@ def load() -> dict:
 
 
 def save(data: dict) -> None:
+    """Write the queue atomically.
+
+    `dashboard.py` re-reads QUEUE.json on every page load without taking the
+    lock, so a plain in-place write leaves a window where a reader can catch a
+    half-written file and fail to parse it. Writing a sibling temp file and
+    renaming it means a reader always sees either the whole old file or the
+    whole new one.
+    """
     QUEUE.parent.mkdir(parents=True, exist_ok=True)
-    QUEUE.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    tmp = QUEUE.with_suffix(QUEUE.suffix + f".tmp.{os.getpid()}")
+    tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    os.replace(tmp, QUEUE)
+
+
+@contextlib.contextmanager
+def locked(timeout: float = LOCK_TIMEOUT_SECONDS):
+    """Hold an exclusive lock on the queue for the body of the block.
+
+    Every command here is a read-modify-write of one small JSON file. Without
+    a lock, two drivers running at once interleave as load/load/save/save and
+    the second save silently discards the first one's transition — the classic
+    lost update, and in this pipeline a lost update means a stage that ran but
+    left no trace that it ran.
+    """
+    LOCK.parent.mkdir(parents=True, exist_ok=True)
+    handle = LOCK.open("w")
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            break
+        except OSError:
+            if time.monotonic() >= deadline:
+                handle.close()
+                raise SystemExit(
+                    f"queue is locked by another process and did not free it "
+                    f"within {timeout:.0f}s ({LOCK}) — if nothing else is "
+                    f"running, delete that file")
+            time.sleep(0.05)
+    try:
+        yield
+    finally:
+        fcntl.flock(handle, fcntl.LOCK_UN)
+        handle.close()
+
+
+# Journal entries queued during a transaction, sent once the lock is released.
+# `journal.append` talks to Telegram over the network; doing that while holding
+# the queue lock would make every other driver wait on someone else's HTTP
+# round-trip, and a hung request would block the pipeline rather than just one
+# message.
+_pending_journal: list[dict] = []
+
+
+@contextlib.contextmanager
+def transaction(timeout: float = LOCK_TIMEOUT_SECONDS):
+    """Load the queue, let the caller mutate it, save it — all under the lock.
+
+    The queue is only ever written from inside one of these. Nothing may call
+    `save()` on its own.
+    """
+    _pending_journal.clear()
+    try:
+        with locked(timeout):
+            data = load()
+            yield data
+            save(data)
+    finally:
+        pending, _pending_journal[:] = list(_pending_journal), []
+        for item in pending:
+            journal.append(**item)
 
 
 def entry(data: dict, slug: str) -> dict:
@@ -89,6 +202,61 @@ def entry(data: dict, slug: str) -> dict:
         return data["ideas"][slug]
     except KeyError:
         raise SystemExit(f"no idea '{slug}' in the queue")
+
+
+# ---------------------------------------------------------------------------
+# Claims — "this idea is being worked on right now"
+#
+# `state` says where an idea has *got to*; a claim says someone is *in the
+# middle of moving it*. They are deliberately two different fields. A driver
+# spawns an agent that runs for minutes, and only writes the new state once
+# that agent's output has passed its checker — so for the whole length of a
+# step, `state` still reads exactly what it read before the step began. Under
+# `/loop /bg` that is enough for the next tick to be handed the same work and
+# spawn a second agent onto the same files.
+#
+# The claim is not folded into `state` (as an `in_progress` value) because
+# `state` is the one field every other command reasons about: `require_state`
+# guards the owner's replies with it, `advance` moves it, `PRIORITY` orders by
+# it. Overwriting it would mean stashing the real state somewhere anyway and
+# restoring it correctly on every exit path, including the crash paths. A
+# separate lease that expires needs no restore — it just lapses.
+
+def claim_of(item: dict) -> dict | None:
+    """The item's claim if one is live, else None. An expired claim is dead:
+    the driver that took it is gone or wedged, and the work is free again."""
+    claim = item.get("claim")
+    if not claim:
+        return None
+    expires = parse_ts(claim.get("expires", ""))
+    if expires is None or expires <= datetime.now(timezone.utc):
+        return None
+    return claim
+
+
+def claim_age(claim: dict) -> str:
+    started = parse_ts(claim.get("at", ""))
+    if started is None:
+        return "?"
+    seconds = int((datetime.now(timezone.utc) - started).total_seconds())
+    return f"{seconds // 60}m" if seconds >= 60 else f"{seconds}s"
+
+
+def take_claim(item: dict, action: str, state: str) -> dict:
+    claim = {
+        "action": action,
+        "state": state,
+        "at": now(),
+        "expires": (datetime.now(timezone.utc)
+                    + timedelta(seconds=CLAIM_TTL_SECONDS)).isoformat(),
+        "by": f"{socket.gethostname()}:{os.getpid()}",
+    }
+    item["claim"] = claim
+    return claim
+
+
+def drop_claim(item: dict) -> dict | None:
+    return item.pop("claim", None)
 
 
 # Which state each owner-reply command is only ever valid from. A one-tap
@@ -123,43 +291,57 @@ def log(item: dict, frm: str, to: str, note: str = "",
     Both, always, from one place. The queue's log is what the pipeline reads;
     the journal is what the owner reads, and it lives only in Telegram. Firing
     them together is the only way the story cannot quietly fall behind the
-    state.
+    state. The journal half is queued rather than sent here, and flushed by
+    `transaction()` once the lock is off — same call, same order, just not on
+    somebody else's critical path.
     """
     item.setdefault("log", []).append(
         {"at": now(), "from": frm, "to": to, "note": note})
-    journal.append(item["slug"], kind, by,
-                   f"{frm} → {to}" + (f"\n{note}" if note else ""),
-                   title=item.get("title", item["slug"]))
+    _pending_journal.append({
+        "slug": item["slug"], "kind": kind, "by": by,
+        "summary": f"{frm} → {to}" + (f"\n{note}" if note else ""),
+        "title": item.get("title", item["slug"]),
+    })
 
 
 # ---------------------------------------------------------------------------
 
 def cmd_add(args) -> int:
-    data = load()
-    if args.slug in data["ideas"]:
-        raise SystemExit(f"'{args.slug}' is already in the queue")
-    data["ideas"][args.slug] = {
-        "slug": args.slug, "title": args.title or args.slug,
-        "state": "proposed", "repairs_used": 0, "created": now(), "log": [],
-    }
-    (IDEAS / args.slug).mkdir(parents=True, exist_ok=True)
-    save(data)
-    journal.append(args.slug, "proposed", "pipeline",
-                   f"entered the queue as “{args.title or args.slug}”",
-                   title=args.title or args.slug)
+    with transaction() as data:
+        if args.slug in data["ideas"]:
+            raise SystemExit(f"'{args.slug}' is already in the queue")
+        data["ideas"][args.slug] = {
+            "slug": args.slug, "title": args.title or args.slug,
+            "state": "proposed", "repairs_used": 0, "created": now(), "log": [],
+        }
+        # The idea now exists, so the propose slot this driver was holding has
+        # done its job and the next tick is free to propose again.
+        data.pop("propose_claim", None)
+        (IDEAS / args.slug).mkdir(parents=True, exist_ok=True)
+        _pending_journal.append({
+            "slug": args.slug, "kind": "proposed", "by": "pipeline",
+            "summary": f"entered the queue as “{args.title or args.slug}”",
+            "title": args.title or args.slug,
+        })
     print(f"added {args.slug} (proposed)")
     return 0
 
 
 def cmd_advance(args) -> int:
-    data = load()
-    item = entry(data, args.slug)
-    frm = item["state"]
-    if args.to not in PIPELINE:
-        raise SystemExit(f"unknown state '{args.to}'")
-    item["state"] = args.to
-    log(item, frm, args.to, args.note or "")
-    save(data)
+    """Move an idea to its next state — and, with it, end the step.
+
+    A step is over exactly when its state changes, so this is where the claim
+    is dropped. Any driver that was blocked out of this idea while the step ran
+    is free to pick up the next one immediately, with no wait for the lease.
+    """
+    with transaction() as data:
+        item = entry(data, args.slug)
+        frm = item["state"]
+        if args.to not in PIPELINE:
+            raise SystemExit(f"unknown state '{args.to}'")
+        item["state"] = args.to
+        drop_claim(item)
+        log(item, frm, args.to, args.note or "")
     print(f"{args.slug}: {frm} -> {args.to}")
     return 0
 
@@ -167,20 +349,43 @@ def cmd_advance(args) -> int:
 def cmd_repair(args) -> int:
     """Consume one repair round. Refuses past the budget — the caller is meant
     to escalate to arbitration, not to keep going."""
-    data = load()
-    item = entry(data, args.slug)
-    used = int(item.get("repairs_used", 0))
-    if used >= REPAIR_BUDGET:
-        print(f"BUDGET EXHAUSTED {args.slug}: {used}/{REPAIR_BUDGET} repair "
-              f"rounds spent — escalate to arbitration, do not repair again")
-        return 1
-    item["repairs_used"] = used + 1
-    frm = item["state"]
-    item["state"] = "repairing"
-    log(item, frm, "repairing", f"repair round {used + 1}/{REPAIR_BUDGET}",
-        kind="repair")
-    save(data)
+    with transaction() as data:
+        item = entry(data, args.slug)
+        used = int(item.get("repairs_used", 0))
+        if used >= REPAIR_BUDGET:
+            print(f"BUDGET EXHAUSTED {args.slug}: {used}/{REPAIR_BUDGET} repair "
+                  f"rounds spent — escalate to arbitration, do not repair again")
+            return 1
+        item["repairs_used"] = used + 1
+        frm = item["state"]
+        item["state"] = "repairing"
+        # A repair happens *inside* the step that called it: the driver is
+        # still holding this idea and is about to run the builder again. Renew
+        # the lease rather than dropping it, so the extra rounds cannot outlive
+        # the claim and let a second driver in mid-repair.
+        if claim_of(item):
+            take_claim(item, "repair", "repairing")
+        log(item, frm, "repairing", f"repair round {used + 1}/{REPAIR_BUDGET}",
+            kind="repair")
     print(f"{args.slug}: repair round {used + 1}/{REPAIR_BUDGET}")
+    return 0
+
+
+def cmd_release(args) -> int:
+    """Give up a claim without moving the idea.
+
+    The counterpart to `advance` for every way a step can end without
+    finishing: a gate that failed, an agent that errored, a driver shutting
+    down. Without it a dead step's idea is invisible to `next` until the lease
+    lapses, which is correct but slow — this makes it immediate.
+    """
+    with transaction() as data:
+        if args.slug == "propose":
+            existed = data.pop("propose_claim", None) is not None
+        else:
+            existed = drop_claim(entry(data, args.slug)) is not None
+    print(f"{args.slug}: claim released" if existed
+          else f"{args.slug}: no claim to release")
     return 0
 
 
@@ -191,24 +396,24 @@ def cmd_approve(args) -> int:
     build is held to. This is the one moment a human agrees the design is
     worth making, so it is worth freezing rather than remembering.
     """
-    data = load()
-    item = entry(data, args.slug)
-    require_state(item, args.slug, "approve")
-    home = IDEAS / args.slug
-    reference = home / "reference"
-    reference.mkdir(parents=True, exist_ok=True)
-    copied = 0
-    for png in sorted((home / "draft").rglob("*.png")):
-        (reference / png.name).write_bytes(png.read_bytes())
-        copied += 1
-    if not copied:
-        print(f"warning: no draft renders found under {home / 'draft'} — the "
-              f"build will have no visual contract to match")
-    frm = item["state"]
-    item["state"] = "approved"
-    log(item, frm, "approved", f"owner approved the draft; {copied} renders frozen",
-        by="owner", kind="owner")
-    save(data)
+    with transaction() as data:
+        item = entry(data, args.slug)
+        require_state(item, args.slug, "approve")
+        home = IDEAS / args.slug
+        reference = home / "reference"
+        reference.mkdir(parents=True, exist_ok=True)
+        copied = 0
+        for png in sorted((home / "draft").rglob("*.png")):
+            (reference / png.name).write_bytes(png.read_bytes())
+            copied += 1
+        if not copied:
+            print(f"warning: no draft renders found under {home / 'draft'} — the "
+                  f"build will have no visual contract to match")
+        frm = item["state"]
+        item["state"] = "approved"
+        drop_claim(item)
+        log(item, frm, "approved", f"owner approved the draft; {copied} renders frozen",
+            by="owner", kind="owner")
     print(f"{args.slug}: approved — {copied} render(s) frozen as reference/")
     return 0
 
@@ -221,35 +426,35 @@ def cmd_amend(args) -> int:
     reset happens only because a human read the proposal and applied it — an
     agent cannot reach this path on its own.
     """
-    data = load()
-    item = entry(data, args.slug)
-    require_state(item, args.slug, "amend")
-    home = IDEAS / args.slug
-    proposed = home / "brief_proposed.json"
-    if not proposed.is_file():
-        raise SystemExit(f"no brief_proposed.json for '{args.slug}'")
-    (home / "brief.json").write_text(proposed.read_text(encoding="utf-8"),
-                                     encoding="utf-8")
-    proposed.unlink()
-    frm = item["state"]
-    item["state"] = "approved"
-    item["repairs_used"] = 0
-    log(item, frm, "approved", "owner applied the arbitration amendment; "
-        "budget reset for the amended design", by="owner", kind="owner")
-    save(data)
+    with transaction() as data:
+        item = entry(data, args.slug)
+        require_state(item, args.slug, "amend")
+        home = IDEAS / args.slug
+        proposed = home / "brief_proposed.json"
+        if not proposed.is_file():
+            raise SystemExit(f"no brief_proposed.json for '{args.slug}'")
+        (home / "brief.json").write_text(proposed.read_text(encoding="utf-8"),
+                                         encoding="utf-8")
+        proposed.unlink()
+        frm = item["state"]
+        item["state"] = "approved"
+        item["repairs_used"] = 0
+        drop_claim(item)
+        log(item, frm, "approved", "owner applied the arbitration amendment; "
+            "budget reset for the amended design", by="owner", kind="owner")
     print(f"{args.slug}: brief amended, repair budget reset")
     return 0
 
 
 def cmd_ship(args) -> int:
-    data = load()
-    item = entry(data, args.slug)
-    require_state(item, args.slug, "ship")
-    frm = item["state"]
-    item["state"] = "shipped"
-    item["shipped_at"] = now()
-    log(item, frm, "shipped", "owner approved", by="owner", kind="owner")
-    save(data)
+    with transaction() as data:
+        item = entry(data, args.slug)
+        require_state(item, args.slug, "ship")
+        frm = item["state"]
+        item["state"] = "shipped"
+        item["shipped_at"] = now()
+        drop_claim(item)
+        log(item, frm, "shipped", "owner approved", by="owner", kind="owner")
     print(f"{args.slug}: SHIPPED")
     return 0
 
@@ -258,14 +463,14 @@ def cmd_reject(args) -> int:
     """The owner said no. The reason is the single most valuable sentence in
     this pipeline: it is the only signal that comes from a human, and it goes
     into TASTE.md where every future ideation reads it."""
-    data = load()
-    item = entry(data, args.slug)
-    require_state(item, args.slug, "reject")
-    frm = item["state"]
-    item["state"] = "killed"
-    item["kill_reason"] = args.reason
-    log(item, frm, "killed", args.reason, by="owner", kind="owner")
-    save(data)
+    with transaction() as data:
+        item = entry(data, args.slug)
+        require_state(item, args.slug, "reject")
+        frm = item["state"]
+        item["state"] = "killed"
+        item["kill_reason"] = args.reason
+        drop_claim(item)
+        log(item, frm, "killed", args.reason, by="owner", kind="owner")
 
     if not TASTE.is_file():
         TASTE.write_text(
@@ -283,44 +488,96 @@ def cmd_reject(args) -> int:
 
 
 def cmd_rework(args) -> int:
-    data = load()
-    item = entry(data, args.slug)
-    require_state(item, args.slug, "rework")
-    frm = item["state"]
-    item["state"] = "proposed"
-    item["rework_reason"] = args.reason
-    log(item, frm, "proposed", f"owner asked for a rules change: {args.reason}",
-        by="owner", kind="owner")
-    save(data)
+    with transaction() as data:
+        item = entry(data, args.slug)
+        require_state(item, args.slug, "rework")
+        frm = item["state"]
+        item["state"] = "proposed"
+        item["rework_reason"] = args.reason
+        drop_claim(item)
+        log(item, frm, "proposed", f"owner asked for a rules change: {args.reason}",
+            by="owner", kind="owner")
     print(f"{args.slug}: back to proposed for rework")
     return 0
 
 
 def cmd_next(args) -> int:
-    """Print the one thing that should happen now, as JSON. The driver reads
-    this and does exactly that — it does not get to pick."""
-    data = load()
-    for state in PRIORITY:
-        for slug, item in sorted(data["ideas"].items()):
-            if item["state"] != state:
-                continue
-            action, to = PIPELINE[state]
-            if action is None:
-                continue
+    """Print the one thing that should happen now, as JSON, and claim it.
+
+    The driver reads this and does exactly that — it does not get to pick. And
+    because handing out the work and marking it taken happen together, under
+    the lock, two drivers running at once cannot be handed the same step: the
+    second one is told to wait.
+
+    `--peek` reports without claiming, for looking at the queue without
+    disturbing it. Never run the driver off a peek.
+    """
+    claim_this = not args.peek
+    with transaction() as data:
+        in_progress = []
+        for state in PRIORITY:
+            for slug, item in sorted(data["ideas"].items()):
+                if item["state"] != state:
+                    continue
+                action, to = PIPELINE[state]
+                if action is None:
+                    continue
+                held = claim_of(item)
+                if held:
+                    in_progress.append(
+                        f"{slug} ({held['action']}, {claim_age(held)} in, "
+                        f"by {held.get('by', '?')})")
+                    continue
+                out = {
+                    "slug": slug, "title": item.get("title", slug),
+                    "state": state, "action": action, "next_state": to,
+                    "repairs_used": item.get("repairs_used", 0),
+                    "repair_budget": REPAIR_BUDGET,
+                    "dir": str(IDEAS / slug),
+                }
+                if claim_this:
+                    out["claim"] = take_claim(item, action, state)
+                print(json.dumps(out, indent=2))
+                return 0
+
+        # Nothing advanceable. Before falling back to proposing a new idea,
+        # check whether that is also already being done — `propose` has no slug
+        # to hang a claim on, so it gets one of its own. Without it, a fast
+        # loop with everything else in progress would spawn an ideator every
+        # single tick.
+        propose_held = data.get("propose_claim")
+        if propose_held:
+            expires = parse_ts(propose_held.get("expires", ""))
+            if expires is None or expires <= datetime.now(timezone.utc):
+                propose_held = None
+        if propose_held:
+            in_progress.append(
+                f"propose ({claim_age(propose_held)} in, "
+                f"by {propose_held.get('by', '?')})")
+
+        if in_progress:
             print(json.dumps({
-                "slug": slug, "title": item.get("title", slug),
-                "state": state, "action": action, "next_state": to,
-                "repairs_used": item.get("repairs_used", 0),
-                "repair_budget": REPAIR_BUDGET,
-                "dir": str(IDEAS / slug),
-            }, indent=2))
+                "action": "wait",
+                "reason": "every advanceable idea is already being worked on",
+                "in_progress": in_progress}, indent=2))
             return 0
-    waiting = [s for s, i in data["ideas"].items()
-               if i["state"] in ("awaiting_owner", "awaiting_ship")]
-    print(json.dumps({"action": "propose",
-                      "reason": ("every idea in the queue is waiting on the owner"
-                                 if waiting else "the queue has nothing to advance"),
-                      "waiting_on_owner": waiting}, indent=2))
+
+        waiting = [s for s, i in data["ideas"].items()
+                   if i["state"] in ("awaiting_owner", "awaiting_ship")]
+        out = {"action": "propose",
+               "reason": ("every idea in the queue is waiting on the owner"
+                          if waiting else "the queue has nothing to advance"),
+               "waiting_on_owner": waiting}
+        if claim_this:
+            holder = {
+                "action": "propose", "at": now(),
+                "expires": (datetime.now(timezone.utc)
+                            + timedelta(seconds=CLAIM_TTL_SECONDS)).isoformat(),
+                "by": f"{socket.gethostname()}:{os.getpid()}",
+            }
+            data["propose_claim"] = holder
+            out["claim"] = holder
+        print(json.dumps(out, indent=2))
     return 0
 
 
@@ -336,7 +593,15 @@ def cmd_list(args) -> int:
         repairs = item.get("repairs_used", 0)
         tail = f"  repairs {repairs}/{REPAIR_BUDGET}" if repairs else ""
         note = f"  — {item['kill_reason']}" if item.get("kill_reason") else ""
-        print(f"  {slug:<{width}}  {item['state']:<14}{tail}{note}")
+        held = claim_of(item)
+        busy = f"  [in progress: {held['action']}, {claim_age(held)}]" if held else ""
+        print(f"  {slug:<{width}}  {item['state']:<14}{tail}{busy}{note}")
+    if data.get("propose_claim"):
+        held = data["propose_claim"]
+        expires = parse_ts(held.get("expires", ""))
+        if expires and expires > datetime.now(timezone.utc):
+            print(f"  {'(propose)':<{width}}  {'—':<14}"
+                  f"  [in progress: propose, {claim_age(held)}]")
     return 0
 
 
@@ -350,6 +615,9 @@ def main() -> int:
     p.add_argument("--to", required=True); p.add_argument("--note")
     p.set_defaults(fn=cmd_advance)
     p = sub.add_parser("repair"); p.add_argument("slug"); p.set_defaults(fn=cmd_repair)
+    p = sub.add_parser("release", help="drop a claim without moving the idea")
+    p.add_argument("slug", help="the idea's slug, or 'propose'")
+    p.set_defaults(fn=cmd_release)
     p = sub.add_parser("approve"); p.add_argument("slug"); p.set_defaults(fn=cmd_approve)
     p = sub.add_parser("amend"); p.add_argument("slug"); p.set_defaults(fn=cmd_amend)
     p = sub.add_parser("ship"); p.add_argument("slug"); p.set_defaults(fn=cmd_ship)
@@ -357,7 +625,10 @@ def main() -> int:
     p.add_argument("--reason", required=True); p.set_defaults(fn=cmd_reject)
     p = sub.add_parser("rework"); p.add_argument("slug")
     p.add_argument("--reason", required=True); p.set_defaults(fn=cmd_rework)
-    sub.add_parser("next").set_defaults(fn=cmd_next)
+    p = sub.add_parser("next")
+    p.add_argument("--peek", action="store_true",
+                   help="report without claiming — for looking, not for driving")
+    p.set_defaults(fn=cmd_next)
     sub.add_parser("list").set_defaults(fn=cmd_list)
 
     args = ap.parse_args()

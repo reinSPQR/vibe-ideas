@@ -39,7 +39,40 @@ choose** — the queue owns prioritisation (ideas closest to shipping go first,
 so finishing beats starting) and it owns the repair budget. If `$ARGUMENTS`
 names a slug, still run `next` and simply skip to that idea's own action.
 
+`next` does not just report the step, it **claims** it: the idea is marked in
+progress until the step ends. This is what stops a second `/bg` — a fast
+`/loop`, another terminal — from being handed the same work and spawning a
+second agent onto the same files, since an idea's `state` does not change
+until its step *finishes*. Two consequences for you:
+
+- **`"action": "wait"`** means every advanceable idea is already being worked
+  on by someone else. Print the `in_progress` list and stop. Do not go looking
+  for something else to do; the claim exists precisely so you don't.
+- **You now hold something, so you must hand it back.** See below.
+
 Then run the matching block below, and nothing else.
+
+## Ending a step
+
+Exactly one of these ends every step. There is no third option, and "stop
+without doing either" leaves the idea invisible to the pipeline until its
+lease expires:
+
+- The step **finished** → `advance --to <state>` (this drops the claim for you).
+- The step **did not** — a gate failed and you are leaving the state where it
+  is, an agent errored, a checker refused, you are stopping to report a
+  problem → release it explicitly:
+
+```bash
+.venv/bin/python board-game/tools/pipeline_queue.py release <slug>
+```
+
+For a failed `propose` (no slug exists yet), the slug is the literal word
+`propose`: `pipeline_queue.py release propose`.
+
+Releasing is not an admission of failure and it never fakes progress — the
+state stays exactly where it was. It only says "I am no longer working on
+this", so the next tick can retry instead of waiting out the lease.
 
 ## Actions
 
@@ -50,6 +83,9 @@ Invoke `board-game-ideator` in **propose** mode. It writes
 ```bash
 .venv/bin/python board-game/tools/pipeline_queue.py add <slug> --title "<title>"
 ```
+
+`add` clears the propose claim. If the ideator failed and no idea was added,
+`release propose` instead.
 
 Append its `PAIN_POINTS:` to `board-game/PAIN_POINTS.md` under a dated heading.
 
@@ -70,7 +106,8 @@ Then:
 ```
 PASS → `pipeline_queue.py advance <slug> --to rules_ok`.
 FAIL → invoke `board-game-ideator` in **rework** mode with the findings
-verbatim; leave the state at `proposed` so the gate runs again next step.
+verbatim; leave the state at `proposed` so the gate runs again next step, and
+`release <slug>` so the next step can actually pick it up.
 
 ### `brief`
 Invoke `board-game-brief-writer` in **write** mode. It writes `brief.json` +
@@ -81,7 +118,7 @@ Invoke `board-game-brief-writer` in **write** mode. It writes `brief.json` +
 ```
 
 PASS → `advance --to briefed`. FAIL → **patch** mode with the findings; stay
-put. Append its `PAIN_POINTS:`.
+put and `release <slug>`. Append its `PAIN_POINTS:`.
 
 ### `draft`
 Invoke `board-game-builder` in **draft** mode. It builds real geometry fast
@@ -112,7 +149,9 @@ silhouette. Then:
 `GATE PASS` → `advance --to built`.
 `GATE FAIL` → `pipeline_queue.py repair <slug>`:
 - exit 0 → invoke `board-game-builder` in **repair** mode with the gate's
-  findings verbatim, then re-run `gate.py`.
+  findings verbatim, then re-run `gate.py`. (`repair` renews the claim rather
+  than dropping it — the repair happens inside this same step.) If the re-run
+  still fails and you are stopping here, `release <slug>`.
 - exit 1 (budget exhausted) → **arbitration**: read `brief.json`, `gate.json`
   and the build source, and decide whether what remains is a genuine spec
   conflict — the brief demanding things that are mutually impossible — rather
@@ -131,7 +170,8 @@ run concurrently and cannot see each other's reasoning:
 All three PASS → `advance --to reviewed`.
 Any FAIL → treat exactly like a gate failure: `pipeline_queue.py repair <slug>`, then
 builder **repair** mode with the failing verdicts, then re-run only the lenses
-that failed. Budget exhausted → arbitration, as above.
+that failed. Budget exhausted → arbitration, as above. If a lens still fails
+and you are stopping here, `release <slug>`.
 
 ### `owner_gate_2`
 ```bash
@@ -193,6 +233,9 @@ it — the owner is trying to see what the machine actually said.
 - **Never fabricate a stage.** If a build failed, the state stays where it is
   and the failure is reported. An idea that dies of a tooling fault is retried,
   not replaced — that is the whole reason the queue exists.
+- **Never work on an idea `next` did not hand you**, and never edit a `claim`
+  field by hand to get around a `wait`. If you think a claim is stale, say so
+  and stop — a stale one lapses on its own within the hour.
 - Repair budget and state transitions belong to `pipeline_queue.py`. Do not track them
   in your own head, and do not work around a refusal.
 - Report in one or two lines: what ran, what it produced, what is next.
