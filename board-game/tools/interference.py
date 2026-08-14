@@ -494,13 +494,48 @@ def _motion_steps(motion: dict) -> list[tuple[str, object]]:
 
 
 def load_motions(path: Path) -> list[dict]:
-    """Read a project's motion.json. Absent is not an error — most parts of most
-    games do not move — but see check_interference for what silence costs."""
+    """Read a project's motion.json. Absent is not an error on its own — most
+    parts of most games do not move — but see `unswept_moving_parts` for why
+    absence cannot be allowed to mean "nothing moves"."""
     if not path.is_file():
         return []
     data = json.loads(path.read_text(encoding="utf-8"))
     motions = data.get("motions", data) if isinstance(data, dict) else data
     return [m for m in motions if isinstance(m, dict)]
+
+
+# Interface kinds in a brief that describe a part moving against another, as
+# opposed to the static fit that `seats` / `joins` / `stacks` describe.
+MOVING_INTERFACE_KINDS = ("turns", "slides")
+
+
+def moving_parts_from_brief(brief: dict | None) -> list[str]:
+    """Parts the BRIEF says move.
+
+    This is what closes the loop. Sweeping is driven by motion.json, which the
+    builder writes — and a builder who forgets it gets a silent pass, because
+    nothing in the geometry says "this was meant to turn". The brief does say
+    so, upstream of any build, so it is the thing that can require the sweep to
+    have happened.
+
+    Same shape as the rule that a brief with interfaces and no fit_checks.py
+    has verified nothing: the declaration that something must be checked lives
+    with the design, not with the person who would rather not check it.
+    """
+    out: list[str] = []
+    for interface in ((brief or {}).get("interfaces") or []):
+        if str(interface.get("kind", "")).lower() not in MOVING_INTERFACE_KINDS:
+            continue
+        name = interface.get("piece") or interface.get("a")
+        if name:
+            out.append(str(name))
+    return sorted(set(out))
+
+
+def unswept_moving_parts(brief: dict | None, motions: list[dict] | None) -> list[str]:
+    """Parts the brief says move that no declared motion sweeps."""
+    declared = {str(m.get("part", "")) for m in (motions or [])}
+    return [p for p in moving_parts_from_brief(brief) if p not in declared]
 
 
 def _resolve_part(names: list[str], wanted: str) -> int | None:

@@ -397,6 +397,24 @@ def slice_stl(stl: Path) -> dict:
 # 7-8. Project's own checks, and graduated lessons
 # ---------------------------------------------------------------------------
 
+def load_brief(explicit: Path | None, home: Path) -> dict | None:
+    """The brief for this project, if one can be found.
+
+    A project lives at <slug>/project/ with its brief a level up at
+    <slug>/brief.json, so that is the default; the project's own directory is
+    searched first so a self-contained fixture needs no flag.
+    """
+    candidates = [explicit] if explicit else [home / "brief.json",
+                                              home.parent / "brief.json"]
+    for path in candidates:
+        if path and path.is_file():
+            try:
+                return json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                return None
+    return None
+
+
 def run_fit_checks(project: Path) -> tuple[str | None, bool]:
     """The builder's own interface checks. Absent is a finding in its own
     right: a brief with an `## Interfaces` section and no fit_checks.py means
@@ -446,6 +464,9 @@ def main() -> int:
     ap.add_argument("--bill", type=Path,
                     help="component bill JSON; without it the piece-count "
                          "checks are reported but cannot fail the gate")
+    ap.add_argument("--brief", type=Path,
+                    help="brief.json; defaults to the project dir then its "
+                         "parent. Read only to find parts declared to move.")
     ap.add_argument("--no-slice", action="store_true")
     ap.add_argument("--out", type=Path, help="default <project>/gate.json")
     args = ap.parse_args()
@@ -525,16 +546,30 @@ def main() -> int:
     # a gate that cannot reach a verdict is worse than one that reports it could
     # not measure something.
     try:
-        from interference import check_interference, load_motions
+        from interference import check_interference, load_motions, unswept_moving_parts
 
+        motions = load_motions(home / "motion.json")
         interference = check_interference(
             assembled,
             dict(stls),
             expected_components=expected_total,
-            motions=load_motions(home / "motion.json"),
+            motions=motions,
         )
         fails += interference["findings"]
         report["interference"] = interference
+
+        # A part the brief says moves, that no motion sweeps, was passed on a
+        # pose nothing ever questioned. Forgetting the declaration has to cost
+        # what failing it costs, or saying nothing is the cheapest way through.
+        brief = load_brief(args.brief, home)
+        unswept = unswept_moving_parts(brief, motions)
+        report["interference"]["unswept_moving_parts"] = unswept
+        fails += [
+            f"motion:{part}: the brief declares it turns or slides, but "
+            f"motion.json does not sweep it — a pass here would be about a "
+            f"motion nothing looked at"
+            for part in unswept
+        ]
     except Exception as exc:
         report["interference"] = {
             "inconclusive": [f"check did not run: {type(exc).__name__}: {exc}"]}

@@ -47,7 +47,10 @@ rather than discovering it in the plastic.
     {"kind": "seats", "piece": "seed_small", "into": "trough_board",
      "clearance_mm": 0.4},
     {"kind": "joins", "a": "board_tile_01", "b": "board_tile_02",
-     "joint": "dovetail"}
+     "joint": "dovetail"},
+    {"kind": "turns", "piece": "sluice_gate", "about": "gate_post",
+     "range_deg": [0, 360],
+     "notes": "players rotate it to a new index each turn"}
   ],
   "print_plan": {
     "min_wall_mm": 1.6,
@@ -72,6 +75,23 @@ that exists is worth more than a paragraph that does not. Kinds:
 | `joins` | two pieces interlock | the joint engages over its stated depth without interference |
 | `stacks` | pieces stack | `max` of them stand without toppling |
 | `spans` | a piece bridges a gap | the gap is what the rules need |
+| `turns` | a piece rotates in play | it is swept through `range_deg` and must not foul anything at ANY angle |
+| `slides` | a piece translates in play | it is swept along `vector_mm` and must not foul anything anywhere along it |
+
+The last two are the only kinds that describe a part in motion, and they exist
+because the four static kinds describe one arrangement while a moving part is
+only as good as its worst position. Armillary is why: its mask disc is clear in
+the pose it was built in and buries every tile half an index step later.
+
+**If a rule uses a verb — rotate, turn, spin, slide, swivel, dial, shutter — the
+part that verb acts on gets a `turns` or `slides` interface.** State the axis in
+design terms (`"about": "<the part it turns on>"`) and the range the rules
+allow; the builder resolves that to coordinates, exactly as it resolves every
+other interface into a real measurement. Do NOT state which position is the bad
+one — finding that is the check's job, and if you could name it you would have
+designed it out. The gate fails a build whose brief declares a `turns` that the
+project never swept, so an omission here is not a shortcut, it is a later
+failure with a worse error message.
 
 ## `brief.md` — the readable half
 

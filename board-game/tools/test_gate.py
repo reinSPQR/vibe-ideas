@@ -167,6 +167,51 @@ def gen_step():
           "range_deg": [0, 60], "steps": 6}],
     ),
     (
+        # A disc free-spinning on its post: clean at rest and clean at every
+        # angle, so the geometry is not the point. The brief says it TURNS and
+        # the project never declared the turn, which means the sweep ran over
+        # nothing and the gate's pass would be about a motion it never looked
+        # at. Forgetting the declaration has to cost as much as failing it, or
+        # the cheapest way past the check is to say nothing.
+        "brief_declares_a_turn_that_is_never_swept",
+        """import cadquery as cq
+def gen_step():
+    asm = cq.Assembly()
+    asm.add(cq.Workplane("XY").circle(40).extrude(6).faces(">Z").workplane().hole(12),
+            name="mask")
+    asm.add(cq.Workplane("XY").circle(5).extrude(20), name="post",
+            loc=cq.Location(cq.Vector(0, 0, -7)))
+    return asm
+""",
+        [{"name": "mask", "qty": 1}, {"name": "post", "qty": 1}],
+        False, ["mask", "motion.json"],
+        None,
+        {"interfaces": [{"kind": "turns", "piece": "mask", "about": "post",
+                         "range_deg": [0, 360],
+                         "notes": "the mask spins freely on the post"}]},
+    ),
+    (
+        # The same geometry with the turn actually declared. The sweep runs,
+        # finds nothing, and the pass now means something.
+        "declared_turn_that_never_collides_passes",
+        """import cadquery as cq
+def gen_step():
+    asm = cq.Assembly()
+    asm.add(cq.Workplane("XY").circle(40).extrude(6).faces(">Z").workplane().hole(12),
+            name="mask")
+    asm.add(cq.Workplane("XY").circle(5).extrude(20), name="post",
+            loc=cq.Location(cq.Vector(0, 0, -7)))
+    return asm
+""",
+        [{"name": "mask", "qty": 1}, {"name": "post", "qty": 1}],
+        True, [],
+        [{"part": "mask", "kind": "rotation",
+          "axis_point": [0, 0, 0], "axis_direction": [0, 0, 1],
+          "range_deg": [0, 360], "steps": 8}],
+        {"interfaces": [{"kind": "turns", "piece": "mask", "about": "post",
+                         "range_deg": [0, 360]}]},
+    ),
+    (
         # Graduated lesson: a blanket fillet over every edge direction makes
         # OCCT build spherical vertex blends that tessellate into phantom
         # slivers. It must fail on the source, not wait for the mesh.
@@ -184,7 +229,8 @@ def gen_step():
 
 
 def run_case(tmp: Path, name: str, source: str, bill: list,
-             motions: list | None = None) -> tuple[bool, list]:
+             motions: list | None = None,
+             brief: dict | None = None) -> tuple[bool, list]:
     home = tmp / name
     home.mkdir(parents=True)
     (home / "main.py").write_text(source, encoding="utf-8")
@@ -192,6 +238,8 @@ def run_case(tmp: Path, name: str, source: str, bill: list,
     if motions:
         (home / "motion.json").write_text(json.dumps({"motions": motions}),
                                           encoding="utf-8")
+    if brief:
+        (home / "brief.json").write_text(json.dumps(brief), encoding="utf-8")
     python = str(PY) if PY.is_file() else sys.executable
     subprocess.run([python, str(GATE), str(home / "main.py"),
                     "--bill", str(home / "bill.json"), "--no-slice"],
@@ -207,7 +255,8 @@ def main() -> int:
         for case in CASES:
             name, source, bill, expect_pass, needles = case[:5]
             motions = case[5] if len(case) > 5 else None
-            passed, fails = run_case(tmp, name, source, bill, motions)
+            brief = case[6] if len(case) > 6 else None
+            passed, fails = run_case(tmp, name, source, bill, motions, brief)
             blob = " ".join(fails).lower()
             missing = [n for n in needles if n.lower() not in blob]
             if passed != expect_pass:

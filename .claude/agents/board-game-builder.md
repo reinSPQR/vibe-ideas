@@ -104,8 +104,30 @@ welcome; silhouette drift is failure.
    enough to retrieve, a `joins` interface checks the joint engages without
    interference. Exit 0 = all fit. Run it yourself; `gate.py` reruns it
    forever after.
-3. Iterate with `cad` until the JSON shows no non-`info` warnings.
-4. Run `gate.py` and iterate until it prints `GATE PASS`.
+3. If the brief has any `turns` or `slides` interface, write `motion.json`
+   beside `main.py`, one entry per moving part:
+
+   ```json
+   {"motions": [
+     {"part": "mask_disc_a", "kind": "rotation",
+      "axis_point": [0, 0, 0], "axis_direction": [0, 0, 1],
+      "range_deg": [0, 360], "steps": 20}
+   ]}
+   ```
+
+   The brief names the axis in design terms ("about the plinth's post"); you
+   resolve it to the coordinates you actually built, the same translation you
+   already do for every other interface. `kind` is `rotation` (with
+   `axis_point`/`axis_direction`/`range_deg`) or `linear` (with `vector`).
+   Use enough `steps` that no position between two of them could hide a
+   collision — for an indexed part, several per index step.
+
+   The gate sweeps each declared motion and fails on interference at ANY
+   position, and it fails just as hard if the brief declares a motion that
+   `motion.json` does not sweep. You cannot pass by staying quiet, and the
+   scene you export is not evidence about the positions you did not export.
+4. Iterate with `cad` until the JSON shows no non-`info` warnings.
+5. Run `gate.py` and iterate until it prints `GATE PASS`.
 
 Reply `BUILT` or `STUCK <one sentence>`.
 
