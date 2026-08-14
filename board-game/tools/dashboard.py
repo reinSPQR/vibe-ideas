@@ -7,18 +7,26 @@ instead of scrolling Telegram history.
     python3 board-game/tools/dashboard.py --serve            # live, at localhost:8420
     python3 board-game/tools/dashboard.py --serve --open     # live, opened for you
 
-Telegram stays the alert channel — the two gates that need a decision, plus
-the journal narration as it happens. This is the other view of the same
-data: every idea at once, current state first, so you can see where the
-queue actually stands without reconstructing it from a chat scrollback.
+Telegram stays the alert channel — the two gates that need a decision fire a
+notification there, plus the journal narration as it happens. This is the
+other view of the same data: every idea at once, current state first, so you
+can see where the queue actually stands without reconstructing it from a
+chat scrollback — and, when `--serve` is running, actually answer a gate from
+here too: an idea sitting in `awaiting_owner` or `awaiting_ship` gets
+Approve/Reject/Rework/Ship buttons, with Reject and Rework opening a dialog
+for the reason instead of routing through Telegram's reply flow. Every button
+still just runs the same `pipeline_queue.py` verb the Telegram path would —
+this is another front end onto it, not a second source of truth, and
+`pipeline_queue.py`'s own state check is what makes it safe to act from
+here even if a stale Telegram gate message is still sitting there too.
 
-`--serve` re-reads `QUEUE.json` and the journal log on every request (the
-open tab also reloads itself every `--interval` seconds, 5 by default), so
-the page never goes stale while the pipeline is running — still read-only,
-nothing on the page writes back to the queue. It binds to 127.0.0.1 only:
-this is pipeline internals, not something to expose on the network. Without
-`--serve` it is the original one-shot file, for a quick look or for handing
-someone a single HTML file.
+`--serve` re-reads `QUEUE.json` and the journal log on every request, so a
+browser refresh always shows the current queue. The open tab does not poll on
+its own unless you ask it to with `--interval <seconds>`. It binds to
+127.0.0.1 only: this is pipeline internals, not something to expose on the
+network. Without `--serve` it is the original one-shot file, read-only (no
+server to act against) — for a quick look or for handing someone a single
+HTML file.
 
 This is the one place allowed to read `journal.JOURNAL_LOG` — see the warning
 in `journal.py`'s docstring before adding a second one. Everything else here
@@ -36,6 +44,7 @@ import base64
 import html
 import http.server
 import json
+import subprocess
 import sys
 import webbrowser
 from pathlib import Path
@@ -47,6 +56,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 IDEAS = REPO_ROOT / "board-game" / "ideas"
 QUEUE = REPO_ROOT / "board-game" / "QUEUE.json"
 OUT = REPO_ROOT / "board-game" / "dashboard.html"
+PY_ABS = REPO_ROOT / ".venv" / "bin" / "python"
+QUEUE_SCRIPT = REPO_ROOT / "board-game" / "tools" / "pipeline_queue.py"
+
+# The owner-gate verbs the dashboard's action buttons are allowed to run, and
+# whether each needs a typed reason. Deliberately the same small surface
+# telegram.py exposes — the dashboard is another front end onto
+# pipeline_queue.py, not a second source of truth.
+GATE_ACTIONS = {"approve": False, "reject": True, "rework": True, "ship": False}
 
 LENSES = ("printability", "fidelity", "playability")
 
@@ -171,7 +188,25 @@ def render_timeline(events: list[dict]) -> str:
     return f'<ul class="timeline">{"".join(rows)}</ul>'
 
 
-def render_idea(slug: str, item: dict, entries: list[dict]) -> str:
+def render_actions(slug: str, state: str, interactive: bool) -> str:
+    if not interactive:
+        return ""
+    verbs: list[str] = []
+    if state == "awaiting_owner":
+        verbs = ["approve", "reject", "rework"]
+    elif state == "awaiting_ship":
+        verbs = ["ship", "reject"]
+    if not verbs:
+        return ""
+    slug_js = esc(json.dumps(slug))
+    buttons = "".join(
+        f'<button class="act {"ok" if v in ("approve", "ship") else "warn" if v == "rework" else "bad"}" '
+        f"onclick='actOn({slug_js},&quot;{v}&quot;)'>{v}</button>"
+        for v in verbs)
+    return f'<div class="actions">{buttons}</div>'
+
+
+def render_idea(slug: str, item: dict, entries: list[dict], interactive: bool = False) -> str:
     idea = read_json(IDEAS / slug / "idea.json")
     state = item.get("state", "?")
     color = STATE_COLOR.get(state, "#6b7280")
@@ -228,6 +263,7 @@ def render_idea(slug: str, item: dict, entries: list[dict]) -> str:
   {gate_html}
   {lens_html}
   {rework_html}
+  {render_actions(slug, state, interactive)}
   <details class="timeline-toggle" open>
     <summary>timeline ({len(timeline)})</summary>
     {render_timeline(timeline)}
@@ -235,7 +271,8 @@ def render_idea(slug: str, item: dict, entries: list[dict]) -> str:
 </section>"""
 
 
-def render(data: dict, journal_by_slug: dict, refresh_seconds: int | None = None) -> str:
+def render(data: dict, journal_by_slug: dict, refresh_seconds: int | None = None,
+           interactive: bool = False) -> str:
     ideas = data.get("ideas") or {}
 
     def sort_key(kv):
@@ -260,7 +297,7 @@ def render(data: dict, journal_by_slug: dict, refresh_seconds: int | None = None
         f'<button class="filter" data-filter="{esc(s)}">{esc(s)}</button>'
         for s in states_present)
 
-    cards = "".join(render_idea(slug, item, journal_by_slug.get(slug, []))
+    cards = "".join(render_idea(slug, item, journal_by_slug.get(slug, []), interactive)
                      for slug, item in ordered)
     if not cards:
         cards = '<p class="muted">the queue is empty — nothing has been proposed yet.</p>'
@@ -271,6 +308,59 @@ def render(data: dict, journal_by_slug: dict, refresh_seconds: int | None = None
         if refresh_seconds else ""
     refresh_script = (f"<script>setTimeout(function(){{location.reload();}}, "
                        f"{refresh_seconds * 1000});</script>") if refresh_seconds else ""
+
+    modal_html = """
+  <dialog id="reasonModal">
+    <form method="dialog" id="reasonForm">
+      <h3 id="reasonModalTitle">Reason</h3>
+      <textarea id="reasonText" rows="5" placeholder="Why?" required></textarea>
+      <div class="modal-actions">
+        <button type="button" id="reasonCancel">Cancel</button>
+        <button type="submit" class="act warn">Send</button>
+      </div>
+    </form>
+  </dialog>""" if interactive else ""
+
+    actions_script = """
+<script>
+  var reasonModal = document.getElementById('reasonModal');
+  var pendingSlug = null, pendingAction = null;
+
+  function actOn(slug, action) {
+    if (action === 'reject' || action === 'rework') {
+      pendingSlug = slug; pendingAction = action;
+      document.getElementById('reasonModalTitle').textContent =
+        action + ' ' + slug + ' — reason:';
+      document.getElementById('reasonText').value = '';
+      reasonModal.showModal();
+      return;
+    }
+    if (!confirm(action + ' ' + slug + '?')) return;
+    submitAction(slug, action, null);
+  }
+
+  document.getElementById('reasonCancel').addEventListener('click', function() {
+    reasonModal.close();
+  });
+  document.getElementById('reasonForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var reason = document.getElementById('reasonText').value.trim();
+    if (!reason) return;
+    reasonModal.close();
+    submitAction(pendingSlug, pendingAction, reason);
+  });
+
+  function submitAction(slug, action, reason) {
+    fetch('/action', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({slug: slug, action: action, reason: reason})
+    }).then(function(r) { return r.json(); }).then(function(data) {
+      if (!data.ok) alert((data.output || 'failed') + '');
+      location.reload();
+    }).catch(function(err) { alert('request failed: ' + err); });
+  }
+</script>""" if interactive else ""
 
     return f"""<!doctype html>
 <html><head><meta charset="utf-8">
@@ -324,6 +414,20 @@ def render(data: dict, journal_by_slug: dict, refresh_seconds: int | None = None
   .summary {{ margin-top:3px; }}
   .muted {{ color:var(--muted); }}
   .live {{ color:var(--ok); }}
+  .actions {{ display:flex; gap:8px; margin:10px 0 4px; }}
+  .act {{ border:1px solid var(--border); border-radius:6px; padding:6px 14px;
+          font-size:12px; cursor:pointer; background:var(--card); color:var(--text); }}
+  .act.ok {{ background:var(--ok); color:#fff; border-color:var(--ok); }}
+  .act.bad {{ background:var(--bad); color:#fff; border-color:var(--bad); }}
+  .act.warn {{ background:#d97706; color:#fff; border-color:#d97706; }}
+  dialog {{ background:var(--card); color:var(--text); border:1px solid var(--border);
+            border-radius:10px; padding:20px; max-width:420px; width:90%; }}
+  dialog::backdrop {{ background:rgba(0,0,0,.4); }}
+  dialog h3 {{ margin:0 0 10px; font-size:14px; }}
+  dialog textarea {{ width:100%; box-sizing:border-box; background:var(--bg); color:var(--text);
+                      border:1px solid var(--border); border-radius:6px; padding:8px;
+                      font:inherit; resize:vertical; }}
+  .modal-actions {{ display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }}
 </style></head>
 <body>
   <h1>board-game pipeline</h1>
@@ -333,6 +437,7 @@ def render(data: dict, journal_by_slug: dict, refresh_seconds: int | None = None
     {filter_buttons}
   </div>
   <div id="cards">{cards}</div>
+  {modal_html}
 <script>
   function applyFilter(f) {{
     document.querySelectorAll('.filter').forEach(function(b) {{
@@ -351,8 +456,18 @@ def render(data: dict, journal_by_slug: dict, refresh_seconds: int | None = None
   var saved = sessionStorage.getItem('bgFilter');
   if (saved) applyFilter(saved);
 </script>
+{actions_script}
 {refresh_script}
 </body></html>"""
+
+
+def run_pipeline(cmd_args: list[str]) -> tuple[int, str]:
+    """Run one pipeline_queue.py command exactly as a gate button would,
+    mirroring telegram.py's run_pipeline — this is the only thing a dashboard
+    POST is allowed to execute, and only with a verb from GATE_ACTIONS."""
+    result = subprocess.run([str(PY_ABS), str(QUEUE_SCRIPT)] + cmd_args, cwd=REPO_ROOT,
+                             capture_output=True, text=True, timeout=60)
+    return result.returncode, (result.stdout + result.stderr).strip()
 
 
 def make_handler(interval: int):
@@ -369,9 +484,56 @@ def make_handler(interval: int):
                 return
             data = read_json(QUEUE)
             journal_by_slug = load_journal()
-            body = render(data, journal_by_slug, refresh_seconds=interval).encode("utf-8")
+            body = render(data, journal_by_slug, refresh_seconds=interval,
+                           interactive=True).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_POST(self) -> None:
+            """The dashboard's only write path: one gate verb against one
+            known slug, exactly as a Telegram button would run it.
+            `pipeline_queue.py`'s own state check is the real guard — this
+            just narrows what a page load can even attempt to send."""
+            if self.path != "/action":
+                self._json(404, {"ok": False, "output": "not found"})
+                return
+            length = int(self.headers.get("Content-Length", 0) or 0)
+            raw = self.rfile.read(length) if length else b""
+            try:
+                payload = json.loads(raw or b"{}")
+            except json.JSONDecodeError:
+                self._json(400, {"ok": False, "output": "malformed request"})
+                return
+
+            action = str(payload.get("action", ""))
+            slug = str(payload.get("slug", ""))
+            reason = payload.get("reason")
+            ideas = (read_json(QUEUE).get("ideas") or {})
+
+            if action not in GATE_ACTIONS:
+                self._json(400, {"ok": False, "output": f"unknown action {action!r}"})
+                return
+            if slug not in ideas:
+                self._json(404, {"ok": False, "output": f"unknown slug {slug!r}"})
+                return
+            needs_reason = GATE_ACTIONS[action]
+            if needs_reason and not (reason or "").strip():
+                self._json(400, {"ok": False, "output": "a reason is required"})
+                return
+
+            cmd = [action, slug]
+            if needs_reason:
+                cmd += ["--reason", reason.strip()]
+            code, output = run_pipeline(cmd)
+            self._json(200, {"ok": code == 0, "output": output})
+
+        def _json(self, status: int, payload: dict) -> None:
+            body = json.dumps(payload).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)

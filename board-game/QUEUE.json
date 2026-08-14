@@ -3,7 +3,7 @@
     "armillary": {
       "slug": "armillary",
       "title": "Armillary",
-      "state": "proposed",
+      "state": "approved",
       "repairs_used": 0,
       "created": "2026-08-13T10:12:04.748670+00:00",
       "log": [
@@ -36,6 +36,36 @@
           "from": "awaiting_owner",
           "to": "proposed",
           "note": "owner asked for a rules change: you can see the holes before dropping, defeat the purpose of luck here"
+        },
+        {
+          "at": "2026-08-13T16:32:22.024717+00:00",
+          "from": "proposed",
+          "to": "rules_ok",
+          "note": ""
+        },
+        {
+          "at": "2026-08-13T16:45:25.971298+00:00",
+          "from": "rules_ok",
+          "to": "briefed",
+          "note": ""
+        },
+        {
+          "at": "2026-08-13T17:07:14.234163+00:00",
+          "from": "briefed",
+          "to": "drafted",
+          "note": ""
+        },
+        {
+          "at": "2026-08-13T17:08:08.889908+00:00",
+          "from": "drafted",
+          "to": "awaiting_owner",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T01:13:27.748785+00:00",
+          "from": "awaiting_owner",
+          "to": "approved",
+          "note": "owner approved the draft; 0 renders frozen"
         }
       ],
       "rework_reason": "you can see the holes before dropping, defeat the purpose of luck here"
@@ -43,7 +73,7 @@
     "deep-claim": {
       "slug": "deep-claim",
       "title": "Deep Claim",
-      "state": "briefed",
+      "state": "killed",
       "repairs_used": 0,
       "created": "2026-08-13T11:30:09.967254+00:00",
       "log": [
@@ -55,6 +85,46 @@
         },
         {
           "at": "2026-08-13T11:42:11.450817+00:00",
+          "from": "rules_ok",
+          "to": "briefed",
+          "note": ""
+        },
+        {
+          "at": "2026-08-13T16:12:48.355033+00:00",
+          "from": "briefed",
+          "to": "drafted",
+          "note": ""
+        },
+        {
+          "at": "2026-08-13T16:13:42.851252+00:00",
+          "from": "drafted",
+          "to": "awaiting_owner",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T01:25:45.598170+00:00",
+          "from": "awaiting_owner",
+          "to": "killed",
+          "note": "The game rule sound so boring, and it seems like there is an optimal strategy for the first player to always win than can be easily figured out"
+        }
+      ],
+      "kill_reason": "The game rule sound so boring, and it seems like there is an optimal strategy for the first player to always win than can be easily figured out"
+    },
+    "millbind": {
+      "slug": "millbind",
+      "title": "Millbind",
+      "state": "briefed",
+      "repairs_used": 0,
+      "created": "2026-08-13T17:23:26.092499+00:00",
+      "log": [
+        {
+          "at": "2026-08-13T17:25:23.356374+00:00",
+          "from": "proposed",
+          "to": "rules_ok",
+          "note": ""
+        },
+        {
+          "at": "2026-08-14T01:22:08.424946+00:00",
           "from": "rules_ok",
           "to": "briefed",
           "note": ""

@@ -7,10 +7,15 @@
     python3 board-game/tools/telegram.py stuck       <slug>
     python3 board-game/tools/telegram.py heartbeat
     python3 board-game/tools/telegram.py watchdog --max-hours 28
+    python3 board-game/tools/telegram.py listen
 
-Every message carries the reply commands ready to paste. There is no webhook
-and no polling: the owner answers by running one line, which means this whole
-channel is a `curl` and a file, with nothing to keep alive.
+Every message carries the reply commands ready to paste. There is no webhook:
+the owner answers by running one line, which means this whole channel is a
+`curl` and a file, with nothing that has to be built to keep it alive. `poll`
+still runs once per pipeline step for that reason, but a button's reply
+textbox only opens once something reacts to the tap — run `listen` in the
+background (it long-polls, no server needed) if you want that to happen in
+real time instead of on the pipeline's own schedule.
 
 Without TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_DM the message is printed to stdout
 instead of being sent. That is a deliberate fallback rather than a silent
@@ -418,16 +423,54 @@ def handle_callback(token: str, chat: str, cq: dict, pending: dict) -> bool:
     return True
 
 
-def cmd_poll(args) -> int:
-    """One poll of Telegram for new owner replies — button taps and, for
-    reject/rework, the free-text reason that follows — run as pipeline_queue.py
-    commands. One pass per invocation, no long-lived process and no webhook,
-    matching the rest of this pipeline's one-action-then-stop shape; call this
-    from a loop step or a cron tick.
+def process_update(token: str, chat: str, update: dict, pending: dict) -> bool:
+    """Handle one getUpdates item — a button tap or a free-text message —
+    shared by `poll` (one pass) and `listen` (continuous). Returns whether it
+    was something this bot acts on, so callers can count `handled`.
 
     Still accepts a raw pasted command line too (`approve armillary`, or the
     full line a gate message prints) — the button is a shortcut, not a
     replacement for the paste-it-yourself path the pipeline started with."""
+    cq = update.get("callback_query")
+    if cq:
+        return handle_callback(token, chat, cq, pending)
+
+    msg = update.get("message")
+    if not msg or str(msg.get("chat", {}).get("id", "")) != chat:
+        return False
+    text = (msg.get("text") or "").strip()
+    if not text:
+        return False
+
+    reply_to = (msg.get("reply_to_message") or {}).get("message_id")
+    if reply_to is not None and str(reply_to) in pending:
+        entry = pending.pop(str(reply_to))
+        out = run_pipeline([entry["action"], entry["slug"], "--reason", text])
+        send(out or f"{entry['action']} {entry['slug']}: done", chat=chat)
+        return True
+
+    try:
+        tokens = shlex.split(text)
+    except ValueError:
+        tokens = text.split()
+    verb_idx = next((i for i, t in enumerate(tokens) if t in ALLOWED_VERBS), None)
+    if verb_idx is not None:
+        out = run_pipeline(tokens[verb_idx:])
+        send(out or f"{tokens[verb_idx]}: done", chat=chat)
+        return True
+    return False
+
+
+def cmd_poll(args) -> int:
+    """One poll of Telegram for new owner replies — button taps and, for
+    reject/rework, the free-text reason that follows — run as pipeline_queue.py
+    commands. One pass per invocation, called from a loop step or a cron tick.
+
+    This alone means a button tap can sit unanswered until the next `/bg`
+    step happens to run `poll`, which can be minutes away — the reply textbox
+    (Telegram's force_reply) only opens once `poll` reacts to the tap. Run
+    `listen` alongside this for an owner who wants that to happen within a
+    second or two instead."""
     token, chat = creds()
     if not (token and chat):
         print("telegram not configured; nothing to poll")
@@ -443,41 +486,45 @@ def cmd_poll(args) -> int:
     handled = 0
     for update in resp.get("result", []):
         offset = update["update_id"]
-
-        cq = update.get("callback_query")
-        if cq:
-            if handle_callback(token, chat, cq, pending):
-                handled += 1
-            continue
-
-        msg = update.get("message")
-        if not msg or str(msg.get("chat", {}).get("id", "")) != chat:
-            continue
-        text = (msg.get("text") or "").strip()
-        if not text:
-            continue
-
-        reply_to = (msg.get("reply_to_message") or {}).get("message_id")
-        if reply_to is not None and str(reply_to) in pending:
-            entry = pending.pop(str(reply_to))
-            out = run_pipeline([entry["action"], entry["slug"], "--reason", text])
-            send(out or f"{entry['action']} {entry['slug']}: done", chat=chat)
-            handled += 1
-            continue
-
-        try:
-            tokens = shlex.split(text)
-        except ValueError:
-            tokens = text.split()
-        verb_idx = next((i for i, t in enumerate(tokens) if t in ALLOWED_VERBS), None)
-        if verb_idx is not None:
-            out = run_pipeline(tokens[verb_idx:])
-            send(out or f"{tokens[verb_idx]}: done", chat=chat)
+        if process_update(token, chat, update, pending):
             handled += 1
 
     save_offset(offset)
     save_pending(pending)
     print(f"polled, {handled} update(s) handled")
+    return 0
+
+
+def cmd_listen(args) -> int:
+    """Long-poll Telegram forever so a button tap gets its reply textbox (or
+    its pipeline command) run within a second or two, instead of waiting on
+    the next `/bg` step's one-shot `poll`. Meant to be started once and left
+    running (e.g. `nohup ... telegram.py listen &`) alongside the pipeline
+    loop, not driven by it — Ctrl-C or a kill signal stops it cleanly."""
+    token, chat = creds()
+    if not (token and chat):
+        print("telegram not configured; nothing to listen for")
+        return 0
+
+    print("listening for Telegram replies (Ctrl-C to stop)...")
+    try:
+        while True:
+            offset = load_offset()
+            resp = api_call(token, "getUpdates",
+                             {"offset": str(offset + 1), "timeout": "25"})
+            if not resp.get("ok"):
+                print(f"getUpdates failed: {resp}")
+                continue
+
+            pending = load_pending()
+            for update in resp.get("result", []):
+                offset = update["update_id"]
+                if process_update(token, chat, update, pending):
+                    print(f"handled update {offset}")
+            save_offset(offset)
+            save_pending(pending)
+    except KeyboardInterrupt:
+        print("\nstopped")
     return 0
 
 
@@ -508,6 +555,7 @@ def main() -> int:
     p.add_argument("--max-hours", type=float, default=28.0)
     p.set_defaults(fn=cmd_watchdog)
     sub.add_parser("poll").set_defaults(fn=cmd_poll)
+    sub.add_parser("listen").set_defaults(fn=cmd_listen)
     p = sub.add_parser("disable")
     p.add_argument("slug")
     p.set_defaults(fn=cmd_disable)
