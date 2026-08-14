@@ -385,7 +385,8 @@ def make_handler(interval: int):
 def cmd_serve(port: int, interval: int, do_open: bool) -> int:
     httpd = http.server.HTTPServer(("127.0.0.1", port), make_handler(interval))
     url = f"http://127.0.0.1:{port}/"
-    print(f"serving {url} (refreshing every {interval}s) — Ctrl+C to stop")
+    refresh_note = f"refreshing every {interval}s" if interval else "no auto-refresh, reload manually"
+    print(f"serving {url} ({refresh_note}) — Ctrl+C to stop")
     if do_open:
         webbrowser.open(url)
     try:
@@ -402,8 +403,9 @@ def main() -> int:
     ap.add_argument("--serve", action="store_true",
                      help="serve a live, auto-refreshing page instead of writing a static file")
     ap.add_argument("--port", type=int, default=8420, help="serve: port to listen on")
-    ap.add_argument("--interval", type=int, default=5,
-                     help="serve: seconds between auto-refresh of the open tab")
+    ap.add_argument("--interval", type=int, default=0,
+                     help="serve: seconds between auto-refresh of the open tab "
+                          "(0 = no auto-refresh, reload manually)")
     args = ap.parse_args()
 
     if args.serve:
