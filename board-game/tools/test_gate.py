@@ -136,6 +136,37 @@ def gen_step():
         True, [],
     ),
     (
+        # A windowed disc turning over standing pegs. In the pose it is exported
+        # in, every peg sits centred in a window and the assembly is spotless —
+        # so no single-pose check can fault it. Turn the disc half an index step
+        # and every peg is buried. This is Armillary's defect in miniature, and
+        # it is the case that proves the gate looks at more than one pose.
+        "windowed_disc_jams_when_turned",
+        """import cadquery as cq
+import math
+RING_R, HOLES = 30.0, 6
+def gen_step():
+    asm = cq.Assembly()
+    mask = cq.Workplane("XY").circle(45).extrude(8)
+    for k in range(HOLES):
+        a = math.radians(k * 360.0 / HOLES)
+        mask = mask.cut(cq.Workplane("XY").circle(6).extrude(8).translate(
+            (RING_R * math.cos(a), RING_R * math.sin(a), 0)))
+    asm.add(mask, name="mask")
+    for k in range(HOLES):
+        a = math.radians(k * 360.0 / HOLES)
+        asm.add(cq.Workplane("XY").circle(4).extrude(17), name=f"peg_{k+1:02d}",
+                loc=cq.Location(cq.Vector(
+                    RING_R * math.cos(a), RING_R * math.sin(a), -5)))
+    return asm
+""",
+        [{"name": "mask", "qty": 1}, {"name": "peg", "qty": 6}],
+        False, ["motion", "clear at rest"],
+        [{"part": "mask", "kind": "rotation",
+          "axis_point": [0, 0, 0], "axis_direction": [0, 0, 1],
+          "range_deg": [0, 60], "steps": 6}],
+    ),
+    (
         # Graduated lesson: a blanket fillet over every edge direction makes
         # OCCT build spherical vertex blends that tessellate into phantom
         # slivers. It must fail on the source, not wait for the mesh.
@@ -152,11 +183,15 @@ def gen_step():
 ]
 
 
-def run_case(tmp: Path, name: str, source: str, bill: list) -> tuple[bool, list]:
+def run_case(tmp: Path, name: str, source: str, bill: list,
+             motions: list | None = None) -> tuple[bool, list]:
     home = tmp / name
     home.mkdir(parents=True)
     (home / "main.py").write_text(source, encoding="utf-8")
     (home / "bill.json").write_text(json.dumps({"components": bill}), encoding="utf-8")
+    if motions:
+        (home / "motion.json").write_text(json.dumps({"motions": motions}),
+                                          encoding="utf-8")
     python = str(PY) if PY.is_file() else sys.executable
     subprocess.run([python, str(GATE), str(home / "main.py"),
                     "--bill", str(home / "bill.json"), "--no-slice"],
@@ -169,8 +204,10 @@ def main() -> int:
     failures = []
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
-        for name, source, bill, expect_pass, needles in CASES:
-            passed, fails = run_case(tmp, name, source, bill)
+        for case in CASES:
+            name, source, bill, expect_pass, needles = case[:5]
+            motions = case[5] if len(case) > 5 else None
+            passed, fails = run_case(tmp, name, source, bill, motions)
             blob = " ".join(fails).lower()
             missing = [n for n in needles if n.lower() not in blob]
             if passed != expect_pass:

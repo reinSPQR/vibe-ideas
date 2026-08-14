@@ -42,6 +42,13 @@ round sees every problem at once, not one per cycle:
                 drawn overlapping — nothing errors, because nothing was ever
                 unioned. See interference.py for why this is measured as shared
                 volume rather than distance or vertex containment.
+                A part that MOVES is only as good as its worst position, and the
+                pose it was exported in is not evidence about any of the others,
+                so a project may declare its moving parts in `motion.json` and
+                the check sweeps each one through its stated range. What that
+                file declares is the axis and the range — design facts from the
+                brief — never which position is the bad one; finding that is the
+                job being automated.
   7. slice      OrcaSlicer, once per DISTINCT shape rather than per instance —
                 48 identical tiles are one slice, not 48. Skipped silently
                 when the slicer env vars are unset.
@@ -518,12 +525,13 @@ def main() -> int:
     # a gate that cannot reach a verdict is worse than one that reports it could
     # not measure something.
     try:
-        from interference import check_interference
+        from interference import check_interference, load_motions
 
         interference = check_interference(
             assembled,
             dict(stls),
             expected_components=expected_total,
+            motions=load_motions(home / "motion.json"),
         )
         fails += interference["findings"]
         report["interference"] = interference

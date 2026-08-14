@@ -110,6 +110,150 @@ CASES = [
 
 
 # ---------------------------------------------------------------------------
+# Motion: the defect a single pose cannot see
+# ---------------------------------------------------------------------------
+
+def build_indexing_mask(hole_count: int = 6, ring_r: float = 30.0):
+    """Armillary in miniature: a windowed disc turning over standing pegs.
+
+    At rest every peg sits centred in a window with 2mm of clearance, so the
+    assembly is clean in the pose it was exported in — a static check measures
+    exactly zero and reports a pass. Turn the disc half an index step and every
+    peg is under solid material.
+
+    This is the real Armillary defect stripped to its bones: mask_disc_a carries
+    six windows over ten wells, so four knobs are always covered, and at 18deg
+    all ten are. It is also the shape of every indexing lid, dial, shutter and
+    turntable a game can have.
+    """
+    import math
+
+    mask = cq.Workplane("XY").circle(45).extrude(8)
+    for k in range(hole_count):
+        angle = math.radians(k * 360.0 / hole_count)
+        mask = mask.cut(
+            cq.Workplane("XY").circle(6).extrude(8).translate(
+                (ring_r * math.cos(angle), ring_r * math.sin(angle), 0)))
+
+    shapes = {"mask": mask}
+    for k in range(hole_count):
+        angle = math.radians(k * 360.0 / hole_count)
+        shapes[f"peg_{k + 1:02d}"] = (
+            cq.Workplane("XY").circle(4).extrude(17).translate(
+                (ring_r * math.cos(angle), ring_r * math.sin(angle), -5)))
+
+    asm = cq.Assembly()
+    for name, shape in shapes.items():
+        asm.add(shape, name=name)
+
+    home = Path(tempfile.mkdtemp())
+    assembled = home / "indexing_mask.stl"
+    cq.exporters.export(asm.toCompound(), str(assembled))
+
+    # Per-part exports, in their own local frames exactly as cadcode writes
+    # them — used only so findings carry real names.
+    parts_dir = home / "parts"
+    parts_dir.mkdir()
+    part_stls = {}
+    for name, shape in shapes.items():
+        path = parts_dir / f"{name}.stl"
+        cq.exporters.export(shape.val() if hasattr(shape, "val") else shape, str(path))
+        part_stls[name] = path
+
+    return assembled, part_stls
+
+
+def case_grazing_slab_stays_bounded():
+    """A wide, microns-thin shared box must not cost more than a fat one.
+
+    Two big flats tilted a hair apart overlap in a box hundreds of mm wide and
+    almost nothing thick. Sizing sample counts per axis and flooring each at 2
+    made the product explode — measured at 16.7GB resident and a killed process
+    the first time Armillary's discs were swept, because rotation produces these
+    boxes constantly while exactly-coincident planes (the static case) do not.
+
+    Asserted here as a time and memory bound, since a correct-but-unaffordable
+    answer is the failure mode being guarded against.
+    """
+    import time
+
+    asm = cq.Assembly()
+    asm.add(cq.Workplane("XY").box(200, 200, 6), name="lower")
+    asm.add(cq.Workplane("XY").box(200, 200, 6).rotate((0, 0, 0), (1, 0, 0), 0.02),
+            name="upper", loc=cq.Location(cq.Vector(0, 0, 6)))
+    path = export(asm, "grazing_slab")
+
+    start = time.time()
+    report = check_interference(path, expected_components=2)
+    elapsed = time.time() - start
+    if elapsed > 20.0:
+        return (f"grazing_slab_stays_bounded: took {elapsed:.1f}s — the sample "
+                f"budget is not being enforced on the product of the axes")
+    return None
+
+
+def case_rest_pose_is_clean():
+    """The premise of the motion case: at rest this assembly is spotless.
+
+    If this ever starts failing, the motion case below proves nothing — it would
+    be catching a defect the static pass already sees.
+    """
+    assembled, part_stls = build_indexing_mask()
+    report = check_interference(assembled, part_stls, expected_components=7)
+    if report["inconclusive"]:
+        return f"rest_pose_is_clean: inconclusive: {report['inconclusive']}"
+    if not report["pass"]:
+        return (f"rest_pose_is_clean: expected a clean rest pose, got "
+                f"{report['findings']}")
+    return None
+
+
+def case_rotation_jams_every_peg():
+    """Turn the disc and every peg is buried: pi * 4^2 * 8 = 402.1mm3 each.
+
+    The declaration is the axis and the range, which is a design fact — the
+    check does the sweeping. Nobody has to predict WHICH angle jams.
+    """
+    import math
+
+    assembled, part_stls = build_indexing_mask()
+    motions = [{
+        "part": "mask",
+        "kind": "rotation",
+        "axis_point": [0.0, 0.0, 0.0],
+        "axis_direction": [0.0, 0.0, 1.0],
+        "range_deg": [0.0, 60.0],
+        "steps": 6,
+    }]
+    report = check_interference(assembled, part_stls, expected_components=7,
+                               motions=motions)
+
+    if not report["findings"]:
+        return ("rotation_jams_every_peg: the sweep found nothing — a disc that "
+                "cannot turn without burying all six pegs was reported clean")
+
+    worst = max((m["volume_mm3"] for m in report.get("swept_overlaps", [])),
+                default=0.0)
+    expected = math.pi * 16.0 * 8.0
+    if worst == 0.0:
+        return "rotation_jams_every_peg: no swept overlap volume was reported"
+    error = abs(worst - expected) / expected * 100.0
+    if error > TOLERANCE_PCT:
+        return (f"rotation_jams_every_peg: worst buried volume {worst}mm3 vs "
+                f"arithmetic {expected:.2f}mm3 ({error:.1f}% off)")
+
+    jammed = {m["b"] for m in report.get("swept_overlaps", [])
+              if m["volume_mm3"] > report["threshold_mm3"]}
+    if len(jammed) != 6:
+        return (f"rotation_jams_every_peg: expected all 6 pegs to jam, "
+                f"got {len(jammed)}: {sorted(jammed)}")
+
+    print(f"  rotation_jams_every_peg: {worst}mm3 vs {expected:.2f}mm3 expected "
+          f"({error:.1f}% off), 6 pegs jammed")
+    return None
+
+
+# ---------------------------------------------------------------------------
 # The known limitation, asserted rather than left to be discovered
 # ---------------------------------------------------------------------------
 
@@ -188,18 +332,25 @@ def main() -> int:
         if failure:
             failures.append(failure)
 
-    try:
-        limitation = case_coincident_faces_is_inconclusive()
-    except Exception as exc:
-        limitation = f"coincident_faces: raised {type(exc).__name__}: {exc}"
-    if limitation:
-        failures.append(limitation)
+    extra = [
+        ("coincident_faces_is_inconclusive", case_coincident_faces_is_inconclusive),
+        ("grazing_slab_stays_bounded", case_grazing_slab_stays_bounded),
+        ("rest_pose_is_clean", case_rest_pose_is_clean),
+        ("rotation_jams_every_peg", case_rotation_jams_every_peg),
+    ]
+    for name, factory in extra:
+        try:
+            failure = factory()
+        except Exception as exc:
+            failure = f"{name}: raised {type(exc).__name__}: {exc}"
+        if failure:
+            failures.append(failure)
 
     if failures:
         for line in failures:
             print(f"FAIL {line}")
         return 1
-    print(f"ALL PASS ({len(CASES) + 1} cases)")
+    print(f"ALL PASS ({len(CASES) + len(extra)} cases)")
     return 0
 
 

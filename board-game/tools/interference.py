@@ -51,6 +51,33 @@ HOW
 2. narrow phase  Sample the box where the two AABBs overlap and count the
                  points interior to BOTH meshes, by ray-parity. Volume is
                  (points in both / points sampled) * box volume.
+
+3. motion        Steps 1-2 judge ONE pose: the arrangement the assembly happened
+                 to be exported in. That pose is not evidence about any other,
+                 and a builder naturally exports a legal one. Armillary is the
+                 worked example: turn mask_disc_a half an index step and all ten
+                 tiles jam instead of four, and no still frame shows it.
+
+                 So a project may declare its moving parts in `motion.json`, and
+                 each is swept through its stated range against everything else:
+
+                   {"motions": [
+                     {"part": "mask_disc_a", "kind": "rotation",
+                      "axis_point": [0,0,0], "axis_direction": [0,0,1],
+                      "range_deg": [0,360], "steps": 20}]}
+
+                 `kind` is "rotation" or "linear" (which takes a `vector`). What
+                 is declared is the AXIS and the RANGE — design facts, written
+                 in the brief before any geometry existed. It never declares
+                 which position is the bad one: predicting that is the job being
+                 automated, and a builder who could predict it would have fixed
+                 it instead. Findings say whether the pair was clean at rest,
+                 because "clean at rest, buried at 30deg" is exactly the finding
+                 a single pose cannot produce.
+
+                 A project that declares nothing is swept nowhere. Nothing here
+                 can tell that a game HAS moving parts — that has to come from
+                 the brief, and does not yet.
 """
 from __future__ import annotations
 
@@ -300,17 +327,41 @@ def _points_inside(points, mesh, _cache: dict = {}):
     return index.contains(points)
 
 
-def _overlap_box(a, b):
+def _transform_points(points, matrix):
     import numpy as np
 
-    lo = np.maximum(a.bounds[0], b.bounds[0])
-    hi = np.minimum(a.bounds[1], b.bounds[1])
+    if matrix is None:
+        return points
+    return points @ np.asarray(matrix)[:3, :3].T + np.asarray(matrix)[:3, 3]
+
+
+def _transformed_bounds(mesh, matrix):
+    """Exact AABB of the mesh after the transform, from its own vertices.
+
+    Transforming the eight corners of the existing AABB instead would be
+    conservative but loose, and a looser box only wastes sample points.
+    """
+    import numpy as np
+
+    if matrix is None:
+        return mesh.bounds
+    moved = _transform_points(np.asarray(mesh.vertices, dtype=float), matrix)
+    return np.array([moved.min(axis=0), moved.max(axis=0)])
+
+
+def _overlap_box(a, b, a_matrix=None):
+    import numpy as np
+
+    a_bounds = _transformed_bounds(a, a_matrix)
+    lo = np.maximum(a_bounds[0], b.bounds[0])
+    hi = np.minimum(a_bounds[1], b.bounds[1])
     if np.any(hi <= lo):
         return None, None
     return lo, hi
 
 
-def interference_volume_mm3(a, b, threshold_mm3: float = INTERFERENCE_VOLUME_MM3) -> dict:
+def interference_volume_mm3(a, b, threshold_mm3: float = INTERFERENCE_VOLUME_MM3,
+                            a_matrix=None) -> dict:
     """Volume the two solids both claim, by sampling the box they share.
 
     Resolution is derived from the threshold, not fixed: cells are sized so a
@@ -322,13 +373,25 @@ def interference_volume_mm3(a, b, threshold_mm3: float = INTERFERENCE_VOLUME_MM3
     """
     import numpy as np
 
-    lo, hi = _overlap_box(a, b)
+    lo, hi = _overlap_box(a, b, a_matrix)
     if lo is None:
         return {"volume_mm3": 0.0, "sampled": 0, "resolution_mm3": None,
                 "resolution_capped": False, "note": "no AABB overlap"}
 
     extents = hi - lo
     box_volume = float(np.prod(extents))
+
+    # The shared volume cannot exceed the box that contains it, so a box smaller
+    # than the threshold can never produce a finding and is not worth sampling.
+    # This is also what makes near-degenerate boxes cheap: two flats that meet
+    # at a grazing angle leave a slab microns thick and hundreds of mm wide,
+    # which the static pass never sees (exactly coincident planes give a
+    # zero-extent box, caught above) but a rotation sweep produces constantly.
+    if box_volume <= threshold_mm3:
+        return {"volume_mm3": 0.0, "sampled": 0,
+                "resolution_mm3": None, "resolution_capped": False,
+                "note": "shared box smaller than the threshold"}
+
     target_cell = threshold_mm3 / CELLS_PER_THRESHOLD_VOLUME
     wanted = box_volume / target_cell if target_cell > 0 else MIN_GRID_POINTS
     total = int(min(MAX_GRID_POINTS, max(MIN_GRID_POINTS, wanted)))
@@ -339,11 +402,36 @@ def interference_volume_mm3(a, b, threshold_mm3: float = INTERFERENCE_VOLUME_MM3
     scale = (total / box_volume) ** (1.0 / 3.0) if box_volume > 0 else 1.0
     counts = [max(2, int(round(e * scale))) for e in extents]
 
+    # Then enforce the budget on the PRODUCT, which is what actually costs.
+    # Sizing each axis independently and flooring it at 2 lets an anisotropic
+    # box run away: 215 x 215 x 1e-9 asks for billions of points from a budget
+    # of 512. Measured before this clamp existed: 16.7GB resident and the
+    # process killed, on Armillary's own discs the moment they were swept.
+    # Shrink proportionally first — halving the longest axis to fix a 3%
+    # overshoot would throw away half the resolution for nothing — and keep the
+    # halving loop only as the backstop for boxes so anisotropic that the
+    # proportional pass cannot get under the budget.
+    product = counts[0] * counts[1] * counts[2]
+    if product > total:
+        shrink = (total / product) ** (1.0 / 3.0)
+        counts = [max(2, int(count * shrink)) for count in counts]
+    while counts[0] * counts[1] * counts[2] > total:
+        axis = max(range(3), key=lambda i: counts[i])
+        if counts[axis] <= 2:
+            break
+        counts[axis] = max(2, counts[axis] // 2)
+
     axes = [lo[i] + (np.arange(counts[i]) + 0.5) * (extents[i] / counts[i]) for i in range(3)]
     grid = np.stack(np.meshgrid(*axes, indexing="ij"), axis=-1).reshape(-1, 3)
     cell_volume = box_volume / len(grid)
 
-    in_a = _points_inside(grid, a)
+    # A moving part is never re-meshed. Asking "is this world point inside the
+    # MOVED solid" is the same question as "is the point pulled back through
+    # the motion inside the solid where it was built", so the sweep maps the
+    # sample points instead — which keeps A's spatial index built once and
+    # valid at every step, rather than rebuilding it per angle.
+    probe = grid if a_matrix is None else _transform_points(grid, np.linalg.inv(a_matrix))
+    in_a = _points_inside(probe, a)
     if not in_a.any():
         return {"volume_mm3": 0.0, "sampled": int(len(grid)),
                 "resolution_mm3": round(cell_volume, 4),
@@ -358,6 +446,122 @@ def interference_volume_mm3(a, b, threshold_mm3: float = INTERFERENCE_VOLUME_MM3
 
 
 # ---------------------------------------------------------------------------
+# Motion
+# ---------------------------------------------------------------------------
+
+def _motion_steps(motion: dict) -> list[tuple[str, object]]:
+    """(label, 4x4 matrix) for each sampled position along a declared motion.
+
+    What a motion declares is the AXIS and the RANGE — design facts, stated in
+    the brief long before any geometry exists ("the disc turns in 36deg index
+    steps"). It deliberately does NOT declare which position is the bad one:
+    predicting that is the whole job being automated, and a builder who could
+    predict it would have fixed it instead.
+    """
+    import numpy as np
+    import trimesh
+
+    kind = str(motion.get("kind", "rotation")).lower()
+    steps = int(motion.get("steps", 12))
+    if steps < 1:
+        raise ValueError("a motion needs at least one step")
+
+    if kind == "rotation":
+        point = np.asarray(motion.get("axis_point", [0.0, 0.0, 0.0]), dtype=float)
+        direction = np.asarray(motion.get("axis_direction", [0.0, 0.0, 1.0]), dtype=float)
+        if np.linalg.norm(direction) <= 1e-12:
+            raise ValueError("axis_direction must be non-zero")
+        start, end = [float(v) for v in motion.get("range_deg", [0.0, 360.0])]
+        out = []
+        for index in range(steps + 1):
+            angle = start + (end - start) * (index / steps)
+            matrix = trimesh.transformations.rotation_matrix(
+                np.deg2rad(angle), direction, point)
+            out.append((f"{angle:.1f}deg", matrix))
+        return out
+
+    if kind == "linear":
+        vector = np.asarray(motion.get("vector", [0.0, 0.0, 0.0]), dtype=float)
+        out = []
+        for index in range(steps + 1):
+            fraction = index / steps
+            matrix = np.eye(4)
+            matrix[:3, 3] = vector * fraction
+            out.append((f"{fraction * float(np.linalg.norm(vector)):.1f}mm", matrix))
+        return out
+
+    raise ValueError(f"unknown motion kind: {kind!r}")
+
+
+def load_motions(path: Path) -> list[dict]:
+    """Read a project's motion.json. Absent is not an error — most parts of most
+    games do not move — but see check_interference for what silence costs."""
+    if not path.is_file():
+        return []
+    data = json.loads(path.read_text(encoding="utf-8"))
+    motions = data.get("motions", data) if isinstance(data, dict) else data
+    return [m for m in motions if isinstance(m, dict)]
+
+
+def _resolve_part(names: list[str], wanted: str) -> int | None:
+    if wanted in names:
+        return names.index(wanted)
+    prefixed = [i for i, n in enumerate(names) if n.split("#")[0] == wanted]
+    return prefixed[0] if len(prefixed) == 1 else None
+
+
+def sweep_motion(components: list, names: list[str], motion: dict,
+                 threshold_mm3: float = INTERFERENCE_VOLUME_MM3,
+                 margin_mm: float = BROAD_PHASE_MARGIN_MM) -> list[dict]:
+    """Move one part through its declared range; measure it against the rest.
+
+    Reports the WORST position per pair, and whether the pair was clean at the
+    first sampled position — because "clean at rest, buried at 30deg" is the
+    finding the static pass structurally cannot produce, and saying so is what
+    stops it being read as a duplicate of one.
+    """
+    moving = _resolve_part(names, str(motion.get("part", "")))
+    if moving is None:
+        raise KeyError(f"motion names part {motion.get('part')!r}, which is not "
+                       f"one of the placed components")
+
+    steps = _motion_steps(motion)
+    worst: dict[int, dict] = {}
+
+    for position, (label, matrix) in enumerate(steps):
+        bounds = _transformed_bounds(components[moving], matrix)
+        for other in range(len(components)):
+            if other == moving:
+                continue
+            if not components[other].is_watertight or not components[moving].is_watertight:
+                continue
+            other_bounds = components[other].bounds
+            if any(bounds[0][axis] - margin_mm > other_bounds[1][axis]
+                   or other_bounds[0][axis] - margin_mm > bounds[1][axis]
+                   for axis in range(3)):
+                continue
+            result = interference_volume_mm3(components[moving], components[other],
+                                             threshold_mm3, a_matrix=matrix)
+            volume = result["volume_mm3"]
+            record = worst.get(other)
+            if record is None:
+                record = {"a": names[moving], "b": names[other],
+                          "volume_mm3": 0.0, "at": None,
+                          "clear_at_first_position": True,
+                          "resolution_mm3": result["resolution_mm3"],
+                          "resolution_capped": result["resolution_capped"]}
+                worst[other] = record
+            if position == 0 and volume > threshold_mm3:
+                record["clear_at_first_position"] = False
+            if volume > record["volume_mm3"]:
+                record.update(volume_mm3=volume, at=label,
+                              resolution_mm3=result["resolution_mm3"],
+                              resolution_capped=result["resolution_capped"])
+
+    return [r for r in worst.values() if r["volume_mm3"] > 0.0]
+
+
+# ---------------------------------------------------------------------------
 # Driver
 # ---------------------------------------------------------------------------
 
@@ -367,6 +571,7 @@ def check_interference(
     expected_components: int | None = None,
     threshold_mm3: float = INTERFERENCE_VOLUME_MM3,
     margin_mm: float = BROAD_PHASE_MARGIN_MM,
+    motions: list[dict] | None = None,
 ) -> dict:
     """Every placed pair, measured. Returns a report; the caller decides.
 
@@ -428,6 +633,30 @@ def check_interference(
         + (", lower bound" if m["resolution_capped"] else "") + ")"
         for m in measured if m["volume_mm3"] > threshold_mm3
     ]
+
+    # Declared motions. A part that moves is only as good as its worst
+    # position, and the pose it happened to be exported in is not evidence
+    # about any of the others.
+    swept: list[dict] = []
+    report["motions_declared"] = len(motions or [])
+    for motion in (motions or []):
+        try:
+            swept.extend(sweep_motion(components, names, motion, threshold_mm3, margin_mm))
+        except Exception as exc:
+            report["inconclusive"].append(
+                f"motion {motion.get('part', '?')}: not swept: {type(exc).__name__}: {exc}")
+    swept.sort(key=lambda m: -m["volume_mm3"])
+    report["swept_overlaps"] = swept
+    report["findings"] += [
+        f"motion:{m['a']} x {m['b']}: {m['volume_mm3']}mm3 of shared volume at "
+        f"{m['at']}"
+        + (" (clear at rest — no single pose could have caught this)"
+           if m["clear_at_first_position"] else "")
+        + f" (threshold {threshold_mm3}mm3, resolution {m['resolution_mm3']}mm3"
+        + (", lower bound" if m["resolution_capped"] else "") + ")"
+        for m in swept if m["volume_mm3"] > threshold_mm3
+    ]
+
     report["pass"] = not report["findings"]
     return report
 
@@ -439,6 +668,8 @@ def main() -> int:
                     help="directory of per-part STLs, used only to name findings")
     ap.add_argument("--expected-components", type=int)
     ap.add_argument("--threshold-mm3", type=float, default=INTERFERENCE_VOLUME_MM3)
+    ap.add_argument("--motions", type=Path,
+                    help="motion.json declaring which parts move, and how")
     ap.add_argument("--json-out", type=Path)
     args = ap.parse_args()
 
@@ -450,6 +681,7 @@ def main() -> int:
         args.assembled, part_stls,
         expected_components=args.expected_components,
         threshold_mm3=args.threshold_mm3,
+        motions=load_motions(args.motions) if args.motions else None,
     )
     text = json.dumps(report, indent=2)
     if args.json_out:
@@ -457,13 +689,19 @@ def main() -> int:
 
     print(f"{report['placed_components']} placed components, "
           f"{report['pairs_tested']}/{report['pairs_total']} pairs tested "
-          f"({report['pairs_pruned']} pruned by AABB)")
+          f"({report['pairs_pruned']} pruned by AABB), "
+          f"{report.get('motions_declared', 0)} motion(s) declared")
     for note in report["inconclusive"]:
         print(f"  INCONCLUSIVE: {note}")
     for m in report.get("measured_overlaps", []):
         mark = "FAIL" if m["volume_mm3"] > report["threshold_mm3"] else "noise"
-        print(f"  [{mark}] {m['a']} x {m['b']}: {m['volume_mm3']}mm3 "
+        print(f"  [{mark}] static  {m['a']} x {m['b']}: {m['volume_mm3']}mm3 "
               f"(resolution {m['resolution_mm3']}mm3)")
+    for m in report.get("swept_overlaps", []):
+        mark = "FAIL" if m["volume_mm3"] > report["threshold_mm3"] else "noise"
+        rest = " CLEAR AT REST" if m["clear_at_first_position"] else ""
+        print(f"  [{mark}] motion  {m['a']} x {m['b']}: {m['volume_mm3']}mm3 "
+              f"at {m['at']}{rest} (resolution {m['resolution_mm3']}mm3)")
     print("INTERFERENCE PASS" if report.get("pass") else "INTERFERENCE FAIL")
     return 0 if report.get("pass") else 1
 
