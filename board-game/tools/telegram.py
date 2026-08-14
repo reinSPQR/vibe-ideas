@@ -45,6 +45,7 @@ PY = ".venv/bin/python"
 Q = "board-game/tools/pipeline_queue.py"
 PY_ABS = REPO_ROOT / ".venv" / "bin" / "python"
 QUEUE_SCRIPT = REPO_ROOT / "board-game" / "tools" / "pipeline_queue.py"
+PUBLISH_SCRIPT = REPO_ROOT / "board-game" / "tools" / "publish.py"
 
 # The four gate-reply verbs a Telegram message ever asks the owner to run,
 # plus `amend` (arbitration's one reply). Deliberately not the full
@@ -52,6 +53,18 @@ QUEUE_SCRIPT = REPO_ROOT / "board-game" / "tools" / "pipeline_queue.py"
 # itself offered, button or pasted text.
 ALLOWED_VERBS = {"approve", "reject", "rework", "ship", "amend"}
 NEEDS_REASON = {"reject", "rework"}
+# `publish` is the one verb that is not a queue transition: it runs publish.py,
+# which imports the shipped game into Panda Social as a draft. It is offered
+# only AFTER a ship succeeds — shipping is the decision, publishing is the
+# consequence, and keeping them two taps means a ship can still be recorded on
+# a machine where publishing is not configured.
+PUBLISH_VERB = "publish"
+REPLY_VERBS = ALLOWED_VERBS | {PUBLISH_VERB}
+# Publishing uploads the whole project folder to the CDN, so it is minutes, not
+# seconds. `poll`/`listen` block for that whole time — acceptable because it
+# happens once per game, and a job queue for one upload would be its own thing
+# to keep alive.
+PUBLISH_TIMEOUT = 1800
 
 
 def load_env() -> None:
@@ -368,13 +381,32 @@ def save_pending(pending: dict) -> None:
 
 
 def run_pipeline(cmd_args: list[str]) -> str:
-    """Run one pipeline_queue.py command exactly as the owner would paste it,
-    and return its combined output — this is the only thing `poll` is allowed
-    to execute, and only with a verb from ALLOWED_VERBS."""
-    result = subprocess.run([str(PY_ABS), str(QUEUE_SCRIPT)] + cmd_args,
-                             cwd=REPO_ROOT, capture_output=True, text=True,
-                             timeout=60)
+    """Run one owner command exactly as they would paste it, and return its
+    combined output. Two scripts are reachable and no others: pipeline_queue.py
+    for a state transition, publish.py for `publish <slug>` — which is why the
+    verb is checked against REPLY_VERBS before anything gets here."""
+    verb, rest = cmd_args[0], cmd_args[1:]
+    if verb == PUBLISH_VERB:
+        cmd, timeout = [str(PY_ABS), str(PUBLISH_SCRIPT)] + rest, PUBLISH_TIMEOUT
+    else:
+        cmd, timeout = [str(PY_ABS), str(QUEUE_SCRIPT)] + cmd_args, 60
+    try:
+        result = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True,
+                                text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return f"{verb}: timed out after {timeout}s — check the terminal"
     return (result.stdout + result.stderr).strip()
+
+
+def offer_publish(chat: str, slug: str, out: str) -> None:
+    """After a ship lands, hand over the one button that carries it out of the
+    repo. Silent when the ship did not actually happen, so a refused transition
+    never gets a publish button anyway."""
+    if "SHIPPED" not in out.upper():
+        return
+    send(f"{slug} is shipped. Put it on Panda Social as a draft?",
+         chat=chat,
+         buttons=[[{"text": "📦 Publish", "callback_data": f"{PUBLISH_VERB}:{slug}"}]])
 
 
 def send_reply_prompt(token: str, chat: str, action: str, slug: str) -> int | None:
@@ -395,7 +427,7 @@ def handle_callback(token: str, chat: str, cq: dict, pending: dict) -> bool:
     msg_id = (cq.get("message") or {}).get("message_id")
     action, _, slug = (cq.get("data") or "").partition(":")
 
-    if action not in ALLOWED_VERBS or not slug:
+    if action not in REPLY_VERBS or not slug:
         api_call(token, "answerCallbackQuery",
                  {"callback_query_id": cq_id, "text": "unrecognized button"})
         return False
@@ -416,10 +448,21 @@ def handle_callback(token: str, chat: str, cq: dict, pending: dict) -> bool:
                  {"callback_query_id": cq_id, "text": "reply with your reason below"})
         return True
 
+    if action == PUBLISH_VERB:
+        # Telegram drops a callback that is not answered within seconds, and
+        # this one runs for minutes — so answer first, then upload.
+        api_call(token, "answerCallbackQuery",
+                 {"callback_query_id": cq_id,
+                  "text": "publishing — this takes a few minutes"})
+        send(run_pipeline([PUBLISH_VERB, slug]) or f"published {slug}", chat=chat)
+        return True
+
     out = run_pipeline([action, slug])
     api_call(token, "answerCallbackQuery",
              {"callback_query_id": cq_id, "text": (out or action)[:200]})
     send(out or f"{action} {slug}: done", chat=chat)
+    if action == "ship":
+        offer_publish(chat, slug, out)
     return True
 
 
@@ -453,10 +496,12 @@ def process_update(token: str, chat: str, update: dict, pending: dict) -> bool:
         tokens = shlex.split(text)
     except ValueError:
         tokens = text.split()
-    verb_idx = next((i for i, t in enumerate(tokens) if t in ALLOWED_VERBS), None)
+    verb_idx = next((i for i, t in enumerate(tokens) if t in REPLY_VERBS), None)
     if verb_idx is not None:
         out = run_pipeline(tokens[verb_idx:])
         send(out or f"{tokens[verb_idx]}: done", chat=chat)
+        if tokens[verb_idx] == "ship" and len(tokens) > verb_idx + 1:
+            offer_publish(chat, tokens[verb_idx + 1], out)
         return True
     return False
 

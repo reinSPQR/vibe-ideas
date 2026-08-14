@@ -456,6 +456,9 @@ def cmd_ship(args) -> int:
         drop_claim(item)
         log(item, frm, "shipped", "owner approved", by="owner", kind="owner")
     print(f"{args.slug}: SHIPPED")
+    # Shipping is a decision, not a publication. Say where the decision goes
+    # next so a shipped game does not quietly sit in the repo forever.
+    print(f"  next: .venv/bin/python board-game/tools/publish.py {args.slug}")
     return 0
 
 

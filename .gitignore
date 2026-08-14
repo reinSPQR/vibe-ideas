@@ -11,5 +11,7 @@ board-game/QUEUE.json.tmp.*
 board-game/.telegram_offset
 board-game/.telegram_pending.json
 board-game/.telegram_messages.json
+board-game/tools/bin/
+board-game/.publish-*
 
 **/.DS_Store

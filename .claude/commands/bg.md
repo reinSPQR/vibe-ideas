@@ -223,6 +223,35 @@ A rejection reason lands in `board-game/TASTE.md` and is read by every future
 ideation. It is the only signal in this pipeline that does not come from a
 model, which is why it outranks everything an agent has learned on its own.
 
+## After the ship
+
+`ship` records the decision; it does not publish anything. A ship that lands is
+answered with a **📦 Publish** button in Telegram — `poll`/`listen` run it the
+same way they run the gate verbs — and the same thing is one command here,
+safe to re-run:
+
+```bash
+.venv/bin/python board-game/tools/publish.py <slug>            # or --all
+.venv/bin/python board-game/tools/publish.py <slug> --dry-run  # check, write nothing
+```
+
+It refuses anything whose state is not `shipped` or whose `gate.json` does not
+pass, then imports the project folder into Panda Social as a **draft** design —
+private, with its CDN snapshot and viewer files — and Telegrams you the id.
+Flipping draft→public stays yours, in the app. The binary it drives is built
+once per machine with `board-game/tools/publishdesign/build.sh`.
+
+The rules ride along in three places: `RULES.md` written into the published
+folder (complete), the story blocks on the product page (a walkthrough, capped
+by the FE contract), and the description. Changing the rules of a game that is
+already up does NOT mean publishing again — that would fork it into a second
+design:
+
+```bash
+.venv/bin/python board-game/tools/publish.py <slug> --page         # rules + specs only
+.venv/bin/python board-game/tools/publish.py <slug> --new-version  # files again, as v2
+```
+
 ## Narrate it
 
 `pipeline_queue.py` already narrates every state change to the owner's journal
