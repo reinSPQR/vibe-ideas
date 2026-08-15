@@ -282,11 +282,24 @@ def cmd_gate2(args) -> int:
     sliced = [v for v in (gate.get("slice") or {}).values() if v.get("print_min")]
     hours = sum(v["print_min"] for v in sliced) / 60.0 if sliced else None
 
+    # A pass that could not measure something is not a clean pass, and the
+    # owner has to see that BEFORE tapping Ship rather than in the refusal
+    # afterwards. The button cannot carry a reason, so the command is spelled
+    # out to paste.
+    unmeasured = gate.get("unmeasured") or []
+    caveat = ""
+    if unmeasured:
+        caveat = ("\n\nNOT MEASURED — the gate could not reach a verdict on:\n"
+                  + "\n".join(f"  • {note}" for note in unmeasured)
+                  + f"\nShipping needs you to accept that explicitly:\n"
+                    f"  ship {slug} --accept-unmeasured \"why this is fine\"")
+
     header = f"BOARD GAME — ship it?\n{idea.get('title', slug)} ({slug})"
     body = (f"GATE PASS · {parts} pieces, {shapes} distinct shapes"
             + (f" · ~{hours:.1f}h of printing\n" if hours else "\n")
             + "\n".join(verdicts)
-            + f"\n\nFiles: board-game/ideas/{slug}/project/")
+            + f"\n\nFiles: board-game/ideas/{slug}/project/"
+            + caveat)
     buttons = [[
         {"text": "🚀 Ship", "callback_data": f"ship:{slug}"},
         {"text": "❌ Reject", "callback_data": f"reject:{slug}"},

@@ -153,6 +153,49 @@ def check_no_stdlib_shadowing() -> list:
             f"this directory — rename it" for name in sorted(clashes)]
 
 
+def check_graduation_checker_bites() -> list:
+    """The graduation checker's own sentinel.
+
+    A checker that cannot fail is indistinguishable from one that works, right
+    up to the day something breaks and it prints ALL PASS anyway. So: one claim
+    that is true, and one for each way a claim can be false, run against the
+    real tree through a substituted lessons file.
+    """
+    import tempfile
+
+    import graduation_check as gc
+
+    filler = " " + "x" * 60  # lessons.md only reads lines over 40 chars
+    good = "- [GRADUATED -> blocks.shared_positions]" + filler
+    false_claims = [
+        ("missing_symbol", "- [GRADUATED -> gate.no_such_function]" + filler),
+        ("unknown_module", "- [GRADUATED -> nowhere.MIN_RELIEF_MM]" + filler),
+        ("absent_literal", '- [GRADUATED -> gate:"no-such-lint-rule"]' + filler),
+        ("prose_not_target", "- [GRADUATED -> gate.py lint]" + filler),
+    ]
+
+    findings = []
+    original = gc.LESSONS
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "lessons.md"
+        try:
+            gc.LESSONS = path
+            path.write_text(good + "\n", encoding="utf-8")
+            broken, checked, _ = gc.verify()
+            if broken or checked != 1:
+                findings.append(f"graduation/landed_claim: a graduation that IS in "
+                                f"the tree was reported broken ({broken})")
+            for label, line in false_claims:
+                path.write_text(line + "\n", encoding="utf-8")
+                broken, _, _ = gc.verify()
+                if not broken:
+                    findings.append(f"graduation/{label}: a false claim passed — "
+                                    f"the checker is blind to this kind of rot")
+        finally:
+            gc.LESSONS = original
+    return findings
+
+
 def main() -> int:
     failures = run("rules", rules_check, RULES_CASES)
     failures += run("ergo", ergo_check, ERGO_CASES)
@@ -160,6 +203,10 @@ def main() -> int:
     failures += shadowing
     if not shadowing:
         print("  ok  tools/no_stdlib_shadowing")
+    graduations = check_graduation_checker_bites()
+    failures += graduations
+    if not graduations:
+        print("  ok  tools/graduation_checker_bites")
     if failures:
         print("\nFAILED:")
         for f in failures:

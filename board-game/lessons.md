@@ -12,10 +12,24 @@ pipeline this replaced knew one fact for three turns and changed nothing.
 `improve.py` flags repeats mechanically, but only catches the ones that look
 alike. Reading for repeated *meaning* is a human's job, and the auditor's.
 
+A marker is a claim, and `graduation_check.py` holds every one of them to the
+tree, so it has to name something a machine can find:
+
+| form | means |
+|---|---|
+| `module.SYMBOL` | that module defines `SYMBOL` (`def`, `class`, or a constant) |
+| `module:"literal"` | that file contains the literal text, for anything that is not a definition |
+
+Several targets may be listed, comma separated. `module` is one of the names
+in `graduation_check.MODULES`; anything else fails rather than being skipped.
+A graduated lesson leaves the build prompts, so a marker that has quietly
+stopped being true is worse than one that never graduated: the lesson is
+neither enforced nor remembered.
+
 ---
 
-- [GRADUATED -> gate.py lint] Never fillet all three edge directions of a box at once (`.edges().fillet(r)`). OCCT synthesises a spherical vertex blend at each corner and tessellates it into phantom sliver bodies that pass a no-error check and fail the watertight/body count. Bake corner rounds into the 2D profile and apply top/bottom fillets afterwards.
-- [GRADUATED -> gate.py bill check + blocks.add_piece_family] Pieces the rules require to be loose must be separately named `cq.Assembly` children. Never `union()` them: 48 tiles arriving as one continuous mat is what ended fifteen turns of the previous pipeline.
+- [GRADUATED -> gate:"blanket-fillet"] Never fillet all three edge directions of a box at once (`.edges().fillet(r)`). OCCT synthesises a spherical vertex blend at each corner and tessellates it into phantom sliver bodies that pass a no-error check and fail the watertight/body count. Bake corner rounds into the 2D profile and apply top/bottom fillets afterwards.
+- [GRADUATED -> gate.check_bill, blocks.add_piece_family] Pieces the rules require to be loose must be separately named `cq.Assembly` children. Never `union()` them: 48 tiles arriving as one continuous mat is what ended fifteen turns of the previous pipeline.
 - [GRADUATED -> ergonomics_check.MIN_RELIEF_MM] Relief under 0.6mm is modelled faithfully and then invisible — in the print and in every render. If a motif carries identity, give it depth worth printing.
 - [GRADUATED -> blocks.shared_positions] When two layers must line up, generate the pattern once and reuse the same list for both. Two coordinate lists that agree today stop agreeing after one edit.
 - Never cut a relief/clearance pocket into the underside of a part that must rest flat on the print bed — it leaves the whole remaining annulus/slab attached only at its outer edge, a dead-flat unsupported overhang. Cut the identical-depth pocket from the opposite (upward-facing) face instead: the bed-contact face stays solid and flat, and an upward-opening pocket never needs support.

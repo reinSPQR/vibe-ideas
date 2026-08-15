@@ -20,7 +20,13 @@ REPO_ROOT = HERE.parents[1]
 GATE = HERE / "gate.py"
 PY = REPO_ROOT / ".venv" / "bin" / "python"
 
-# (name, source, bill, expect_pass, substrings that must appear in fails)
+# (name, source, bill, expect_pass, substrings that must appear in fails,
+#  [motions], [brief], [substrings in `unmeasured` — prefix "!" for must NOT])
+#
+# The last field is about the other half of a verdict. `unmeasured` is what a
+# check could not reach a conclusion on, and it never fails the gate, so it has
+# exactly the shape of a thing that rots unnoticed: both a check that stopped
+# firing and a check that fires on everything look like a pass from here.
 CASES = [
     (
         "separate_pieces",
@@ -34,6 +40,12 @@ def gen_step():
 """,
         [{"name": "tile", "qty": 4}],
         True, [],
+        None, None,
+        # Pieces with air between them are fully measurable, so a clean build
+        # must report nothing unmeasured about interference. Without this, a
+        # check that quietly went inconclusive on every project would still
+        # look exactly like this suite passing.
+        ["!interference"],
     ),
     (
         # The failure that destroyed turns 11-15: pieces the rules need loose
@@ -225,12 +237,38 @@ def gen_step():
         [{"name": "block", "qty": 1}],
         False, ["lint", "blanket"],
     ),
+    (
+        # Two pieces placed touching. Each part is one closed body, the bill
+        # matches, nothing overlaps — and the interference check still cannot
+        # say so, because a shared face welds the assembled mesh and the pairs
+        # it would have compared stop existing.
+        #
+        # The verdict is PASS and that is correct; failing here would fail
+        # every design whose pieces rest against each other, which is how a
+        # gate gets routed around. What must not happen is the pass being
+        # indistinguishable from one where the check ran. `unmeasured` is that
+        # difference, and it is what pipeline_queue.py refuses to ship on
+        # without a human's stated acceptance.
+        "touching_pieces_leave_interference_unmeasured",
+        """import cadquery as cq
+def gen_step():
+    asm = cq.Assembly()
+    asm.add(cq.Workplane("XY").box(40, 40, 4), name="tile_01")
+    asm.add(cq.Workplane("XY").box(40, 40, 4), name="tile_02",
+            loc=cq.Location(cq.Vector(40, 0, 0)))
+    return asm
+""",
+        [{"name": "tile", "qty": 2}],
+        True, [],
+        None, None,
+        ["interference", "pairs among any welded or fused pieces"],
+    ),
 ]
 
 
 def run_case(tmp: Path, name: str, source: str, bill: list,
              motions: list | None = None,
-             brief: dict | None = None) -> tuple[bool, list]:
+             brief: dict | None = None) -> tuple[bool, list, list]:
     home = tmp / name
     home.mkdir(parents=True)
     (home / "main.py").write_text(source, encoding="utf-8")
@@ -245,7 +283,8 @@ def run_case(tmp: Path, name: str, source: str, bill: list,
                     "--bill", str(home / "bill.json"), "--no-slice"],
                    capture_output=True, text=True, timeout=600)
     report = json.loads((home / "gate.json").read_text(encoding="utf-8"))
-    return bool(report.get("pass")), report.get("fails") or []
+    return (bool(report.get("pass")), report.get("fails") or [],
+            report.get("unmeasured") or [])
 
 
 def main() -> int:
@@ -256,15 +295,25 @@ def main() -> int:
             name, source, bill, expect_pass, needles = case[:5]
             motions = case[5] if len(case) > 5 else None
             brief = case[6] if len(case) > 6 else None
-            passed, fails = run_case(tmp, name, source, bill, motions, brief)
+            un_needles = case[7] if len(case) > 7 else []
+            passed, fails, unmeasured = run_case(tmp, name, source, bill,
+                                                 motions, brief)
             blob = " ".join(fails).lower()
             missing = [n for n in needles if n.lower() not in blob]
+            un_blob = " ".join(unmeasured).lower()
+            un_wrong = [f"unexpected {n[1:]}" for n in un_needles
+                        if n.startswith("!") and n[1:].lower() in un_blob]
+            un_wrong += [f"missing {n}" for n in un_needles
+                         if not n.startswith("!") and n.lower() not in un_blob]
             if passed != expect_pass:
                 failures.append(f"{name}: expected {'PASS' if expect_pass else 'FAIL'}, "
                                 f"got {'PASS' if passed else 'FAIL'} ({fails})")
             elif missing:
                 failures.append(f"{name}: verdict right but reason missing {missing} "
                                 f"in {fails}")
+            elif un_wrong:
+                failures.append(f"{name}: verdict right but `unmeasured` wrong "
+                                f"({un_wrong}) in {unmeasured}")
             else:
                 print(f"  ok  {name}")
     if failures:

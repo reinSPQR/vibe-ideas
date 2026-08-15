@@ -175,6 +175,16 @@ silhouette. Then:
 ```
 
 `GATE PASS` → `advance --to built`.
+
+A `GATE PASS` line can carry an `unmeasured` list: checks that reached no
+verdict rather than a good one. It is not a failure and you must not treat it
+as one — pieces resting in contact legitimately weld the assembled mesh, and a
+gate that failed correct designs would be routed around within a week. You do
+not have to carry it either; `advance` reads it off `gate.json` and attaches it
+to the idea itself, and `ship` will refuse until the owner accepts it by name.
+What you owe it is the journal entry: paste the list verbatim, because it is
+the part of the verdict that says what nobody looked at.
+
 `GATE FAIL` → `pipeline_queue.py repair <slug>`:
 - exit 0 → invoke `board-game-builder` in **repair** mode with the gate's
   findings verbatim, then re-run `gate.py`. (`repair` renews the claim rather
@@ -215,9 +225,16 @@ paste. Never run them on the owner's behalf.
 
 ```bash
 .venv/bin/python board-game/tools/pipeline_queue.py ship   <slug>
+.venv/bin/python board-game/tools/pipeline_queue.py ship   <slug> --accept-unmeasured "..."
 .venv/bin/python board-game/tools/pipeline_queue.py reject <slug> --reason "..."
 .venv/bin/python board-game/tools/pipeline_queue.py rework <slug> --reason "..."
 ```
+
+`ship` refuses while the gate has a check that reached no verdict, and prints
+what they were. `--accept-unmeasured` is how the owner spends that, with the
+reason recorded on the idea. It is theirs to spend and nobody else's: this is
+the only place in the pipeline where "nothing looked at this" costs anything,
+since gate.py cannot charge for it without failing correct designs.
 
 A rejection reason lands in `board-game/TASTE.md` and is read by every future
 ideation. It is the only signal in this pipeline that does not come from a
@@ -272,7 +289,7 @@ What is worth an entry, by action:
 | `rules_gate` | the `rules_check.py` findings verbatim, the `board-game-lens-rules` verdict line, and what the rework changed (either one triggers) |
 | `brief` | the dimensions it chose, and every entry in `unstated_in_spec` — those are the places the spec ran out and somebody guessed |
 | `draft` | what the draft looks like and anything that surprised the builder |
-| `build` / `repair` | the gate findings verbatim (`--body-file .../gate.json`), then what the repair actually changed — not "fixed the overhang", but which number moved |
+| `build` / `repair` | the gate findings verbatim (`--body-file .../gate.json`), including any `unmeasured` entries, then what the repair actually changed — not "fixed the overhang", but which number moved |
 | `owner_gate_1` | the `board-game-lens-playability` verdict line, verbatim; on FAIL, what the repair changed |
 | `panel` | each lens's verdict line, verbatim |
 
@@ -288,6 +305,9 @@ it — the owner is trying to see what the machine actually said.
 - **Never edit a gate, a threshold, `bill.json`, or a brief to make something
   pass.** If a gate looks wrong, say so and stop. A pipeline that can relax its
   own acceptance criteria produces nothing worth having.
+- **Never report a check that could not run as one that passed.** A pass with
+  something unmeasured is a smaller claim than a clean pass, and the difference
+  is the owner's to spend at gate 2, not yours to round off in a summary.
 - **Never fabricate a stage.** If a build failed, the state stays where it is
   and the failure is reported. An idea that dies of a tooling fault is retried,
   not replaced — that is the whole reason the queue exists.

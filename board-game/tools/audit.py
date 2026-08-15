@@ -11,7 +11,7 @@ score-consistency had to be proven. Neither is true any more: builds happen
 here, git records who changed what, and nothing is scored. Keeping those
 checks would have been theatre.
 
-Four risks survive the change, and one of them is new:
+Five risks survive the change, and two of them are new:
 
 1. GATE EROSION (new, and the important one). With acceptance reduced to a
    deterministic gate, the cheapest way to make everything pass is to move
@@ -19,12 +19,18 @@ Four risks survive the change, and one of them is new:
    and flags any LOOSENING — direction matters, so tightening is silent.
 2. SHIPPED WITHOUT MEASUREMENT. Nothing may reach `shipped` without a
    `gate.json` that actually passed. This is the one invariant the whole
-   rebuild rests on.
+   rebuild rests on. A gate that passed while a check reached no verdict
+   counts here too: `unmeasured` may be spent, but only by a human, and only
+   with a reason on the record.
 3. DEGENERACY. Optimising for pass rate rewards proposing simpler games. If
    part families, piece counts, and relief depths drift down over time, the
    loop is getting better at the metric rather than at board games.
 4. PROMPT BLOAT. Agents that rewrite their own instructions grow them without
    limit; a Learned Heuristics section that doubles is one nobody reads.
+5. GRADUATION ROT (new). A lesson that becomes code leaves the build prompts.
+   If the code it became is later deleted, the lesson is neither enforced nor
+   remembered, and lessons.md goes on claiming otherwise. Delegated to
+   graduation_check.py, which holds every marker to the tree.
 
 Exit 0 green, 1 amber, 2 red.
 """
@@ -99,6 +105,9 @@ def check_gate_erosion(findings: list) -> None:
 def check_shipped_were_measured(findings: list) -> None:
     if not QUEUE.is_file():
         return
+    sys.path.insert(0, str(TOOLS))
+    import pipeline_queue  # one owner of "what did the gate fail to measure"
+
     data = json.loads(QUEUE.read_text(encoding="utf-8"))
     for slug, item in sorted(data.get("ideas", {}).items()):
         if item.get("state") != "shipped":
@@ -108,9 +117,40 @@ def check_shipped_were_measured(findings: list) -> None:
             findings.append((RED, "unmeasured",
                              f"{slug} is shipped with no gate.json at all"))
             continue
-        if not json.loads(report.read_text(encoding="utf-8")).get("pass"):
+        gate_report = json.loads(report.read_text(encoding="utf-8"))
+        if not gate_report.get("pass"):
             findings.append((RED, "unmeasured",
                              f"{slug} is shipped but its gate.json says it failed"))
+        # A pass with something it could not measure is a different object from
+        # a clean pass, and `pipeline_queue.py ship` will not take one without
+        # a stated acceptance. This is the check that the refusal was not gone
+        # around — by an edit to QUEUE.json, or by a re-run of the gate after
+        # the ship that quietly turned a clean pass into an incomplete one.
+        skipped = pipeline_queue.gate_unmeasured(slug)
+        if skipped and not item.get("unmeasured_accepted"):
+            findings.append((RED, "unmeasured",
+                             f"{slug} is shipped with {len(skipped)} gate check(s) "
+                             f"that never reached a verdict and no recorded "
+                             f"acceptance — first: {skipped[0]}"))
+
+
+def check_graduations(findings: list) -> None:
+    """Every `[GRADUATED -> ...]` marker in lessons.md, held to the tree.
+
+    Graduating a lesson is what takes it OUT of the build prompts, so a marker
+    whose code has since been deleted leaves the lesson neither enforced nor
+    remembered. That is the worst of the three states an insight can be in, and
+    the only one that is invisible without asking.
+    """
+    sys.path.insert(0, str(TOOLS))
+    import graduation_check
+
+    broken, checked, prose = graduation_check.verify()
+    for entry in broken:
+        findings.append((RED, "graduation", entry))
+    if not broken:
+        print(f"  note: {checked} graduation(s) verified, {prose} lesson(s) "
+              f"still prose")
 
 
 def _complexity(idea: dict) -> dict:
@@ -177,6 +217,7 @@ def main() -> int:
     findings: list[tuple[str, str, str]] = []
     check_gate_erosion(findings)
     check_shipped_were_measured(findings)
+    check_graduations(findings)
     check_degeneracy(findings)
     check_prompt_bloat(findings)
 

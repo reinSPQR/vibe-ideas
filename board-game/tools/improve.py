@@ -62,6 +62,11 @@ SUITES = [
     ("gate", ["board-game/tools/test_gate.py"]),
     ("checks", ["board-game/tools/test_checks.py"]),
     ("blocks", ["board-game/blocks/testbench.py"]),
+    # A session can edit gate.py and rewrite lessons.md in the same run, so it
+    # is able to delete the code a lesson graduated into and leave the marker
+    # claiming otherwise. That failure is silent and permanent: the lesson is
+    # out of the build prompts precisely because it graduated.
+    ("graduations", ["board-game/tools/graduation_check.py"]),
 ]
 
 
@@ -174,6 +179,11 @@ IN PRIORITY ORDER:
    board-game/tools/gate.py, a threshold, a golden block, or a constraint in
    the brief-writer's template. Then collapse the duplicate lines into the one
    graduated entry, marked [GRADUATED -> where].
+   The marker must name something graduation_check.py can find — `module.SYMBOL`
+   or `module:"literal text"`, per the grammar at the top of lessons.md. One it
+   cannot resolve fails the suite, and rightly: graduating a lesson is what
+   takes it OUT of the build prompts, so a claim nothing verifies leaves that
+   lesson neither enforced nor remembered.
    That list is a FLOOR, not the answer. It compares wording, and two lessons
    that say the same thing in different words score no higher than two
    unrelated ones — measured, not assumed. So read lessons.md yourself and

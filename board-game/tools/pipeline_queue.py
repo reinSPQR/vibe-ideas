@@ -10,6 +10,7 @@ happens next.
     python3 board-game/tools/pipeline_queue.py repair <slug>        # consume one round
     python3 board-game/tools/pipeline_queue.py release <slug>       # step ended, no move
     python3 board-game/tools/pipeline_queue.py ship <slug>          # owner: gate 2 yes
+    python3 board-game/tools/pipeline_queue.py ship <slug> --accept-unmeasured "..."
     python3 board-game/tools/pipeline_queue.py reject <slug> --reason "..."
     python3 board-game/tools/pipeline_queue.py rework <slug> --reason "..."
 
@@ -304,6 +305,35 @@ def log(item: dict, frm: str, to: str, note: str = "",
     })
 
 
+def gate_unmeasured(slug: str) -> list:
+    """What the deterministic gate could not reach a verdict on, last run.
+
+    gate.py records these and deliberately does not fail on them: pieces
+    resting in contact legitimately merge in the assembled mesh, so failing
+    would be a false alarm on correct designs and the gate would be routed
+    around inside a week. The cost has to land somewhere though, or "we did not
+    look" is free — so it lands here, where it follows the idea through the
+    queue and stops at `ship` until a human accepts it by name.
+
+    Read from the file rather than taken from the driver's report, because a
+    step that can report this itself is a step that can forget to.
+    """
+    report = IDEAS / slug / "project" / "gate.json"
+    if not report.is_file():
+        return []
+    try:
+        data = json.loads(report.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return [f"gate.json could not be read ({type(exc).__name__}), so not even "
+                f"the list of what went unmeasured is known"]
+    if "unmeasured" in data:
+        return [str(note) for note in data.get("unmeasured") or []]
+    # A gate.json written before the field existed. Dig the notes out of where
+    # they used to live; reporting a clean run would be the one wrong answer.
+    return [f"interference: {note}"
+            for note in (data.get("interference") or {}).get("inconclusive") or []]
+
+
 # ---------------------------------------------------------------------------
 
 def cmd_add(args) -> int:
@@ -333,6 +363,10 @@ def cmd_advance(args) -> int:
     A step is over exactly when its state changes, so this is where the claim
     is dropped. Any driver that was blocked out of this idea while the step ran
     is free to pick up the next one immediately, with no wait for the lease.
+
+    It is also where the gate's `unmeasured` list is picked up. A state change
+    is the one moment every step passes through, so attaching it here means no
+    driver has to remember to carry it and none of them can decline to.
     """
     with transaction() as data:
         item = entry(data, args.slug)
@@ -340,9 +374,17 @@ def cmd_advance(args) -> int:
         if args.to not in PIPELINE:
             raise SystemExit(f"unknown state '{args.to}'")
         item["state"] = args.to
+        unmeasured = gate_unmeasured(args.slug)
+        item["unmeasured"] = unmeasured
         drop_claim(item)
-        log(item, frm, args.to, args.note or "")
-    print(f"{args.slug}: {frm} -> {args.to}")
+        note = args.note or ""
+        if unmeasured:
+            note = (note + " · " if note else "") + (
+                f"{len(unmeasured)} gate check(s) reached no verdict — carried, "
+                f"and ship will ask for an explicit acceptance")
+        log(item, frm, args.to, note)
+    print(f"{args.slug}: {frm} -> {args.to}"
+          + (f" ({len(unmeasured)} unmeasured)" if unmeasured else ""))
     return 0
 
 
@@ -447,14 +489,38 @@ def cmd_amend(args) -> int:
 
 
 def cmd_ship(args) -> int:
+    """Gate 2: the owner said make it real.
+
+    Refuses while the gate has a check that reached no verdict, unless the
+    owner names what they are accepting. This is the only place in the pipeline
+    where "nothing looked at this" costs anything — gate.py cannot charge for
+    it without failing correct designs — and it is deliberately a human's to
+    spend: no agent has a path to this command.
+    """
     with transaction() as data:
         item = entry(data, args.slug)
         require_state(item, args.slug, "ship")
+        unmeasured = gate_unmeasured(args.slug)
+        item["unmeasured"] = unmeasured
+        if unmeasured and not args.accept_unmeasured:
+            listed = "\n".join(f"  - {note}" for note in unmeasured)
+            raise SystemExit(
+                f"{args.slug}: the gate passed, but {len(unmeasured)} check(s) "
+                f"never reached a verdict:\n{listed}\n"
+                f"Shipping now means shipping something nothing looked at. If "
+                f"that is the call, say what you are accepting:\n"
+                f"  ship {args.slug} --accept-unmeasured \"why this is fine\"")
         frm = item["state"]
         item["state"] = "shipped"
         item["shipped_at"] = now()
+        note = "owner approved"
+        if unmeasured:
+            item["unmeasured_accepted"] = {
+                "at": now(), "reason": args.accept_unmeasured, "items": unmeasured}
+            note += (f"; accepted {len(unmeasured)} unmeasured check(s): "
+                     f"{args.accept_unmeasured}")
         drop_claim(item)
-        log(item, frm, "shipped", "owner approved", by="owner", kind="owner")
+        log(item, frm, "shipped", note, by="owner", kind="owner")
     print(f"{args.slug}: SHIPPED")
     # Shipping is a decision, not a publication. Say where the decision goes
     # next so a shipped game does not quietly sit in the repo forever.
@@ -598,7 +664,13 @@ def cmd_list(args) -> int:
         note = f"  — {item['kill_reason']}" if item.get("kill_reason") else ""
         held = claim_of(item)
         busy = f"  [in progress: {held['action']}, {claim_age(held)}]" if held else ""
-        print(f"  {slug:<{width}}  {item['state']:<14}{tail}{busy}{note}")
+        # Visible without being alarming: an unmeasured check is not a failure,
+        # but an idea sitting one tap from `shipped` carrying two of them is
+        # something the owner should meet here rather than at the refusal.
+        skipped = item.get("unmeasured") or []
+        gap = (f"  ({len(skipped)} unmeasured{', accepted' if item.get('unmeasured_accepted') else ''})"
+               if skipped else "")
+        print(f"  {slug:<{width}}  {item['state']:<14}{tail}{busy}{gap}{note}")
     if data.get("propose_claim"):
         held = data["propose_claim"]
         expires = parse_ts(held.get("expires", ""))
@@ -623,7 +695,11 @@ def main() -> int:
     p.set_defaults(fn=cmd_release)
     p = sub.add_parser("approve"); p.add_argument("slug"); p.set_defaults(fn=cmd_approve)
     p = sub.add_parser("amend"); p.add_argument("slug"); p.set_defaults(fn=cmd_amend)
-    p = sub.add_parser("ship"); p.add_argument("slug"); p.set_defaults(fn=cmd_ship)
+    p = sub.add_parser("ship"); p.add_argument("slug")
+    p.add_argument("--accept-unmeasured", metavar="REASON",
+                   help="ship even though the gate could not measure something; "
+                        "the reason is recorded on the idea")
+    p.set_defaults(fn=cmd_ship)
     p = sub.add_parser("reject"); p.add_argument("slug")
     p.add_argument("--reason", required=True); p.set_defaults(fn=cmd_reject)
     p = sub.add_parser("rework"); p.add_argument("slug")
