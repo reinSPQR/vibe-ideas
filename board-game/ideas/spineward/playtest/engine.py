@@ -457,3 +457,40 @@ def determinize(state, seat, rng):
     for pid, g in zip(unrevealed, pool):
         state["pearl_grades"][pid] = g
     return state
+
+
+def observation(state, seat):
+    """Everything `seat` is allowed to look at: nothing more.
+
+    Every seat's hidden layer is identical here (see `determinize`), so this
+    ignores `seat` for the same reason that function does — there is no
+    private per-seat holding to add back in. A pearl's POSITION is always
+    public (it is a physical piece sitting in a visible pan or socket, or
+    counted in a visible rack); only its GRADE is hidden, and only until it
+    is landed, for every seat including whoever is carrying it. Grades for
+    unrevealed pearls are simply absent from the returned `grades` map —
+    looking one up for a pearl id that has not been landed is the caller's
+    bug, not a value this function will supply.
+    """
+    return {
+        "phase": state["phase"],
+        "n": state["n"],
+        "spine_supply": state["spine_supply"],
+        "seed_pending": len(state["seed_queue"]),  # count only: draw order is
+                                                     # blind, nobody knows it
+        "seed_turn": state["seed_turn"],
+        "setup_place_turn": state["setup_place_turn"],
+        "arm_turn": state["arm_turn"],
+        "arm_count": state["arm_count"],
+        "current_seat": state["current_seat"],
+        "actions_taken": state["actions_taken"],
+        "turn_number": state["turn_number"],
+        "end_pending": state["end_pending"],
+        "activity_flag": state["activity_flag"],
+        "pans": {pan: {"type": info["type"], "pearl": info["pearl"]}
+                 for pan, info in state["pans"].items()},
+        "urchins": [{"pan": u["pan"], "dir": list(u["dir"])}
+                    for u in state["urchins"]],
+        "racks": [list(rack) for rack in state["racks"]],
+        "grades": {pid: state["pearl_grades"][pid] for pid in state["revealed"]},
+    }

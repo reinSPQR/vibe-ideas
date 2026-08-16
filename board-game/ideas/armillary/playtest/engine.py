@@ -306,3 +306,33 @@ def determinize(state, seat, rng):
         else:
             s["reserve"][idx] = t
     return s
+
+
+def observation(state, seat):
+    """What `seat` is actually allowed to look at. No seat holds a private
+    hand in this game — the only concealment is the shared board's face-down
+    tiles — so this observation is the same for every seat: everything
+    public, and nothing else. A face-down well shows only that it holds
+    *something*, not what; the reserve shows only how many tiles are left in
+    it, not their order or identity."""
+    wells = []
+    for cell in state["wells"]:
+        if cell is None:
+            wells.append(None)
+        elif cell["face"] == "up":
+            wells.append({"tile": cell["tile"], "face": "up"})
+        else:
+            wells.append({"tile": None, "face": "down"})  # identity hidden
+    return {
+        "seat": seat,
+        "n_players": state["n_players"],
+        "phase": state["phase"],
+        "current": state["current"],
+        "rotation": dict(state["rotation"]),
+        "open_wells": sorted(_open_wells(state)),
+        "wells": wells,
+        "reserve_count": len(state["reserve"]),
+        "catch": list(state["catch"]),
+        "banks": [list(b) for b in state["banks"]],
+        "scores": scores(state),
+    }

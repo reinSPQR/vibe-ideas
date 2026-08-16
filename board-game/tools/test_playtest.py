@@ -280,6 +280,32 @@ BLOCKING = CLEAN.replace(
 # then reports an oracle's win rate as though it were a reachable skill.
 ORACLE = CLEAN.replace("HIDDEN_INFO = False", "HIDDEN_INFO = True")
 
+# The same draft with the token values face down until taken, hidden honestly:
+# determinize reshuffles what is still in the pool, observation never shows it.
+CONCEALED = CLEAN.replace("HIDDEN_INFO = False", "HIDDEN_INFO = True") + '''
+def determinize(s, seat, rng):
+    live = [i for i, v in enumerate(s["pool"]) if v is not None]
+    vals = [s["pool"][i] for i in live]
+    rng.shuffle(vals)
+    for i, v in zip(live, vals):
+        s["pool"][i] = v
+    return s
+
+def observation(s, seat):
+    return {"face_down": [i for i, v in enumerate(s["pool"]) if v is not None],
+            "taken": list(s["taken"]), "held": [list(h) for h in s["held"]],
+            "t": s["t"], "order": list(s["order"])}
+'''
+
+# The same game, hidden dishonestly: the observation hands back the whole
+# state, face-down values and all, while still claiming to hide them.
+LEAKY = CONCEALED.replace(
+    'def observation(s, seat):\n'
+    '    return {"face_down": [i for i, v in enumerate(s["pool"]) if v is not None],\n'
+    '            "taken": list(s["taken"]), "held": [list(h) for h in s["held"]],\n'
+    '            "t": s["t"], "order": list(s["order"])}',
+    'def observation(s, seat):\n    return s')
+
 # Every token identical, so every seat ends level and the tiebreaker (there
 # isn't one) never breaks anything.
 TIE = CLEAN.replace("rng.randint(1, 20)", "3")
@@ -302,6 +328,9 @@ FIXTURES = [
     ("clean_game", CLEAN, 5, [], {"games": 150, "ladder_games": 50,
                                   "mc_budget": 16}),
     ("hidden_information_not_modelled", ORACLE, 5, ["depth_unmeasured:"], {}),
+    ("hidden_information_hidden_honestly", CONCEALED, 5, [],
+     {"games": 150, "ladder_games": 50, "mc_budget": 16}),
+    ("observation_hands_back_the_secrets", LEAKY, 5, ["leak:"], {}),
     ("every_game_ends_level", TIE, 5, ["tie:"], {}),
     ("engine_lists_the_best_move_first", ORDERING, 5, ["ordering:"],
      {"games": 100, "ladder_games": 40}),
@@ -369,6 +398,75 @@ def check_contract_violations() -> list:
     return findings
 
 
+def check_table_mode() -> list:
+    """The seat a person sits in. Three ways it must not go wrong.
+
+    A table that shows a player the face-down pieces, or that carries on after
+    the engine underneath it changed, produces a transcript that reads exactly
+    like a real one. Both are silent, so both are checked.
+    """
+    import json
+    import subprocess
+
+    findings = []
+    tool = Path(__file__).resolve().parent / "playtest.py"
+    python = sys.executable
+
+    def run(*argv):
+        return subprocess.run([python, str(tool), "table", *argv],
+                              capture_output=True, text=True, timeout=120)
+
+    with tempfile.TemporaryDirectory() as td:
+        idea = Path(td) / "fixture"
+        (idea / "playtest").mkdir(parents=True)
+        (idea / "idea.json").write_text(json.dumps(
+            {"slug": "fixture", "playtime_min": 5,
+             "players": {"min": 2, "max": 4}}), encoding="utf-8")
+        engine = idea / "playtest" / "engine.py"
+
+        # 1. Hidden information with no observation() must be refused outright.
+        engine.write_text(ORACLE, encoding="utf-8")
+        refused = run("new", str(idea), "--seats", "2")
+        if refused.returncode != 2 or "observation" not in refused.stdout:
+            findings.append(
+                "table/hidden_info_guard: a game with face-down pieces and no "
+                f"observation() was dealt anyway (exit {refused.returncode})")
+
+        # 2. A whole game, played through to a real ending.
+        engine.write_text(CLEAN, encoding="utf-8")
+        opened = run("new", str(idea), "--seats", "2", "--seed", "4",
+                     "--label", "t")
+        if "LEGAL MOVES" not in opened.stdout:
+            findings.append(f"table/new: no position dealt: {opened.stdout[:200]}")
+        session = idea / "playtest" / "table" / "t.json"
+        for _ in range(40):
+            played = run("play", str(session), "--choice", "0",
+                         "--why", "first one")
+            if played.returncode != 0:
+                findings.append(f"table/play: refused a legal choice: "
+                                f"{played.stdout[:200]}")
+                break
+            if "TABLE OVER" in played.stdout:
+                break
+        else:
+            findings.append("table/play: 40 decisions and the game never ended")
+
+        recorded = json.loads(session.read_text(encoding="utf-8"))
+        if not all(m["why"] for m in recorded["moves"] if m["by"] == "player"):
+            findings.append("table/why: a player's reason was not recorded, so "
+                            "the transcript cannot say what was weighed")
+
+        # 3. The engine changing under a live session must stop it, not be
+        #    absorbed into a game that then reads as if it were played.
+        engine.write_text(ORDERING, encoding="utf-8")
+        moved = run("show", str(session))
+        if "changed under this session" not in (moved.stdout + moved.stderr):
+            findings.append(
+                "table/replay: the engine was rewritten mid-session and the "
+                "table carried on as though the same game were still on it")
+    return findings
+
+
 def main() -> int:
     failures = []
     for name, source, playtime, needles, config in FIXTURES:
@@ -388,6 +486,11 @@ def main() -> int:
     failures += contract
     if not contract:
         print("  ok  playtest/refuses_a_non_engine")
+
+    table = check_table_mode()
+    failures += table
+    if not table:
+        print("  ok  playtest/table_seats_a_player_honestly")
 
     if failures:
         print("\nFAILED:")

@@ -379,3 +379,48 @@ def determinize(state, seat, rng):
             st["sockets"][i]["species"] = sp
         st["troughs"][p] = trough
     return st
+
+
+def observation(state, seat):
+    """What `seat` is actually allowed to know, per rules:setup[1]-[2] and the
+    PROBE step: a socket's owner, its crown, whether each of its two holes has
+    been probed, and the sunk/proud RESULT of any hole that has been probed
+    (all public — a pin standing proud or sunk is visible to everyone at the
+    table). A socket's true species is included only when `seat` planted it,
+    or when both holes have been probed, since the four species have distinct
+    (upper, lower) groove patterns and a fully-probed socket's species is
+    therefore already public knowledge, derivable by anyone from the two
+    revealed results — carrying it through is not an extra leak. Every other
+    socket's species is removed. Every other player's trough is replaced by
+    its remaining count, since the composition of stools is public and only
+    the assignment of species to what remains unplanted is not."""
+    sockets_obs = []
+    for s in state["sockets"]:
+        true_species = s["species"]
+        known = (s["owner"] == seat) or (s["probed_upper"] and s["probed_lower"])
+        revealed_upper = (SPECIES_GROOVES[true_species][0]
+                          if true_species is not None and s["probed_upper"] else None)
+        revealed_lower = (SPECIES_GROOVES[true_species][1]
+                          if true_species is not None and s["probed_lower"] else None)
+        sockets_obs.append({
+            "owner": s["owner"],
+            "crown": s["crown"],
+            "probed_upper": s["probed_upper"],
+            "probed_lower": s["probed_lower"],
+            "revealed_upper": revealed_upper,   # True=sunk, False=proud, None=not probed
+            "revealed_lower": revealed_lower,
+            "species": true_species if known else None,
+        })
+    troughs_obs = [list(state["troughs"][p]) if p == seat else len(state["troughs"][p])
+                   for p in range(state["n"])]
+    return {
+        "n": state["n"],
+        "seat": seat,
+        "sockets": sockets_obs,
+        "troughs": troughs_obs,
+        "crowns_remaining": list(state["crowns_remaining"]),
+        "pins_remaining": state["pins_remaining"],
+        "round": state["round"],
+        "seat_ptr": state["seat_ptr"],
+        "subphase": state["subphase"],
+    }

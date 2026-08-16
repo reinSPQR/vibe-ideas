@@ -107,6 +107,7 @@ def is_over(state): ...                  # -> bool
 def scores(state): ...                   # -> one float per seat, valid always
 def winners(state): ...                  # -> seat indices, valid once over
 def determinize(state, seat, rng): ...   # OPTIONAL, see below
+def observation(state, seat): ...        # OPTIONAL, see below
 ```
 
 Rules of the contract, all of which the harness relies on:
@@ -130,12 +131,26 @@ Rules of the contract, all of which the harness relies on:
 - **A stuck seat is not your problem to fix.** If a player has no legal move
   and the rules do not provide a pass, return `[]`. The harness reports that
   as a deadlock, which is exactly what it is.
-- **`HIDDEN_INFO = True` needs `determinize`.** In a game with face-down
-  pieces or a hand, a lookahead policy that can see them is an oracle, and its
-  win rate is not a skill measurement. `determinize(state, seat, rng)`
-  resamples everything `seat` cannot see, consistently with what `seat` has
-  observed, and returns the state. Without it the harness refuses to read the
-  depth measurement.
+- **`HIDDEN_INFO = True` needs `determinize` AND `observation`.** They are two
+  different jobs and a game with anything face-down needs both.
+
+  `determinize(state, seat, rng)` resamples everything `seat` cannot see,
+  consistently with what `seat` has observed, and returns the state. It exists
+  for the lookahead policy: without it that policy can see the face-down
+  pieces, so its win rate is an oracle's, not a skill measurement.
+
+  `observation(state, seat)` returns plain data holding **only what that seat
+  is allowed to look at**: everything public, plus that seat's own private
+  holdings, and nothing else. Not a summary and not a rendering, just the
+  state with what the seat cannot see removed or replaced by a count. It
+  exists because a person sits at this table too: `playtest.py table` shows
+  this and only this to whoever is deciding. An `observation` that leaks a
+  face-down identity turns the whole exercise into a cheat, so err toward
+  removing a field you are unsure about, and say in `notes.md` what you
+  removed.
+
+  A perfect-information game needs neither, and the whole state is the
+  observation.
 
 # Performance
 

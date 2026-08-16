@@ -80,3 +80,52 @@ conclusions rather than to model its findings.
 
 No disagreement between the engine and review_rules.md was found on any of
 the three points.
+
+## `observation(state, seat)` — what was removed or replaced
+
+Added for the second hidden-information hook the contract now requires
+alongside `determinize`. Every seat's hidden layer is identical (nobody,
+including a pearl's own carrier, knows its grade before landing — same fact
+`determinize`'s docstring already relies on), so `observation` ignores its
+`seat` argument for the same reason: there is no private per-seat holding to
+add back in, only a public/hidden split that is the same for everyone.
+
+Removed from the raw `state`, entirely:
+
+- **`pearl_grades`** (the ground-truth grade of all 16 pearls). Replaced by
+  `grades`, a dict containing an entry only for pearl ids in `state["revealed"]`
+  — i.e. only pearls that have actually been landed and turned over. Every
+  other pearl id that appears elsewhere in the observation (sitting on a pan,
+  seated in a socket, mid-carry) has no entry here at all, on purpose: a
+  lookup for an unrevealed id should fail loudly rather than quietly return a
+  value a real player could not have.
+- **`seed_queue`** (the ordered list of pearl ids still waiting to be drawn
+  and placed during setup). Replaced by `seed_pending`, a bare count. The
+  draw order is a blind shake at a real table; showing the list, even with
+  grades stripped, would leak which *specific* future draw comes next, which
+  no player at the table can know.
+- **`pearl_location`** and **`revealed`** (internal bookkeeping). Dropped
+  outright rather than replaced — both are fully reconstructable from
+  `pans` + `urchins` + `racks`, which are already in the observation, so
+  including them again would just be the same information under a second
+  name, not new information to protect or expose.
+
+Kept as-is, because they are already public in the physical game:
+
+- `pans` (pan type and *whether* a pearl stands there, by id — a standing
+  pearl is a visible physical object; only its foot is hidden).
+- `urchins` (each shell's pan and its six sockets' contents — spine, empty,
+  or a pearl id — all visible on the shell from above; again, only a
+  pearl's grade is hidden, not its presence or which socket holds it).
+- `racks` (pearl ids landed per seat — landing is the one moment a grade
+  becomes public for everyone, and `grades` now carries that value for
+  every id that appears here).
+- `spine_supply`, `phase`, and the various turn/phase pointers — physically
+  visible or simply "whose turn is it," not hidden from anyone.
+
+Pearl ids themselves are kept everywhere they appear (pans, sockets, racks)
+as an opaque handle so a policy — or a person — can track "this is the same
+physical pearl I saw two turns ago" without being told its value. This is
+safe rather than a leak: the id-to-grade mapping is reshuffled fresh by
+`rng` in every `new_game`, so an id carries no information about a grade on
+its own, in this game or across games, until it shows up in `grades`.

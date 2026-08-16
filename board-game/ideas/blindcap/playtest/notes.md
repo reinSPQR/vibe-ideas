@@ -103,6 +103,55 @@ to catch; `--quick`'s tiny sample is not the right instrument for either
 did not adjust the engine to push the numbers either way in response to the
 review's expectations.
 
+## `observation(state, seat)` — patch, no other behaviour changed
+
+Added the second hidden-information hook the contract now requires alongside
+`determinize`. `legal_moves`, `apply_move`, `scores`, and the
+`contested_grove_per_crown` assumption are untouched.
+
+Fields removed or replaced per socket, and why:
+
+- **`species`** — removed (set to `None`) unless the socket is `seat`'s own
+  (`owner == seat`, which `seat` planted and always knows), or both
+  `probed_upper` and `probed_lower` are `True`. The four species have
+  pairwise-distinct `(upper, lower)` groove patterns (`SPECIES_GROOVES`), so
+  once both holes of a socket have been probed its species is already public
+  — derivable by anyone from the two revealed results — and carrying it
+  through is equivalent information, not an extra leak. Any socket probed on
+  only one band, or not at all, and not owned by `seat`, has its species
+  removed: that is exactly the one-band candidate-narrowing (two of four, or
+  four common vs. two scarce) the rules describe, not a name.
+- **`revealed_upper` / `revealed_lower`** — added. These are the actual
+  sunk/proud *results* of any hole that has been probed (`True` = sunk,
+  `False` = proud, `None` = not probed), computed from the true species via
+  `SPECIES_GROOVES` and kept regardless of ownership, because a pin's
+  position is physically visible to the whole table once it is placed. The
+  raw `probed_upper` / `probed_lower` booleans (whether a hole has been
+  probed at all — also public, visible as an empty vs. occupied hole) are
+  kept unchanged.
+- **`owner`, `crown`** — unchanged. Both are public the instant they are set
+  (a brim's owner bites, a crown sitting on a boss).
+
+Fields removed or replaced per player, and why:
+
+- **`troughs[p]` for `p != seat`** — replaced with `len(troughs[p])`, an
+  integer count, instead of the list of remaining species. The composition
+  of every player's supply is fixed and public
+  (`rules:setup[1]`: "This composition is the same for everybody and is
+  public knowledge for the whole game"); only which of those six stools a
+  given player has *not yet planted* is private, which is exactly the same
+  fact `determinize` already resamples for the lookahead policy. `seat`'s own
+  trough is left as the full list, since it is `seat`'s own hand.
+- **`crowns_remaining`, `pins_remaining`, `round`, `seat_ptr`, `subphase`,
+  `n`** — unchanged for every seat: all are counts or turn-structure facts
+  visible to the whole table (crowns and pins are physically counted piles,
+  the round/turn order is who is sitting where).
+
+Verified by hand (not by the checked-in test) that `observation(state, 0)`
+after ten random moves in a 3-player game round-trips through `json.dumps`
+and never exposes another player's socket species unless that socket had
+both holes probed.
+
 One terminology note, not a disagreement: the review counts "turns" as one
 per player-round (7 per player, `14`/`21`/`28` for 2p/3p/4p), bundling PLANT
 and the free action together. The engine instead reports each as a separate

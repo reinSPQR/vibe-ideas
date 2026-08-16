@@ -93,3 +93,36 @@ least one bust; `forfeit` needs a bust from one of the three zenith wells
 a handful of times or not at all — that is a sample-size artifact of `--quick`
 (20 games), not evidence the move is dead; the full gate's larger sample is
 the one that can actually say whether `clear` or `forfeit` are dead moves.
+
+## `observation(state, seat)` — patch, fields removed or replaced
+
+No seat holds a private hand in this game — the only concealed thing is the
+shared board's face-down layer — so `observation` is identical for every
+seat: everything public, and nothing else. Removed or replaced from the raw
+state:
+
+- **`wells[i]["tile"]`, for every well whose `face` is `"down"`** — replaced
+  with `None`; the entry keeps `{"tile": None, "face": "down"}` so the seat
+  can see *that* a well holds an unrevealed tile without seeing *what* it
+  is. This is the field the whole game depends on staying hidden: any leak
+  here is a cheat, not a shortcut.
+- **`reserve`** (the ordered list of the 20 tiles still in the
+  reserve_column, face-down) — dropped entirely and replaced with
+  `reserve_count`, an integer. A player at the table can see the stack's
+  height (the reserve_column's read slot is described as "a game clock
+  readable across the table") but not the order or identity of what is in
+  it, so a count is the honest ceiling on what that slot actually discloses.
+
+Kept as-is, because the rules make all of it public: `rotation` (every
+rotation is compulsory and public), `open_wells` (derived from `rotation`,
+computable by any seat, so exposing the derived value is not a leak, just a
+convenience), `wells[i]` for every face-up cell (revealed voids and returned
+star/moon tiles all sit face-up on the board), `catch` (a tile joins the
+catch already "turned face-up in the middle of the table for everyone to
+see"), `banks` (score_rails stand in the open), `scores` (computed purely
+from `banks`), and `phase`/`current`/`n_players` (turn-structure bookkeeping,
+not board content).
+
+No rule, assumption, `legal_moves`, `apply_move`, or `scores` logic changed
+for this patch; `observation` is a read-only projection added alongside
+`determinize`.

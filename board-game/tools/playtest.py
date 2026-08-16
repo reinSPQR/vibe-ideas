@@ -46,15 +46,32 @@ The engine contract, all of it:
     scores(state)            -> list of floats, one per seat, valid any time
     winners(state)           -> list of seat indices, valid once over
 
-    determinize(state, seat, rng) -> state    # OPTIONAL, hidden-information
-                                              # games only: resample what
-                                              # `seat` cannot see
+    determinize(state, seat, rng) -> state    # hidden-information games:
+                                              # resample what `seat` cannot see
+    observation(state, seat) -> plain data    # hidden-information games:
+                                              # only what `seat` may look at
 
 Without `determinize`, a lookahead policy in a hidden-information game is an
 oracle that can see the face-down tiles, so its win rate would be an upper
 bound rather than a skill measurement. `HIDDEN_INFO` is declared separately
 from `determinize` existing precisely so that the harness can tell "this game
 has nothing to hide" apart from "this engine forgot to hide it".
+
+`observation` is what `table` mode shows a player, and the two hooks check
+each other: resampling what a seat cannot see must not change what that seat
+observes. If it does, the observation is leaking or the determinization is
+rewriting something public, and either makes every transcript from that table
+worthless. That cross-check needs no knowledge of the game and runs on every
+hidden-information engine.
+
+## Who sits the baseline
+
+Almost everything below is read off a table of scripted players, so which
+script that is matters more than any threshold here. One ply of score
+maximising is competent in a placement game and actively suicidal in a
+push-your-luck one, where it takes another tile every time because the score
+goes up now. So the two candidates play each other first and the winner sits
+the baseline, reported by name.
 
 ## What the numbers mean
 
@@ -507,36 +524,58 @@ def analyse(eng: ModuleType, idea: dict, *, games: int, ladder_games: int,
     """Everything the report is made of. Raises EngineBroken, nothing else."""
     started = time.monotonic()
     deadline = started + deadline_s
+    # One shared deadline means whichever phase runs first eats the whole
+    # budget and the later ones silently get nothing, which is how a
+    # zero-game batch turns into a confident finding. Each phase gets a slice
+    # it cannot overrun into the next one's.
+    def phase_deadline(fraction: float) -> float:
+        return started + deadline_s * fraction
     cap = int(getattr(eng, "MAX_TURNS", 400))
     lo, hi = (int(v) for v in eng.PLAYERS)
     counts = sorted({lo, hi})
 
     mc = make_mc(mc_budget, cap)
+    table = counts[-1]
+
+    # The all-random baseline is the purely structural read: a seat that wins
+    # when nobody is trying is the board's fault, not a strategy.
     seats: dict[str, dict] = {}
     for n in counts:
-        # Two baselines. All-random is the purely structural read: a seat that
-        # wins with nobody trying is the board's fault, not a strategy. All-
-        # greedy is the same question once everyone is at least awake.
         rnd = run_batch(eng, lambda s, g: pol_random, n, games, cap,
-                        seed + 11 * n, deadline)
-        grd = run_batch(eng, lambda s, g: pol_greedy, n, games, cap,
-                        seed + 13 * n, deadline)
-        seats[str(n)] = {
-            "random": {**rnd, "seat": seat_edge(rnd, n)},
-            "greedy": {**grd, "seat": seat_edge(grd, n)},
-        }
+                        seed + 11 * n, phase_deadline(0.25))
+        seats[str(n)] = {"random": {**rnd, "seat": seat_edge(rnd, n)}}
 
-    table = counts[-1]
     ladder = [
         challenge(eng, "first", pol_first, "random", pol_random, table,
-                  ladder_games, cap, seed + 101, deadline),
+                  ladder_games, cap, seed + 101, phase_deadline(0.55)),
         challenge(eng, "greedy", pol_greedy, "random", pol_random, table,
-                  ladder_games, cap, seed + 103, deadline),
+                  ladder_games, cap, seed + 103, phase_deadline(0.55)),
         challenge(eng, "lookahead", mc, "random", pol_random, table,
-                  ladder_games, cap, seed + 107, deadline),
+                  ladder_games, cap, seed + 107, phase_deadline(0.55)),
         challenge(eng, "lookahead", mc, "greedy", pol_greedy, table,
-                  ladder_games, cap, seed + 109, deadline),
+                  ladder_games, cap, seed + 109, phase_deadline(0.55)),
     ]
+
+    # The second baseline has to be a table of players who are actually trying,
+    # and which scripted policy that is depends on the game. One ply of score
+    # maximising is competent in a placement game and actively suicidal in a
+    # push-your-luck one, where it takes another tile every time because the
+    # score goes up now. Rather than pick in advance, play the two against each
+    # other first and let the winner sit the baseline. Everything downstream is
+    # read off this table, so choosing it wrongly poisons every number.
+    head = next((r for r in ladder
+                 if r["policy"] == "lookahead" and r["field"] == "greedy"), None)
+    lookahead_wins = bool(head and head["games"] >= MIN_LADDER_GAMES
+                          and head["ci"][0] > head["fair_share"])
+    competent_name = "lookahead" if lookahead_wins else "greedy"
+    competent = mc if lookahead_wins else pol_greedy
+    # A lookahead baseline costs roughly a rollout per candidate move per turn,
+    # so it buys its honesty with sample size. Reported either way.
+    competent_games = max(games // 3, 100) if lookahead_wins else games
+    for n in counts:
+        cmp_batch = run_batch(eng, lambda s, g: competent, n, competent_games,
+                              cap, seed + 17 * n, phase_deadline(0.88))
+        seats[str(n)]["competent"] = {**cmp_batch, "seat": seat_edge(cmp_batch, n)}
 
     # Move kinds. `MOVE_KINDS` is what the rules define; what turned out to be
     # legal, and what a competent policy ever bothered to choose, are two
@@ -545,8 +584,8 @@ def analyse(eng: ModuleType, idea: dict, *, games: int, ladder_games: int,
     # challenger with a field of random players in one tally, so a kind chosen
     # there may only ever have been chosen by the dice.
     declared = list(getattr(eng, "MOVE_KINDS", []) or [])
-    legal = set(seats[str(table)]["greedy"]["kinds_legal"])
-    chosen = set(seats[str(table)]["greedy"]["kinds_chosen"])
+    legal = set(seats[str(table)]["competent"]["kinds_legal"])
+    chosen = set(seats[str(table)]["competent"]["kinds_chosen"])
     moves = {
         "declared": declared,
         "never_legal": sorted(k for k in declared if k not in legal),
@@ -554,7 +593,11 @@ def analyse(eng: ModuleType, idea: dict, *, games: int, ladder_games: int,
     }
 
     sensitivity = run_sensitivity(eng, table, max(games // 4, 40), cap,
-                                  seed + 211, deadline, pol_greedy)
+                                  seed + 211, phase_deadline(1.0), competent)
+
+    leaks = []
+    for n in counts:
+        leaks += observation_leaks(eng, n, seed + 313 + n)
 
     return {
         "slug": idea.get("slug") or getattr(eng, "SLUG", "?"),
@@ -567,9 +610,12 @@ def analyse(eng: ModuleType, idea: dict, *, games: int, ladder_games: int,
                    "determinize": hasattr(eng, "determinize")},
         "seats": seats,
         "table_size": table,
+        "competent_policy": competent_name,
+        "competent_games": competent_games,
         "ladder": ladder,
         "moves": moves,
         "sensitivity": sensitivity,
+        "leaks": leaks,
         "elapsed_s": round(time.monotonic() - started, 1),
         "hit_deadline": time.monotonic() > deadline,
     }
@@ -599,37 +645,77 @@ def run_sensitivity(eng, n_players: int, games: int, cap: int, seed: int,
                 "runaway": batch["runaway"] if batch["runaway"] is not None else 0.0,
                 "turns_mean": batch["turns_mean"]}
 
-    base_batch = run_batch(eng, lambda s, g: policy, n_players, games, cap,
-                           seed, deadline)
-    base = headline(base_batch)
-    out = []
-    for entry in assumptions:
-        aid = entry.get("id", "?")
+    def win_shares(batch: dict) -> list:
+        decided = sum(batch["wins"])
+        if decided <= 0:
+            return [0.0] * n_players
+        return [w / decided for w in batch["wins"]]
+
+    def pair(pol, count: int, aid: str | None):
+        """The same games under both readings, same seed, same everything."""
+        if aid is None:
+            return run_batch(eng, lambda s, g: pol, n_players, count, cap,
+                             seed, deadline), None
         was = choices.get(aid, "chosen")
+        base = run_batch(eng, lambda s, g: pol, n_players, count, cap,
+                         seed, deadline)
         choices[aid] = "alternative" if was != "alternative" else "chosen"
         try:
-            flipped_batch = run_batch(eng, lambda s, g: policy, n_players,
-                                      games, cap, seed, deadline)
+            flip = run_batch(eng, lambda s, g: pol, n_players, count, cap,
+                             seed, deadline)
         finally:
             choices[aid] = was
-        flipped = headline(flipped_batch)
+        return base, flip
+
+    def compare(base_batch, flipped_batch):
+        base, flipped = headline(base_batch), headline(flipped_batch)
         deltas = {
             k: abs(flipped[k] - base[k]) if k != "turns_mean"
             else (abs(flipped[k] - base[k]) / max(base[k], 1.0))
             for k in base
         }
-        worst = max(deltas.values()) if deltas else 0.0
-        identical = flipped_batch["wins"] == base_batch["wins"] and \
-            flipped_batch["turns_mean"] == base_batch["turns_mean"]
+        # Every measure above reads the game in aggregate, and `seat_edge`
+        # reads only the BEST seat, so a reading that swaps which seat wins
+        # moves none of them: [.5,.5,0,0] and [0,0,.5,.5] both put the best
+        # seat 25 points over a fair share. Total variation distance across
+        # the whole win-share vector sees exactly that, and calls an inverted
+        # winner set what it is, a delta of 1.0.
+        a, b = win_shares(base_batch), win_shares(flipped_batch)
+        deltas["win_share"] = 0.5 * sum(abs(x - y) for x, y in zip(a, b))
+        same = (flipped_batch["wins"] == base_batch["wins"]
+                and flipped_batch["turns_mean"] == base_batch["turns_mean"])
+        return deltas, (max(deltas.values()) if deltas else 0.0), same
+
+    out = []
+    for entry in assumptions:
+        aid = entry.get("id", "?")
+        base_batch, flipped_batch = pair(policy, games, aid)
+        deltas, worst, same = compare(base_batch, flipped_batch)
+        verdict = "blocking" if worst > SENSITIVITY_DELTA else "cosmetic"
+        under = "the baseline policy"
+
+        if same:
+            # Identical runs mean one of two very different things: the flip
+            # is wired to nothing, or the position it changes never came up.
+            # A tight policy visits a narrow slice of the game, so ask a loose
+            # one, which wanders much further, before calling it dead wiring.
+            base_batch, flipped_batch = pair(pol_random, games * 2, aid)
+            deltas, worst, still_same = compare(base_batch, flipped_batch)
+            if still_same:
+                verdict, under = "unwired", "neither policy"
+            else:
+                verdict = "loose_play_only"
+                under = "random play only"
+
         out.append({
             "id": aid, "rule": entry.get("rule", "?"),
             "question": entry.get("question", ""),
             "chosen": entry.get("chosen", ""),
             "alternative": entry.get("alternative", ""),
+            "measured_under": under,
             "deltas": {k: round(v, 4) for k, v in deltas.items()},
             "worst_delta": round(worst, 4),
-            "verdict": ("unwired" if identical else
-                        "blocking" if worst > SENSITIVITY_DELTA else "cosmetic"),
+            "verdict": verdict,
         })
     return out
 
@@ -651,20 +737,38 @@ def check(stats: dict) -> list:
     # anything. Measured first, because it decides what gets reported at all:
     # a seat-bias number read off the third of games that did not fall down a
     # hole in the rules describes a different game from the one on the page.
+    # A batch that never ran is not a batch that found something. Without this
+    # guard an empty one divides by a floor of 1 and reports 100% of nothing as
+    # the most severe finding in the file.
+    starved = [f"{n}p/{label}" for n, pair in sorted(seats.items())
+               for label in ("random", "competent")
+               if pair[label]["games_played"] == 0]
+    if starved:
+        findings.append(
+            f"budget: {', '.join(starved)} never played a single game before "
+            f"the run ran out of wall clock, so those seat counts were not "
+            f"measured at all. Nothing below covers them")
+
     worst_gap, gap_at = 0.0, ""
     for n, pair in seats.items():
-        for label in ("random", "greedy"):
+        for label in ("random", "competent"):
             batch = pair[label]
-            played = max(batch["games_played"], 1)
+            played = batch["games_played"]
+            if played == 0:
+                continue
             share = (batch["undefined_count"] + batch["stuck"]
                      + (played - batch["natural_endings"] - batch["stuck"]
                         - batch["undefined_count"])) / played
             if share > worst_gap:
                 worst_gap, gap_at = share, f"{n}p/{label}"
     unmeasurable = worst_gap > MAX_UNDEFINED_SHARE
+    findings += stats.get("leaks") or []
 
     for n, batch_pair in sorted(seats.items()):
-        for label in ("random", "greedy"):
+        if any(batch_pair[label]["games_played"] == 0
+               for label in ("random", "competent")):
+            continue
+        for label in ("random", "competent"):
             batch = batch_pair[label]
             played = batch["games_played"]
             if batch["undefined_count"]:
@@ -687,7 +791,7 @@ def check(stats: dict) -> list:
         if unmeasurable:
             continue
 
-        greedy = batch_pair["greedy"]
+        greedy = batch_pair["competent"]
         if greedy["forced_fraction"] > MAX_FORCED_FRACTION:
             findings.append(
                 f"decisions:{n}p: {greedy['forced_fraction']:.0%} of turns offer "
@@ -700,7 +804,7 @@ def check(stats: dict) -> list:
                 f"{greedy['branching_median']:.1f} legal moves, under "
                 f"{MIN_MEDIAN_BRANCHING:.0f}")
 
-        for label in ("random", "greedy"):
+        for label in ("random", "competent"):
             edge = batch_pair[label]["seat"]
             if edge["edge"] > MAX_SEAT_EDGE:
                 findings.append(
@@ -710,13 +814,13 @@ def check(stats: dict) -> list:
                     f"{edge['best_ci'][0]:.0%}-{edge['best_ci'][1]:.0%}), which "
                     f"is the seat playing rather than the player")
 
-        tie_rate = batch_pair["greedy"]["tie_rate"]
+        tie_rate = batch_pair["competent"]["tie_rate"]
         if tie_rate > MAX_TIE_RATE:
             findings.append(
                 f"tie:{n}p: {tie_rate:.0%} of finished games end level, so the "
                 f"tiebreaker in rules:win is not breaking ties")
 
-        runaway = batch_pair["greedy"]["runaway"]
+        runaway = batch_pair["competent"]["runaway"]
         if runaway is not None and runaway > MAX_RUNAWAY:
             findings.append(
                 f"runaway:{n}p: whoever leads at the halfway point goes on to "
@@ -783,11 +887,12 @@ def check(stats: dict) -> list:
             f"proxy: the greedy policy loses to random play "
             f"({one_ply['win_rate']:.0%} against a fair share of "
             f"{one_ply['fair_share']:.0%}), so maximising scores() one ply "
-            f"ahead is actively bad here and the all-greedy baseline every "
-            f"seat, tie, runaway and length number is read from describes a "
-            f"table of players worse than dice")
+            f"ahead is actively bad in this game. The baseline is "
+            f"`{stats['competent_policy']}` and is unaffected; this is a note "
+            f"about the engine's running score, which is a worse guide to the "
+            f"position than it looks")
 
-    turns = seats[table]["greedy"]["turns_mean"]
+    turns = seats[table]["competent"]["turns_mean"]
     claimed = stats["idea"]["playtime_min"]
     if claimed and turns:
         fast, slow = SECONDS_PER_DECISION
@@ -818,9 +923,17 @@ def check(stats: dict) -> list:
                 f"{entry['worst_delta']:.0%}, so this reading IS the game")
         elif entry["verdict"] == "unwired":
             findings.append(
-                f"contract:{entry['id']}: declared as an assumption but the "
-                f"engine plays identically both ways, so the flip is not wired "
-                f"to anything and the ambiguity was never tested")
+                f"contract:{entry['id']}: declared as an assumption, but the "
+                f"engine plays identically both ways under every policy tried, "
+                f"so the flip is wired to nothing and this ambiguity has never "
+                f"actually been tested")
+        elif entry["verdict"] == "loose_play_only":
+            findings.append(
+                f"ambiguous:{entry['rule']}: {entry['question']} The reading "
+                f"changes nothing when everyone plays to win, and moves the "
+                f"numbers by {entry['worst_delta']:.0%} under loose play, so "
+                f"the position it decides is one competent players avoid. Worth "
+                f"a sentence in the rules, not a redesign")
 
     if stats.get("hit_deadline"):
         findings.append(
@@ -849,7 +962,7 @@ CATEGORY = {
     # Real defects that a rules edit fixes without touching the design.
     "tie": "rough_edges", "dead_move": "rough_edges", "length": "rough_edges",
     # Nothing about the game. The harness or the engine warning about itself.
-    "ordering": "measurement", "proxy": "measurement",
+    "ordering": "measurement", "proxy": "measurement", "leak": "measurement",
     "depth_unmeasured": "measurement", "contract": "measurement",
     "sample": "measurement", "budget": "measurement", "playtest": "measurement",
 }
@@ -874,14 +987,349 @@ def classify(findings: list) -> tuple[str, dict]:
 
 
 # ---------------------------------------------------------------------------
+# The table: one game, one decision at a time, by whoever is asked
+# ---------------------------------------------------------------------------
+#
+# Everything above plays thousands of games with nobody at the table. This
+# plays one game slowly enough that a decision-maker who is not a policy can
+# sit in a seat: `table new` deals, `table play` takes one choice and hands
+# back the next position. It exists for the half of the original question the
+# statistics cannot answer, which is whether any of this is worth doing for an
+# evening.
+#
+# The engine still owns legality, so a player at this table cannot make an
+# illegal move, cannot misremember the board, and cannot quietly invent a rule
+# to get out of a corner. That is the whole reason to seat them behind it.
+#
+# A session stores a seed and the list of choices, never a serialised state:
+# the position is recomputed by replaying from the seed every time, so a
+# session file stays readable, diffable, and impossible to desync from the
+# engine without the replay noticing.
+
+SCRIPTED = {"random": pol_random, "greedy": pol_greedy, "first": pol_first}
+
+
+def observe(eng: ModuleType, state, seat: int):
+    fn = getattr(eng, "observation", None)
+    return state if fn is None else fn(state, seat)
+
+
+def canonical(obj):
+    """A JSON-safe, order-stable copy. Engine state is allowed tuples and
+    tuple-keyed dicts (a hex coordinate makes a perfectly good key); printing
+    and comparing it is not allowed to care."""
+    if isinstance(obj, dict):
+        return {str(k): canonical(v) for k, v in sorted(
+            obj.items(), key=lambda kv: str(kv[0]))}
+    if isinstance(obj, (list, tuple)):
+        return [canonical(v) for v in obj]
+    if isinstance(obj, set):
+        return sorted(canonical(v) for v in obj)
+    if isinstance(obj, (str, int, float, bool)) or obj is None:
+        return obj
+    return str(obj)
+
+
+def observation_leaks(eng: ModuleType, n_players: int, seed: int,
+                      positions: int = 12, depth: int = 8) -> list:
+    """Cross-check `observation` against `determinize`, which is the only way
+    to catch a leak without knowing the game.
+
+    `determinize` changes exactly what a seat cannot see. `observation` shows
+    exactly what a seat can see. So for any position, a seat's observation
+    must be byte-identical before and after its own determinization. If it is
+    not, either the observation is showing something hidden or the
+    determinization is rewriting something public, and both of those make
+    every transcript from this table a lie.
+    """
+    if not getattr(eng, "HIDDEN_INFO", False):
+        return []
+    findings = []
+    if not hasattr(eng, "observation"):
+        findings.append(
+            "leak: engine declares HIDDEN_INFO but has no observation(), so a "
+            "player at the table would be shown every face-down piece")
+    if not hasattr(eng, "determinize"):
+        findings.append(
+            "leak: engine declares HIDDEN_INFO but has no determinize(), so "
+            "neither the lookahead policy nor this check can tell what is "
+            "supposed to be hidden")
+    if findings:
+        return findings
+
+    rng = random.Random(seed)
+    for p in range(positions):
+        state = eng.new_game(n_players, rng)
+        for _ in range(p % depth):
+            if eng.is_over(state):
+                break
+            moves = eng.legal_moves(state)
+            if not moves:
+                break
+            state = eng.apply_move(state, rng.choice(moves), rng)
+        for seat in range(n_players):
+            before = canonical(observe(eng, copy.deepcopy(state), seat))
+            shuffled = eng.determinize(copy.deepcopy(state), seat, rng)
+            after = canonical(observe(eng, shuffled, seat))
+            if before != after:
+                findings.append(
+                    f"leak: seat {seat}'s observation changes when only the "
+                    f"pieces that seat cannot see are resampled, so it is "
+                    f"showing something hidden (or determinize is rewriting "
+                    f"something public). First seen {len(eng.legal_moves(state))} "
+                    f"moves into a {n_players}-player game")
+                return findings
+    return findings
+
+
+def table_guard(eng: ModuleType, seats: int, seed: int) -> list:
+    """Refuse to seat a player at a game that would show them the answers."""
+    return observation_leaks(eng, seats, seed)
+
+
+def replay(eng: ModuleType, session: dict):
+    """Rebuild the position from the seed and the recorded choices.
+
+    Also the integrity check: every choice stored its move's text, so an
+    engine edited between two turns of the same game is caught here instead of
+    silently continuing a different game.
+    """
+    rng = random.Random(session["seed"])
+    state = eng.new_game(session["seats"], rng)
+    for i, entry in enumerate(session["moves"]):
+        moves = eng.legal_moves(state)
+        idx = entry["choice"]
+        if idx >= len(moves):
+            raise EngineBroken(
+                f"replay: choice {idx} at turn {i} is out of range now that "
+                f"only {len(moves)} moves are legal — the engine changed under "
+                f"this session")
+        if str(moves[idx]) != entry["move"]:
+            raise EngineBroken(
+                f"replay: turn {i} recorded '{entry['move']}' but choice {idx} "
+                f"is now '{moves[idx]}' — the engine changed under this session")
+        state = eng.apply_move(state, moves[idx], rng)
+    return state, rng
+
+
+def advance_scripted(eng, session, state, rng, policy_rng) -> None:
+    """Play out every consecutive scripted seat, recording each choice."""
+    while not eng.is_over(state):
+        seat = int(eng.player_to_move(state))
+        who = session["scripted"].get(str(seat))
+        if who is None:
+            return
+        moves = eng.legal_moves(state)
+        if not moves:
+            return
+        move = SCRIPTED[who](eng, state, seat, policy_rng, moves)
+        session["moves"].append({
+            "seat": seat, "choice": moves.index(move), "move": str(move),
+            "by": who, "why": "", "arbitrary": None})
+        state = eng.apply_move(state, move, rng)
+
+
+def seed_blind(eng, n_players: int) -> bool:
+    """Does `new_game` ignore the rng it is handed?
+
+    A deterministic setup is legitimate; chess has one. It stops being
+    harmless the moment a report counts three sessions as three games, because
+    with a blind setup and players who reason alike they are one game played
+    three times. Whoever writes that report has to be told.
+    """
+    try:
+        a = canonical(eng.new_game(n_players, random.Random(1)))
+        b = canonical(eng.new_game(n_players, random.Random(9871)))
+    except Exception:
+        return False
+    return (json.dumps(a, sort_keys=True, default=str)
+            == json.dumps(b, sort_keys=True, default=str))
+
+
+def played_lines(session: dict, since: int) -> list:
+    """Every move applied since the last position was printed.
+
+    Without these a seat is shown a board that jumped and has to work out what
+    its opponents did to it. At a real table it watched them do it, and the
+    difference is information the game never meant to hide.
+    """
+    return [f"PLAYED seat {m['seat']}  {m['move']}  [{m['by']}]"
+            for m in session["moves"][since:]]
+
+
+def render_table(eng, session, state, label: str, compact: bool = False) -> str:
+    lines = [f"TABLE {session['slug']}  session {label}  "
+             f"turn {len(session['moves'])}  seats {session['seats']}"]
+    if eng.is_over(state):
+        lines.append(f"TABLE OVER  winners {list(eng.winners(state))}  "
+                     f"scores {[round(s, 2) for s in eng.scores(state)]}")
+        return "\n".join(lines)
+    moves = eng.legal_moves(state)
+    if not moves:
+        lines.append("TABLE STUCK  no legal move and the game is not over. "
+                     "The rules do not say what this player does.")
+        return "\n".join(lines)
+    seat = int(eng.player_to_move(state))
+    lines.append(f"SCORES {[round(s, 2) for s in eng.scores(state)]}")
+    lines.append(f"YOU ARE seat {seat}")
+    lines.append("OBSERVATION")
+    lines.append(json.dumps(canonical(observe(eng, state, seat)),
+                            **({"separators": (",", ":")} if compact
+                               else {"indent": 2})))
+    lines.append(f"LEGAL MOVES ({len(moves)})")
+    for i, move in enumerate(moves):
+        lines.append(f"  {i}  {move}")
+    return "\n".join(lines)
+
+
+def table_main(argv: list) -> int:
+    ap = argparse.ArgumentParser(prog="playtest.py table",
+                                 description="play one game a decision at a time")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    new = sub.add_parser("new")
+    new.add_argument("idea_dir", type=Path)
+    new.add_argument("--seats", type=int, required=True)
+    new.add_argument("--seed", type=int, default=1)
+    new.add_argument("--label", default="g1")
+    new.add_argument("--scripted", default="",
+                     help="seats played by a policy, e.g. 2:greedy,3:greedy")
+    new.add_argument("--agent-turns", type=int, default=0,
+                     help="after this many decisions the rest is played by "
+                          "--finish-with; 0 means no cap")
+    new.add_argument("--finish-with", default="greedy", choices=sorted(SCRIPTED))
+    new.add_argument("--compact", action="store_true",
+                     help="one-line OBSERVATION instead of indented JSON")
+
+    for name in ("show", "play"):
+        p = sub.add_parser(name)
+        p.add_argument("session", type=Path)
+        p.add_argument("--compact", action="store_true",
+                       help="one-line OBSERVATION instead of indented JSON")
+        if name == "play":
+            p.add_argument("--choice", type=int, required=True)
+            p.add_argument("--why", default="",
+                           help="one line: what you weighed. Recorded, read later")
+            p.add_argument("--arbitrary", action="store_true",
+                           help="set when the options were not meaningfully "
+                                "different and you picked one to move on")
+    args = ap.parse_args(argv)
+
+    if args.cmd == "new":
+        idea_dir = (args.idea_dir.parent if args.idea_dir.is_file()
+                    else args.idea_dir)
+        engine_path = idea_dir / "playtest" / "engine.py"
+        if not engine_path.is_file():
+            print(f"TABLE ERROR no engine at {engine_path}")
+            return 2
+        eng = load_engine(engine_path)
+        contract = validate_engine(eng) or table_guard(eng, args.seats,
+                                                       args.seed)
+        if contract:
+            print("TABLE ERROR " + "; ".join(contract))
+            return 2
+        scripted = {}
+        for pair in filter(None, args.scripted.split(",")):
+            seat, _, policy = pair.partition(":")
+            if policy not in SCRIPTED:
+                print(f"TABLE ERROR unknown policy '{policy}'")
+                return 2
+            scripted[seat.strip()] = policy
+        blind = seed_blind(eng, args.seats)
+        session = {
+            "slug": getattr(eng, "SLUG", idea_dir.name),
+            "idea_dir": str(idea_dir), "engine": str(engine_path),
+            "seats": args.seats, "seed": args.seed, "scripted": scripted,
+            "agent_turns": args.agent_turns, "finish_with": args.finish_with,
+            "seed_blind": blind, "handed_over_at": None, "moves": [],
+        }
+        out = idea_dir / "playtest" / "table" / f"{args.label}.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        state, rng = replay(eng, session)
+        advance_scripted(eng, session, state, rng,
+                         random.Random(args.seed ^ 0x5EED))
+        state, _ = replay(eng, session)
+        out.write_text(json.dumps(session, indent=2), encoding="utf-8")
+        print(f"SESSION {out}")
+        if blind:
+            print("SEED BLIND  new_game ignores the rng it is passed, so every "
+                  "session at this seat count opens from the same position. "
+                  "--seed varies nothing here and repeated sessions are one "
+                  "game played twice, which is not what a report may call two.")
+        for line in played_lines(session, 0):
+            print(line)
+        print(render_table(eng, session, state, args.label, args.compact))
+        return 0
+
+    session = json.loads(args.session.read_text(encoding="utf-8"))
+    eng = load_engine(Path(session["engine"]))
+    label = args.session.stem
+    state, rng = replay(eng, session)
+
+    if args.cmd == "show":
+        print(render_table(eng, session, state, label, args.compact))
+        return 0
+
+    if eng.is_over(state):
+        print("TABLE ERROR the game is already over")
+        return 2
+    moves = eng.legal_moves(state)
+    if not 0 <= args.choice < len(moves):
+        print(f"TABLE ERROR choice {args.choice} is not one of the "
+              f"{len(moves)} legal moves")
+        return 2
+    seat = int(eng.player_to_move(state))
+    since = len(session["moves"])
+    session["moves"].append({
+        "seat": seat, "choice": args.choice, "move": str(moves[args.choice]),
+        "by": "player", "why": args.why, "arbitrary": bool(args.arbitrary)})
+    state = eng.apply_move(state, moves[args.choice], rng)
+
+    policy_rng = random.Random(session["seed"] ^ 0x5EED)
+    advance_scripted(eng, session, state, rng, policy_rng)
+    state, rng = replay(eng, session)
+
+    # The cap is a real limit and gets recorded where the report can see it:
+    # a game whose last third was played by a one-ply policy is not a game a
+    # player finished, and nothing downstream may read it as one.
+    played_by_player = sum(1 for m in session["moves"] if m["by"] == "player")
+    if (session["agent_turns"] and not eng.is_over(state)
+            and played_by_player >= session["agent_turns"]):
+        session["handed_over_at"] = len(session["moves"])
+        finisher = SCRIPTED[session["finish_with"]]
+        while not eng.is_over(state):
+            legal = eng.legal_moves(state)
+            if not legal:
+                break
+            s = int(eng.player_to_move(state))
+            move = finisher(eng, state, s, policy_rng, legal)
+            session["moves"].append({
+                "seat": s, "choice": legal.index(move), "move": str(move),
+                "by": session["finish_with"], "why": "", "arbitrary": None})
+            state = eng.apply_move(state, move, rng)
+
+    args.session.write_text(json.dumps(session, indent=2), encoding="utf-8")
+    for line in played_lines(session, since):
+        print(line)
+    print(render_table(eng, session, state, label, args.compact))
+    if session["handed_over_at"] is not None:
+        print(f"HANDED OVER at decision {session['handed_over_at']} to "
+              f"{session['finish_with']}: the rest of this game was not played "
+              f"by a player and its ending is not a player's ending")
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
 def summarise(stats: dict) -> str:
-    lines = []
+    lines = [f"  baseline: all seats on `{stats['competent_policy']}`, "
+             f"{stats['competent_games']} games (it beat the other scripted "
+             f"player head to head)"]
     table = str(stats["table_size"])
     for n, pair in sorted(stats["seats"].items()):
-        g = pair["greedy"]
+        g = pair["competent"]
         edge = g["seat"]
         lines.append(
             f"  {n}p  {g['natural_endings']}/{g['games_played']} finished, "
@@ -972,4 +1420,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "table":
+        sys.exit(table_main(sys.argv[2:]))
     sys.exit(main())

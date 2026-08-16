@@ -45,5 +45,9 @@ board-game/ideas/**/*.png
 board-game/ideas/*/rules_check.json
 board-game/ideas/*/ergonomics_check.json
 board-game/ideas/*/playtest.json
+# Token counts and debriefs from one table run against one model. The sessions
+# beside them ARE kept: those replay from a seed and a list of choices, and no
+# clone can re-derive the choices a player made.
+board-game/ideas/*/playtest/table/run_*.json
 
 **/.DS_Store
