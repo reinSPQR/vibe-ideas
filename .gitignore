@@ -44,5 +44,6 @@ board-game/ideas/**/*.png
 # the same answer on any machine, so the answer is not worth storing.
 board-game/ideas/*/rules_check.json
 board-game/ideas/*/ergonomics_check.json
+board-game/ideas/*/playtest.json
 
 **/.DS_Store
