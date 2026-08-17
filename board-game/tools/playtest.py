@@ -275,17 +275,43 @@ def pol_first(eng, state, seat, rng, moves):
     return moves[0]
 
 
+def unplayable(exc: BaseException) -> bool:
+    """A gap a policy walked into while imagining a line, not while playing.
+
+    A policy speculates: greedy applies every candidate to a copy, and the
+    lookahead plays whole games out. If one of those imagined lines reaches a
+    position the rules do not cover, that is a candidate the policy cannot
+    evaluate, and the honest response is to leave it alone. It is emphatically
+    NOT the real game reaching a rules gap, and letting it escape means the
+    real game dies of something that never happened to it.
+
+    Millbind is what taught this: its crank jam is reachable, so every
+    lookahead rollout eventually hit it, and the entire skill ladder recorded
+    0 completed games out of 60 while the run reported them as rules gaps in
+    play. Any engine with a reachable `Undefined` loses its ladder the same
+    way, silently, and the ladder is the strongest measure in this file.
+    """
+    return is_undefined(exc)
+
+
 def pol_greedy(eng, state, seat, rng, moves):
     """One ply: the move leaving the best score margin right now."""
     best, best_val = [], None
     for move in moves:
-        after = eng.apply_move(copy.deepcopy(state), move, rng)
-        val = _margin(eng.scores(after), seat)
+        try:
+            after = eng.apply_move(copy.deepcopy(state), move, rng)
+            val = _margin(eng.scores(after), seat)
+        except Exception as exc:  # noqa: BLE001
+            if not unplayable(exc):
+                raise
+            continue
         if best_val is None or val > best_val:
             best, best_val = [move], val
         elif val == best_val:
             best.append(move)
-    return rng.choice(best)
+    # Every candidate led somewhere the rules do not cover. The policy has no
+    # basis to prefer any of them and says so by not pretending to.
+    return rng.choice(best) if best else rng.choice(moves)
 
 
 def make_mc(budget: int, cap: int):
@@ -300,20 +326,29 @@ def make_mc(budget: int, cap: int):
         best, best_val = [], None
         for move in moves:
             total = 0.0
+            scored = 0
             for _ in range(per_move):
-                trial = copy.deepcopy(state)
-                determinize = getattr(eng, "determinize", None)
-                if determinize is not None:
-                    trial = determinize(trial, seat, rng)
-                trial = eng.apply_move(trial, move, rng)
-                trial, _turns, _stuck = _rollout(eng, trial, rng, cap)
+                try:
+                    trial = copy.deepcopy(state)
+                    determinize = getattr(eng, "determinize", None)
+                    if determinize is not None:
+                        trial = determinize(trial, seat, rng)
+                    trial = eng.apply_move(trial, move, rng)
+                    trial, _turns, _stuck = _rollout(eng, trial, rng, cap)
+                except Exception as exc:  # noqa: BLE001
+                    if not unplayable(exc):
+                        raise
+                    continue
                 total += _payoff(eng, trial, seat)
-            val = total / per_move
+                scored += 1
+            if not scored:
+                continue
+            val = total / scored
             if best_val is None or val > best_val:
                 best, best_val = [move], val
             elif val == best_val:
                 best.append(move)
-        return rng.choice(best)
+        return rng.choice(best) if best else rng.choice(moves)
     return pol_mc
 
 

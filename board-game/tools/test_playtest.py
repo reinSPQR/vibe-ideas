@@ -14,6 +14,7 @@ proves nothing if they also fire on a sound one.
 """
 from __future__ import annotations
 
+import random
 import sys
 import tempfile
 from pathlib import Path
@@ -398,6 +399,88 @@ def check_contract_violations() -> list:
     return findings
 
 
+GAP_ENGINE_LINES = [
+    'engine.py fixture: every speculative line runs out of rules.',
+    '',
+    'class Undefined(Exception):',
+    '    pass',
+    '',
+    'SLUG = "gapfixture"',
+    'PLAYERS = (2,)',
+    'MAX_TURNS = 20',
+    'MOVE_KINDS = ("step",)',
+    'HIDDEN_INFO = False',
+    'ASSUMPTIONS = []',
+    'CHOICES = {}',
+    '',
+    'def new_game(n_players, rng):',
+    '    return {"seat": 0, "turns": 0, "held": [0, 0]}',
+    '',
+    'def player_to_move(state):',
+    '    return state["seat"]',
+    '',
+    'def legal_moves(state):',
+    '    return [("step", 1), ("step", 2), ("step", 3)]',
+    '',
+    'def apply_move(state, move, rng):',
+    '    if state["turns"] >= 1:',
+    '        raise Undefined("rules:turn[0]: the rules stop after one move")',
+    '    state["held"][state["seat"]] += move[1]',
+    '    state["seat"] = 1 - state["seat"]',
+    '    state["turns"] += 1',
+    '    return state',
+    '',
+    'def is_over(state):',
+    '    return state["turns"] >= 1',
+    '',
+    'def scores(state):',
+    '    return [float(x) for x in state["held"]]',
+    '',
+    'def winners(state):',
+    '    best = max(scores(state))',
+    '    return [i for i, s in enumerate(scores(state)) if s == best]',
+]
+
+
+def check_policies_survive_a_gap() -> list:
+    """A policy must not kill the real game with a gap it only imagined.
+
+    Greedy applies every candidate to a copy and the lookahead plays whole
+    games out, so both walk into positions the real game never reaches. When
+    one of those is a position the rules do not cover, the honest answer is
+    that this candidate cannot be evaluated, not that this game has ended.
+
+    Millbind is why this exists. Its crank jam is reachable, so every rollout
+    eventually hit it, and the whole skill ladder recorded 0 completed games
+    of 60 while the run attributed them to rules gaps in play. The ladder is
+    the strongest measure in `playtest.py` and it had been quietly zeroed for
+    every engine with a reachable `Undefined`.
+    """
+    source = "\n".join(GAP_ENGINE_LINES).replace(
+        "engine.py fixture: every speculative line runs out of rules.", "", 1)
+    bad = []
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "engine.py"
+        path.write_text(source, encoding="utf-8")
+        eng = pt.load_engine(path)
+        # One real move played, so every further apply_move raises: exactly
+        # the shape of a game whose speculative lines all run out of rules.
+        state = eng.new_game(2, random.Random(1))
+        state = eng.apply_move(state, ("step", 1), random.Random(1))
+        moves = eng.legal_moves(state)
+        for name, policy in (("greedy", pt.pol_greedy),
+                             ("lookahead", pt.make_mc(8, 20))):
+            try:
+                move = policy(eng, state, 0, random.Random(2), moves)
+            except Exception as exc:  # noqa: BLE001
+                bad.append(f"{name} let a speculative rules gap escape and "
+                           f"kill the game: {type(exc).__name__}: {exc}")
+                continue
+            if move not in moves:
+                bad.append(f"{name} returned {move!r}, which is not legal")
+    return bad
+
+
 def check_table_mode() -> list:
     """The seat a person sits in. Three ways it must not go wrong.
 
@@ -492,12 +575,17 @@ def main() -> int:
     if not table:
         print("  ok  playtest/table_seats_a_player_honestly")
 
+    gaps = check_policies_survive_a_gap()
+    failures += gaps
+    if not gaps:
+        print("  ok  playtest/a_policy_gap_does_not_kill_the_real_game")
+
     if failures:
         print("\nFAILED:")
         for f in failures:
             print("  -", f)
         return 1
-    print(f"\nALL PASS ({len(FIXTURES) + 1} cases)")
+    print(f"\nALL PASS ({len(FIXTURES) + 3} cases)")
     return 0
 
 
