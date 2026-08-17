@@ -148,10 +148,10 @@ class Endpoint:
         if self.mode == "unreadable":
             return "I think I will take the small one, it seems wise."
         if self.mode == "out_of_range":
-            return "CHOICE 999\nWHY off the end\nARBITRARY no"
+            return "CHOICE 999\nWHY off the end\nDECISION real"
         idx = MOVE_LINE.search(text)
         return (f"CHOICE {idx.group(1) if idx else 0}\n"
-                f"WHY first option\nARBITRARY yes")
+                f"WHY first option\nDECISION indifferent")
 
     def _handler(self):
         endpoint = self
@@ -205,31 +205,38 @@ def check_parse() -> list:
     """The strict half of the contract, checked without a server at all."""
     bad = []
     good = table_run.parse_reply(
-        "CHOICE 2\nWHY holding back keeps both tiers open\nARBITRARY no\n"
+        "CHOICE 2\nWHY holding back keeps both tiers open\nDECISION real\n"
         "RULES QUESTION rules:turn[5] says nothing about ties\n"
         "NOTE fourth turn running with nothing to weigh", 5)
     if not good:
         return ["a well-formed reply did not parse"]
-    for field, want in (("choice", 2), ("arbitrary", False)):
+    for field, want in (("choice", 2), ("arbitrary", False),
+                        ("decision", "real")):
         if good[field] != want:
             bad.append(f"{field} read as {good[field]!r}, wanted {want!r}")
     if good["question"] != ["rules:turn[5] says nothing about ties"]:
         bad.append(f"rules question read as {good['question']!r}")
     if good["note"] != ["fourth turn running with nothing to weigh"]:
         bad.append(f"note read as {good['note']!r}")
-    if not table_run.parse_reply("CHOICE 1\nARBITRARY yes", 5)["arbitrary"]:
-        bad.append("ARBITRARY yes was not read as arbitrary")
+    # Every word but `real` means the seat did not have a decision, and the
+    # three of them mean three different things that must stay distinguishable.
+    for word in ("forced", "indifferent", "scripted"):
+        got = table_run.parse_reply(f"CHOICE 1\nDECISION {word}", 5)
+        if not got["arbitrary"] or got["decision"] != word:
+            bad.append(f"DECISION {word} read as {got!r}")
+    if table_run.parse_reply("CHOICE 1\nDECISION maybe", 5)["decision"] != "unstated":
+        bad.append("a word outside the four was not recorded as unstated")
 
     # A reasoning model's scratch work turns up inside the reply on some
     # gateways. It has to be cut, not searched: a CHOICE the model wrote while
     # still weighing options is not the move it settled on.
     thought = table_run.parse_reply(
         "<mm:think>Maybe CHOICE 0, or CHOICE 1. Let me weigh both.</mm:think>\n"
-        "CHOICE 4\nWHY it forces the reply I want\nARBITRARY no", 5)
+        "CHOICE 4\nWHY it forces the reply I want\nDECISION real", 5)
     if not thought or thought["choice"] != 4:
         bad.append(f"a reply with a think block parsed as {thought!r}")
     tail = table_run.parse_reply(
-        "still weighing this</think>\nCHOICE 2\nWHY settled\nARBITRARY no", 5)
+        "still weighing this</think>\nCHOICE 2\nWHY settled\nDECISION real", 5)
     if not tail or tail["choice"] != 2:
         bad.append(f"a reply with a trimmed think block parsed as {tail!r}")
     if table_run.parse_reply(

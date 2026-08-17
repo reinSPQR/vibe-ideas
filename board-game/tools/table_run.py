@@ -342,7 +342,13 @@ def strip_thinking(text: str) -> str:
 
 CHOICE_RE = re.compile(r"^\s*CHOICE\s+(\d+)\s*$", re.M)
 WHY_RE = re.compile(r"^\s*WHY\s+(.+)$", re.M)
-ARBITRARY_RE = re.compile(r"^\s*ARBITRARY\s+(yes|no)\s*$", re.M | re.I)
+DECISION_RE = re.compile(r"^\s*DECISION\s+(forced|indifferent|scripted|real)"
+                         r"\s*$", re.M | re.I)
+# The boolean this replaced could not tell "one legal move" from "several
+# moves that all end the same" from "a move that scores and that I had
+# already decided three turns ago". Four seats read it four ways and the
+# third meaning, the one that actually kills a game, had nowhere to go.
+DECISIONS = ("forced", "indifferent", "scripted", "real")
 QUESTION_RE = re.compile(r"^\s*RULES QUESTION\s+(.+)$", re.M)
 NOTE_RE = re.compile(r"^\s*NOTE\s+(.+)$", re.M)
 
@@ -363,11 +369,16 @@ def parse_reply(text: str, n_moves: int) -> dict | None:
     if not 0 <= choice < n_moves:
         return None
     why = WHY_RE.search(text)
-    arb = ARBITRARY_RE.search(text)
+    dec = DECISION_RE.search(text)
+    kind = dec.group(1).lower() if dec else "unstated"
     return {
         "choice": choice,
         "why": why.group(1).strip() if why else "",
-        "arbitrary": bool(arb and arb.group(1).lower() == "yes"),
+        "decision": kind,
+        # Kept so the aggregates and `playtest.py table` keep working. Only
+        # `real` is a decision; the other three are three different ways of
+        # not having had one, which is exactly what the boolean could not say.
+        "arbitrary": kind != "real",
         "question": [m.strip() for m in QUESTION_RE.findall(text)],
         "note": [m.strip() for m in NOTE_RE.findall(text)],
     }
@@ -472,7 +483,8 @@ class Run:
                 prompt = block if attempt == 0 else (
                     f"That reply had no readable `CHOICE <n>` with n between 0 "
                     f"and {len(moves) - 1}. Send only the lines the brief asks "
-                    f"for, starting with CHOICE.")
+                    f"for: CHOICE, WHY, then DECISION with one of "
+                    f"{', '.join(DECISIONS)}.")
                 parsed = parse_reply(await self.ask_seat(seat, prompt),
                                      len(moves))
                 if parsed:
@@ -492,6 +504,7 @@ class Run:
                 "seat": seat, "choice": parsed["choice"],
                 "move": str(moves[parsed["choice"]]), "by": "player",
                 "why": parsed["why"], "arbitrary": parsed["arbitrary"],
+                "decision": parsed["decision"],
                 "note": parsed["note"] or None,
             })
             try:
@@ -526,6 +539,11 @@ class Run:
             "finished": over, "decisions": decisions, "scores": scores,
             "winners": winners, "undefined": undefined,
             "arbitrary_rate": round(arbitrary / max(decisions, 1), 3),
+            "decisions_by_seat": {
+                str(s): {k: sum(1 for m in session["moves"]
+                                if m["seat"] == s and m.get("decision") == k)
+                         for k in DECISIONS + ("unstated",)}
+                for s in range(seats)},
             "arbitrary_by_seat": {
                 str(s): round(
                     sum(1 for m in session["moves"]
@@ -712,6 +730,16 @@ async def run(args: argparse.Namespace) -> int:
           f"{use['cached'] / max(total_in, 1):.0%}), out {use['out']}, "
           f"calls {use['calls']}"
           + (f", cost ${use['cost_usd']:.4f}" if use["cost_usd"] else ""))
+    tally = {k: 0 for k in DECISIONS + ("unstated",)}
+    for game in run_state.games:
+        for counts in game["decisions_by_seat"].values():
+            for k, n in counts.items():
+                tally[k] += n
+    total = sum(tally.values()) or 1
+    print("  decisions  " + ", ".join(
+        f"{k} {tally[k]} ({tally[k]/total:.0%})" for k in DECISIONS
+        if tally[k]) + (f", unstated {tally['unstated']}"
+                        if tally["unstated"] else ""))
     print(f"  rules questions raised in play: {len(run_state.questions)}")
     gaps = [g for g in run_state.games if g["undefined"]]
     if gaps:

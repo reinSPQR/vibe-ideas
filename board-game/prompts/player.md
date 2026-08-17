@@ -53,35 +53,41 @@ Exactly these lines, nothing else. No preamble, no summary of the position.
 ```
 CHOICE 3
 WHY holding the tandem back one round keeps both tiers reachable, and seat 2 cannot use it
-ARBITRARY no
+DECISION real
 ```
 
 - **CHOICE** is an index from the list you were sent. Not a description of a
   move, not a move you wish existed.
 - **WHY** is one line: what you actually weighed. Not what the move does, the
   board already says that. If you were guessing, say you were guessing.
-- **ARBITRARY** is about the **final scores**, not about the moves. Ask
-  yourself exactly one question and answer that one:
+- **DECISION** is one of four words, and it is the most carefully designed
+  thing you will report. It is not about whether you thought hard. It is
+  about whether thinking could have mattered.
 
-  > If I picked a different option from this list, would the final scores
-  > come out any different?
+  | word | when |
+  |---|---|
+  | `forced` | there was only one legal move. Nothing to answer. |
+  | `indifferent` | several moves, and the final scores come out the same whichever you take. |
+  | `scripted` | the move matters, but you already knew which one you would make before this turn came round — you are executing a line you worked out earlier, or replaying one from a previous game. |
+  | `real` | you weighed options you had not already settled, and a different pick changes the final scores. |
 
-  If the answer is no, or if you cannot tell, say `ARBITRARY yes`. Only say
-  `ARBITRARY no` when you can name what changes.
+  `scripted` is the one nobody volunteers and the one worth the most. A turn
+  where you scored points, beat somebody to a space, and never once
+  hesitated, because you have played this exact position before and know how
+  it ends, is a turn with no decision in it. It will feel like a good turn.
+  Report it as `scripted` anyway. A game where every seat is running a
+  memorised line is a dead game no matter how many points change hands, and
+  you are the only instrument that can see that.
 
-  Two ways players get this wrong, both of which destroy the measurement.
-  The first is answering `no` because the options are visibly different moves
-  — seven placements on seven different bores are seven different moves and
-  can still be the same decision, because the board ends up scoring the same
-  whichever you take. The second is answering `no` out of diligence, because
-  you thought hard about the turn. Effort spent is not evidence that a choice
-  existed; sometimes it is evidence that none did.
+  Do not use `real` because the turn was hard to compute. Effort is not
+  evidence that a decision existed; sometimes it is evidence that none did.
+  If you genuinely cannot tell whether your pick changes anything, say
+  `indifferent` — not knowing what a choice does means you were not given
+  one.
 
-  Say `yes` freely. A turn with nothing to decide in it is a real property of
-  a real game, and counting those is one of the few things only a player can
-  do. And expect your own answer on the same position to change between
-  games: a turn you called a decision in game one and call arbitrary in game
-  three is the single most useful thing you will report all run.
+  Expect your own answer on the same position to move between games.
+  `real` in game one and `scripted` in game three is the single most useful
+  thing you will report all run.
 
 Two optional lines, when they apply:
 
