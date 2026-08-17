@@ -13,8 +13,8 @@ PLAYERS = (2, 4)
 MAX_TURNS = 300
 MOVE_KINDS = ("setup_mill", "setup_crank", "power", "place", "shift", "pass")
 HIDDEN_INFO = False   # the whole yard, the supply pile and every score are open
-ASSUMPTIONS = []       # no reading found where BOTH branches let play continue;
-CHOICES = {}            # see notes.md for the two genuine Undefined gaps instead
+ASSUMPTIONS = []       # no reading found where BOTH branches let play continue,
+CHOICES = {}            # before or after the rework; see notes.md
 
 
 # ---------------------------------------------------------------------------
@@ -72,6 +72,12 @@ for _p, _nbrs in NEIGHBORS.items():
 # meshes only with gear_low, gear_high only with gear_high; gear_tandem, a
 # millstone and the crank_gear are full-height and mesh with anything on a
 # neighbouring pin. "Neighbouring" is the lattice adjacency above.
+#
+# rules:turn[5] now scopes the test to every arrival on a pin — PLACE, SHIFT
+# AND the crank's own move in POWER (rules:turn[1]) — so this section is
+# used from three call sites: PLACE/SHIFT test-then-revert in apply_move,
+# and POWER filters candidate pins in legal_moves with the crank's old pin
+# hypothetically empty, below.
 # ---------------------------------------------------------------------------
 
 def _tier(piece):
@@ -88,8 +94,7 @@ def _meshes(a, b):
     return ta == "full" or tb == "full" or ta == tb
 
 
-def _build_adj(state):
-    pins = state["pins"]
+def _build_adj(pins):
     adj = {p: [] for p in PIN_LIST if pins[p] is not None}
     for p, q in EDGES:
         pp, pq = pins[p], pins[q]
@@ -126,12 +131,33 @@ def _analyze_graph(adj):
 
 
 def _is_bound_state(state) -> bool:
-    _, _, bound = _analyze_graph(_build_adj(state))
+    _, _, bound = _analyze_graph(_build_adj(state["pins"]))
+    return bound
+
+
+def _would_bind(pins, overrides):
+    """Hypothetical bind test: apply `overrides` to a COPY of `pins` (pin ->
+    None or a piece dict) and report whether that trial layout is bound,
+    without mutating `pins`. Used by POWER (rules:turn[1]/[5]) to test a
+    candidate crank pin before it is ever actually stood there."""
+    trial = dict(pins)
+    trial.update(overrides)
+    _, _, bound = _analyze_graph(_build_adj(trial))
     return bound
 
 
 # ---------------------------------------------------------------------------
-# Setup (rules:setup[3..4])
+# Setup (rules:setup[3..4]). rules:setup[4] now bind-tests every setup
+# placement too, but also states it "cannot fail here" and gives the reason:
+# the 18 yard pins form a single 18-cycle (verified in _gen_pins/NEIGHBORS
+# above and independently in review_playtest.md's own probe), and only
+# full-height millstones and the crank stand on yard pins during setup (no
+# supply gear is placed yet), so every possible setup mesh graph is a
+# subgraph of that one bipartite cycle and can never contain an odd loop.
+# That is a proof, not a hope, so setup does not test-then-revert like
+# PLACE/SHIFT — it asserts the geometry instead, which is the honest way to
+# encode "provably unreachable" rather than writing dead fallback code that
+# a thousand games could never exercise.
 # ---------------------------------------------------------------------------
 
 def new_game(n_players, rng):
@@ -183,9 +209,24 @@ def legal_moves(state):
         return [("setup_crank", p) for p in YARD_PINS if pins[p] is None]
 
     if phase == "power":
-        # rules:turn[1] — any other empty yard pin, or leave it where it is.
-        moves = [("power", p) for p in YARD_PINS if pins[p] is None]
-        moves.append(("power", state["crank_pin"]))
+        # rules:turn[1] POWER / rules:turn[5] TEST FOR A BIND (rescoped to
+        # cover the crank's own move). A candidate pin is a legal home for
+        # the crank this round only if the crank does not bind there,
+        # tested with the crank's OLD pin hypothetically empty (the crank
+        # is not on two pins at once during the test). Retries are free and
+        # unlimited and POWER is not one of the three actions, so a
+        # binding candidate simply is not offered rather than being
+        # attempted then reverted. Staying on the crank's own pin is always
+        # legal per the text, and is never itself a bind risk: the yard was
+        # proven not bound at the end of the previous round (THE GRIND,
+        # rules:turn[7], only completes from an unbound yard) and staying
+        # changes nothing about the mesh graph.
+        old_pin = state["crank_pin"]
+        moves = [("power", old_pin)]
+        for p in YARD_PINS:
+            if p != old_pin and pins[p] is None:
+                if not _would_bind(pins, {old_pin: None, p: {"type": "crank"}}):
+                    moves.append(("power", p))
         return moves
 
     if phase == "actions":
@@ -223,6 +264,10 @@ def apply_move(state, move, rng):
         pin = move[1]
         state["pins"][pin] = {"type": "mill", "owner": seat}
         state["mill_pin"][seat] = pin
+        assert not _is_bound_state(state), (
+            "rules:setup[4]: setup produced a bound yard, which the "
+            "eighteen-pin yard ring should make geometrically impossible"
+        )
         state["setup_index"] += 1
         if state["setup_index"] >= state["n_players"]:
             state["phase"] = "setup_crank"
@@ -232,10 +277,17 @@ def apply_move(state, move, rng):
         pin = move[1]
         state["pins"][pin] = {"type": "crank"}
         state["crank_pin"] = pin
+        assert not _is_bound_state(state), (
+            "rules:setup[4]: setup produced a bound yard, which the "
+            "eighteen-pin yard ring should make geometrically impossible"
+        )
         state["phase"] = "power"
         return state
 
     if kind == "power":
+        # legal_moves already bind-tested every candidate (rules:turn[1]/
+        # [5]); a move reaching here is guaranteed non-binding, so it is
+        # simply applied, with no test-then-revert as PLACE/SHIFT use.
         target = move[1]
         if target != state["crank_pin"]:
             state["pins"][state["crank_pin"]] = None
@@ -286,32 +338,30 @@ def apply_move(state, move, rng):
 
 
 # ---------------------------------------------------------------------------
-# THE GRIND (rules:turn[7]) and DIRECTION (rules:turn[8])
+# THE GRIND (rules:turn[7]), A SHORT GRANARY (rules:turn[8]) and DIRECTION
+# (rules:turn[9])
 # ---------------------------------------------------------------------------
 
 def _process_grind(state):
-    adj = _build_adj(state)
+    adj = _build_adj(state["pins"])
     color, comp, bound = _analyze_graph(adj)
 
     if bound:
-        # rules:turn[1] POWER lets the start player move the crank to any
-        # empty yard pin with no bind test at all — rules:turn[5] TEST FOR
-        # A BIND is scoped explicitly to "Immediately after a PLACE or a
-        # SHIFT". A crank relocation can still close an odd loop through
-        # its own meshed cluster (it changes every edge incident to the
-        # crank's new pin), and once that happens every PLACE/SHIFT this
-        # round finds the whole graph already bound and reverts, so
-        # nothing can fix it before rules:turn[7] THE GRIND, which assumes
-        # the crank always completes one full clockwise turn. The rules
-        # never say whether POWER should have been bind-tested too,
-        # whether the round simply grinds nothing, or something else.
-        raise Undefined(
-            "rules:turn[7]: THE GRIND assumes the crank always completes "
-            "one full clockwise turn, but rules:turn[1] POWER moves the "
-            "crank_gear with no bind test (rules:turn[5] TEST FOR A BIND "
-            "only covers a PLACE or a SHIFT), and this round the crank's "
-            "pin closed an odd loop through its own meshed cluster, so the "
-            "crank cannot physically complete the turn this step calls for."
+        # rules:turn[7] THE GRIND now asserts the crank always turns here,
+        # because every move that could bind the yard is tested before it
+        # takes effect: POWER (rules:turn[1]) only ever offers non-binding
+        # candidate pins (see legal_moves), and every PLACE/SHIFT
+        # (rules:turn[5]) is tested-then-reverted in apply_move. So a bound
+        # yard reaching THE GRIND means one of those guarantees failed to
+        # hold in THIS engine — a defect in the code, not the rules gap the
+        # rework closed. rules:turn[7]'s own recovery clause ("undo this
+        # round's moves ... until it turns") exists for a human table that
+        # skipped a test, which cannot happen here, so this is an assertion
+        # rather than an Undefined.
+        raise AssertionError(
+            "rules:turn[7]: THE GRIND reached a bound yard although every "
+            "move this round was bind-tested before taking effect; this "
+            "indicates an engine bug, not a remaining rules gap."
         )
 
     crank_pin = state["crank_pin"]
@@ -324,29 +374,32 @@ def _process_grind(state):
         if mp is not None and comp.get(mp) == crank_comp and color.get(mp) == crank_color:
             cw_seats.append(seat)
 
-    need = 2 if len(cw_seats) == 1 else len(cw_seats)
-    if need > state["pellets"]:
-        # rules:end[1] ends the game "at the end of the round in which the
-        # granary_bin is emptied", which only cleanly covers a payout that
-        # exactly exhausts it. rules:turn[7] never says how to divide a
-        # granary that runs out mid-payout, e.g. two millstones owed one
-        # pellet each with only one left in the bin.
-        raise Undefined(
-            "rules:turn[7]/end[1]: THE GRIND owes "
-            f"{need} grain_pellet this round (one per clockwise millstone, "
-            f"two if exactly one turned) but only {state['pellets']} remain "
-            "in the granary_bin, and the rules never say how a payout that "
-            "the bin cannot cover should be divided."
-        )
-
+    # rules:turn[8] A SHORT GRANARY: hand pellets out one at a time,
+    # beginning with the start player and going clockwise, to each owner
+    # still owed something, going round again if anyone is still owed,
+    # until every debt is paid or the bin is empty. A lone mill owed 2
+    # pellets with 1 left in the bin scores 1, not 0 and not 2. Any debt
+    # the empty bin cannot cover is never paid.
     reward = 2 if len(cw_seats) == 1 else 1
-    for seat in cw_seats:
-        state["spindles"][seat] += reward
-    state["pellets"] -= need
+    debts = {seat: reward for seat in cw_seats}
+    cw_set = set(cw_seats)
+    payout_order = [s for s in state["action_order"] if s in cw_set]
+    pellets = state["pellets"]
+    while pellets > 0 and any(debts[s] > 0 for s in payout_order):
+        for seat in payout_order:
+            if pellets == 0:
+                break
+            if debts[seat] > 0:
+                debts[seat] -= 1
+                pellets -= 1
+                state["spindles"][seat] += 1
+    state["pellets"] = pellets
     state["last_grind_cw"] = list(cw_seats)
 
     supply_empty = all(v == 0 for v in state["supply"].values())
-    # rules:end[0] / rules:end[1]
+    # rules:end[0] / rules:end[1] — end[1] now explicitly covers a grind
+    # that ran the bin dry part-way through under A SHORT GRANARY as well
+    # as one that exhausted it exactly; both are just state["pellets"] == 0.
     ended = supply_empty or (not state["placed_this_round"]) or state["pellets"] == 0
     state["round"] += 1
 
@@ -381,3 +434,4 @@ def winners(state):
     if len(tied_cw) == 1:
         return tied_cw
     return tied
+
