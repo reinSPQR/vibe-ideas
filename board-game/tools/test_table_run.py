@@ -330,6 +330,42 @@ def check_unreadable_stops(idea_dir: Path, mode: str) -> list:
     return [f"a {mode} reply did not stop the run"]
 
 
+def check_refuses_to_overwrite(idea_dir: Path) -> list:
+    """A second run on the same labels must stop before spending anything.
+
+    A session records what a player chose, and nothing re-derives it: the same
+    seed and the same prompt do not give the same game back. This very check
+    exists because a run was launched with the default prefix over five
+    sessions another table had played, and only a `git checkout` got them
+    back.
+    """
+    endpoint = Endpoint()
+    bad = []
+    try:
+        if run_table(idea_dir, endpoint, ["--schedule", "2:1",
+                                          "--label-prefix", "dup"]) != 0:
+            return ["the first run failed"]
+        if run_table(idea_dir, endpoint, ["--schedule", "2:1",
+                                          "--label-prefix", "dup"]) == 0:
+            bad.append("a second run on the same labels was allowed")
+        before = (idea_dir / "playtest" / "table" / "dup1.json").read_text(
+            encoding="utf-8")
+        # A different seed, so the replacement is visibly a different game.
+        # With the same seed this fixture answers identically and the file
+        # would come back byte for byte, which proves nothing either way.
+        if run_table(idea_dir, endpoint,
+                     ["--schedule", "2:1", "--label-prefix", "dup",
+                      "--seed", "99", "--overwrite"]) != 0:
+            bad.append("--overwrite did not let the run through")
+        after = (idea_dir / "playtest" / "table" / "dup1.json").read_text(
+            encoding="utf-8")
+        if before == after:
+            bad.append("--overwrite ran but left the old session in place")
+    finally:
+        endpoint.stop()
+    return bad
+
+
 CASES = [
     ("reply_parsing_is_strict", lambda d: check_parse()),
     ("a_whole_run_end_to_end", check_full_run),
@@ -338,6 +374,8 @@ CASES = [
      lambda d: check_unreadable_stops(d, "unreadable")),
     ("an_index_past_the_end_stops_the_run",
      lambda d: check_unreadable_stops(d, "out_of_range")),
+    ("a_rerun_will_not_quietly_destroy_the_sessions",
+     check_refuses_to_overwrite),
 ]
 
 

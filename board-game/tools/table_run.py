@@ -591,6 +591,22 @@ async def run(args: argparse.Namespace) -> int:
             print("TABLE ERROR " + "; ".join(problems))
             return 2
 
+    # A session file is the only record of what a player actually chose, and
+    # no rerun re-derives it: the same seed and the same prompt will not give
+    # the same game back. So a label that already exists stops the run before
+    # a token is spent, rather than after, and stops it here rather than on
+    # game four when three games have already been paid for.
+    total = sum(count for _, count in schedule)
+    clashes = [p for p in
+               (idea_dir / "playtest" / "table" / f"{args.label_prefix}{i}.json"
+                for i in range(1, total + 1)) if p.exists()]
+    if clashes and not args.overwrite:
+        print("TABLE ERROR these sessions already exist and this run would "
+              "destroy them: " + ", ".join(p.name for p in clashes)
+              + ". Use a different --label-prefix, or --overwrite if you "
+                "genuinely mean to discard what a previous table played.")
+        return 2
+
     load_env_file(("PLAYTEST_BASE_URL", "PLAYTEST_API_KEY", "PLAYTEST_MODEL"))
     base_url = os.environ.get("PLAYTEST_BASE_URL", "").strip()
     api_key = os.environ.get("PLAYTEST_API_KEY", "").strip()
@@ -685,6 +701,8 @@ def main(argv: list | None = None) -> int:
     ap.add_argument("--engine", type=Path, default=None)
     ap.add_argument("--seed", type=int, default=11)
     ap.add_argument("--label-prefix", default="g")
+    ap.add_argument("--overwrite", action="store_true",
+                    help="allow this run to replace existing session files")
     ap.add_argument("--breaker-seat", type=int, default=0)
     ap.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS)
     ap.add_argument("--compact", action="store_true", default=True)
