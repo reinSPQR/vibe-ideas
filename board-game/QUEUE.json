@@ -3,7 +3,7 @@
     "armillary": {
       "slug": "armillary",
       "title": "Armillary",
-      "state": "blocked",
+      "state": "proposed",
       "repairs_used": 2,
       "created": "2026-08-13T10:12:04.748670+00:00",
       "log": [
@@ -138,9 +138,15 @@
           "from": "repairing",
           "to": "blocked",
           "note": ""
+        },
+        {
+          "at": "2026-08-17T11:13:57.866427+00:00",
+          "from": "blocked",
+          "to": "proposed",
+          "note": "board-game-lens-rules FAIL (no reachable ending at 2p, denial layer dominated, memorisable turn) plus PLAYTEST FAIL at 192 turns against a claimed 30 min; ideator reworked the rules, so the two exhausted CAD repair rounds were spent on a design that no longer exists. Stale playtest/engine.py removed so rules_gate regenerates it."
         }
       ],
-      "rework_reason": "you can see the holes before dropping, defeat the purpose of luck here"
+      "unmeasured": []
     },
     "deep-claim": {
       "slug": "deep-claim",
