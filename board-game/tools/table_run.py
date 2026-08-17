@@ -95,6 +95,15 @@ RETRY_BACKOFF = 4.0
 # minimax-m3 against deep-claim: a first move took about 2000 tokens of
 # thinking before it wrote a line.
 DEFAULT_MAX_TOKENS = 8192
+
+# Above roughly this many options a turn, a seat stops being able to answer at
+# all. Measured on millbind, whose midgame offers 110 placements: four
+# buffered attempts 504'd at the endpoint's 60-second ceiling and four
+# streamed ones came back empty after 53-78s, the model having spent its whole
+# budget weighing options and never reaching a line of output. The list is not
+# truncated to fit, because a seat choosing from a shortened list is not
+# playing the game, and the branching factor is itself the finding.
+PLAYABLE_BRANCHING = 60
 ANTHROPIC_VERSION = "2023-06-01"
 USER_AGENT = "board-game-table/1.0 (playtest gate R1c)"
 
@@ -597,23 +606,33 @@ class Run:
                                          self.compact)])
             parsed = None
             asked_before = len(self.questions)
+            rejected = []
             for attempt in range(MAX_REPLY_RETRIES + 1):
                 prompt = block if attempt == 0 else (
                     f"That reply had no readable `CHOICE <n>` with n between 0 "
                     f"and {len(moves) - 1}. Send only the lines the brief asks "
                     f"for: CHOICE, WHY, then DECISION with one of "
                     f"{', '.join(DECISIONS)}.")
-                parsed = parse_reply(
-                    await self.ask_seat(seat, prompt, label),
-                    len(moves))
+                reply = await self.ask_seat(seat, prompt, label)
+                parsed = parse_reply(reply, len(moves))
                 if parsed:
                     break
+                rejected.append(reply)
             if not parsed:
+                # The old message said "fix the seat or the brief" and showed
+                # nothing to fix it with, which is the least useful shape an
+                # error can take. An empty reply, a refusal and a model that
+                # answered in prose are three different problems and only the
+                # text tells them apart.
+                shown = "\n  ---\n".join(
+                    (repr(r[:400]) if r.strip() else "(empty reply)")
+                    for r in rejected)
                 raise SystemExit(
                     f"TABLE ERROR seat {seat} could not produce a readable "
                     f"CHOICE after {MAX_REPLY_RETRIES + 1} attempts in game "
-                    f"{label}. Fix the seat or the brief; do not let a policy "
-                    f"finish this game and call the result a player's.")
+                    f"{label}, on a position offering {len(moves)} moves. "
+                    f"Do not let a policy finish this game and call the "
+                    f"result a player's. What it actually sent:\n  {shown}")
 
             # ask_seat already recorded any question in those replies. Stamp
             # the turn onto the ones this turn produced, and only those: a
@@ -793,6 +812,29 @@ async def run(args: argparse.Namespace) -> int:
     if missing:
         print("TABLE ERROR set " + ", ".join(missing))
         return 2
+
+    # The machine half, if it has run, already knows how wide this game's
+    # turns are. Saying so before the first request costs nothing and is
+    # cheaper than discovering it forty decisions in.
+    report = idea_dir / "playtest.json"
+    if report.is_file():
+        try:
+            stats = json.loads(report.read_text(encoding="utf-8"))["stats"]
+            widest = max(
+                (block["competent"]["branching_median"], seats)
+                for seats, block in stats["seats"].items()
+                if block.get("competent", {}).get("branching_median"))
+            if widest[0] > PLAYABLE_BRANCHING:
+                print(f"WIDE  playtest.json records a median of {widest[0]:.0f} "
+                      f"legal moves per turn at {widest[1]} players. Past "
+                      f"about {PLAYABLE_BRANCHING} a seat spends its whole "
+                      f"budget weighing options and returns nothing, so "
+                      f"expect this run to stop on an empty reply. That is a "
+                      f"fact about the game's branching factor, not a "
+                      f"transport problem, and truncating the list to fit "
+                      f"would measure a different game.")
+        except (KeyError, ValueError, TypeError):
+            pass
 
     seats_client = Seats(base_url, api_key, model, args.wire,
                          args.max_tokens, not args.no_cache, args.stream)

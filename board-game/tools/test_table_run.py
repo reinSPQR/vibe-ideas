@@ -415,9 +415,17 @@ def check_unreadable_stops(idea_dir: Path, mode: str) -> list:
                                         "--label-prefix", f"{mode}_"])
     except SystemExit as exc:
         message = str(exc)
+        bad = []
         if "TABLE ERROR" not in message:
-            return [f"stopped with an unhelpful message: {message!r}"]
-        return []
+            bad.append(f"stopped with an unhelpful message: {message!r}")
+        # The message has to carry the rejected reply. Whoever reads it is
+        # trying to tell an empty response from a refusal from a model
+        # answering in prose, and only the text distinguishes those.
+        if "What it actually sent" not in message:
+            bad.append("the error does not show what the seat replied")
+        elif mode == "unreadable" and "seems wise" not in message:
+            bad.append("the error shows no trace of the actual reply text")
+        return bad
     finally:
         endpoint.stop()
     return [f"a {mode} reply did not stop the run"]
