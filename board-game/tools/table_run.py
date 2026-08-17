@@ -627,12 +627,27 @@ class Run:
                 shown = "\n  ---\n".join(
                     (repr(r[:400]) if r.strip() else "(empty reply)")
                     for r in rejected)
+                # Write the partial game before giving up. It is a seed and a
+                # list of choices, so it is the reproduction: whoever picks
+                # this up can walk straight back to the position that could
+                # not be answered, and that position is the finding. The same
+                # argument as for a rules gap, which this code already got
+                # right and this path did not.
+                session["abandoned_at"] = len(session["moves"])
+                session["abandoned_because"] = (
+                    f"seat {seat} returned nothing readable on a position "
+                    f"offering {len(moves)} moves")
+                out = self.idea_dir / "playtest" / "table" / f"{label}.json"
+                out.parent.mkdir(parents=True, exist_ok=True)
+                out.write_text(json.dumps(session, indent=2), encoding="utf-8")
                 raise SystemExit(
                     f"TABLE ERROR seat {seat} could not produce a readable "
                     f"CHOICE after {MAX_REPLY_RETRIES + 1} attempts in game "
                     f"{label}, on a position offering {len(moves)} moves. "
                     f"Do not let a policy finish this game and call the "
-                    f"result a player's. What it actually sent:\n  {shown}")
+                    f"result a player's. The game so far is saved at "
+                    f"{out}, so the position replays. What it actually sent:"
+                    f"\n  {shown}")
 
             # ask_seat already recorded any question in those replies. Stamp
             # the turn onto the ones this turn produced, and only those: a

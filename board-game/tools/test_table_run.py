@@ -425,6 +425,14 @@ def check_unreadable_stops(idea_dir: Path, mode: str) -> list:
             bad.append("the error does not show what the seat replied")
         elif mode == "unreadable" and "seems wise" not in message:
             bad.append("the error shows no trace of the actual reply text")
+        # The abandoned game is the reproduction and must survive the failure.
+        saved = list((idea_dir / "playtest" / "table").glob(f"{mode}_*.json"))
+        if not saved:
+            bad.append("the abandoned game was not written, so the position "
+                       "that defeated the seat cannot be replayed")
+        elif json.loads(saved[0].read_text(encoding="utf-8")
+                        ).get("abandoned_at") is None:
+            bad.append("the saved session does not record being abandoned")
         return bad
     finally:
         endpoint.stop()
