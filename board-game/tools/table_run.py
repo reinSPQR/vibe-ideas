@@ -230,8 +230,9 @@ class Seats:
     """
 
     def __init__(self, base_url: str, api_key: str, model: str, wire: str,
-                 max_tokens: int, cache: bool):
-        self.name = wire + ("/cached" if cache else "")
+                 max_tokens: int, cache: bool, stream: bool = False):
+        self.name = wire + ("/cached" if cache else "") + ("/stream" if stream else "")
+        self.stream = stream
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.model = model
@@ -252,10 +253,11 @@ class Seats:
                     {"Authorization": f"Bearer {self.api_key}",
                      "content-type": "application/json"},
                     {"model": self.model, "max_tokens": self.max_tokens,
-                     "stream": True,
+                     "stream": self.stream,
                      # Streaming otherwise omits usage entirely, and a run
                      # that cannot say what it spent is not a measurement.
-                     "stream_options": {"include_usage": True},
+                     **({"stream_options": {"include_usage": True}}
+                        if self.stream else {}),
                      "messages": [{"role": "system", "content": system}]
                                  + messages})
         block = {"type": "text", "text": system}
@@ -270,28 +272,34 @@ class Seats:
                  "anthropic-version": ANTHROPIC_VERSION,
                  "content-type": "application/json"},
                 {"model": self.model, "max_tokens": self.max_tokens,
-                 "stream": True,
+                 "stream": self.stream,
                  "system": [block], "messages": messages})
 
     def _post(self, url: str, headers: dict, payload: dict) -> dict:
-        """POST and consume the event stream, returning text and usage.
+        """POST and return the reply text and its usage, streamed or not.
 
-        Streaming is not an optimisation here, it is the only thing that
-        works. Asked for millbind's opening position without it, this endpoint
-        spent 38 seconds and returned an empty `content`, having buffered the
-        model's reasoning and dropped the answer behind it; asked with it, the
-        same prompt answered in 4 seconds. On harder positions the buffered
-        call does not return at all, it 504s, and no amount of retrying fixes
-        a request that cannot complete. The gateway documentation says
-        inference responses must stream, and it means it.
+        Which is better is a property of the endpoint, not of this file, so it
+        is a flag and the default is off. Measured on this gateway with five
+        interleaved pairs of the same prompt: buffered ran 3.4-4.2s and
+        returned a complete reply 5 times out of 5; streamed ran 3.7-63s and
+        returned 4 out of 5, the failure being a 63-second stream that ended
+        empty. An earlier single pair pointed the other way and a whole commit
+        was written on it; one pair on an endpoint whose latency varies twenty
+        fold is not evidence of anything.
+
+        Streaming stays available because some gateways require it and an
+        intermediary can kill a long silent request, and because a reasoning
+        model's `thinking_delta` events are cleaner to drop as they arrive
+        than to strip from the text afterwards.
         """
         # urllib announces itself as `Python-urllib/3.x`, which a gateway
         # behind Cloudflare rejects outright with a 403 and error code 1010
         # before the request reaches the model at all. Naming the tool is both
         # what fixes it and what an operator reading their own access log
         # would want to see.
-        headers = dict(headers, **{"user-agent": USER_AGENT,
-                                   "accept": "text/event-stream"})
+        headers = dict(headers, **{"user-agent": USER_AGENT})
+        if self.stream:
+            headers["accept"] = "text/event-stream"
         body = json.dumps(payload).encode("utf-8")
         for attempt in range(GATEWAY_RETRIES + 1):
             req = urllib.request.Request(url, data=body, headers=headers,
@@ -299,7 +307,9 @@ class Seats:
             try:
                 with urllib.request.urlopen(req,
                                             timeout=REQUEST_TIMEOUT) as resp:
-                    return self._consume(resp)
+                    return (self._consume(resp) if self.stream
+                            else self._buffered(json.loads(
+                                resp.read().decode("utf-8"))))
             except urllib.error.HTTPError as exc:
                 detail = exc.read().decode("utf-8", "replace")[:800]
                 # A gateway 502/503/504 is the upstream being slow or busy,
@@ -322,6 +332,18 @@ class Seats:
                         f"over {backoff_total(attempt):.0f}s: {exc}") from None
                 time.sleep(RETRY_BACKOFF * 2 ** attempt)
         raise RuntimeError(f"{url}: retries exhausted")
+
+    def _buffered(self, data: dict) -> dict:
+        """One JSON body, folded into the same shape the stream reader gives."""
+        if self.wire == "openai":
+            message = (data.get("choices") or [{}])[0].get("message") or {}
+            text = message.get("content") or ""
+        else:
+            # `text` blocks only. A reasoning model also sends `thinking`
+            # blocks, and those are its scratch work rather than its answer.
+            text = "".join(b.get("text", "") for b in data.get("content", [])
+                           if b.get("type") == "text")
+        return {"text": text, "usage": data.get("usage") or {}}
 
     def _consume(self, resp) -> dict:
         """Fold an SSE stream back into the one text and one usage we want.
@@ -773,7 +795,7 @@ async def run(args: argparse.Namespace) -> int:
         return 2
 
     seats_client = Seats(base_url, api_key, model, args.wire,
-                         args.max_tokens, not args.no_cache)
+                         args.max_tokens, not args.no_cache, args.stream)
 
     brief = PLAYER_BRIEF.read_text(encoding="utf-8").strip()
     rules = render_rules(idea)
@@ -864,6 +886,10 @@ def main(argv: list | None = None) -> int:
                     help="games per seat count, e.g. 4:3,2:2")
     ap.add_argument("--wire", choices=("anthropic", "openai"),
                     default="anthropic")
+    ap.add_argument("--stream", action="store_true",
+                    help="consume the reply as server-sent events. Required "
+                         "by some gateways; measured slower and less reliable "
+                         "on the one this was built against")
     ap.add_argument("--no-cache", action="store_true",
                     help="anthropic wire only: drop the cache_control marker "
                          "on the static brief, to measure what it saves")

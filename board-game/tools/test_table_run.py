@@ -179,6 +179,30 @@ class Endpoint:
                 self.wfile.write(b"data: [DONE]\n\n")
                 self.wfile.flush()
 
+            def _buffered(self, reply: str, openai: bool) -> None:
+                if openai:
+                    payload = {"choices": [{"message": {"content": reply}}],
+                               "usage": {
+                                   "prompt_tokens":
+                                       (USAGE["input_tokens"]
+                                        + USAGE["cache_read_input_tokens"]),
+                                   "completion_tokens": USAGE["output_tokens"],
+                                   "prompt_tokens_details": {
+                                       "cached_tokens":
+                                           USAGE["cache_read_input_tokens"]}}}
+                else:
+                    payload = {"content": [
+                        # Scratch work alongside the answer, which must not
+                        # reach the parser on this path either.
+                        {"type": "thinking", "text": "CHOICE 7 maybe? no."},
+                        {"type": "text", "text": reply}], "usage": USAGE}
+                raw = json.dumps(payload).encode()
+                self.send_response(200)
+                self.send_header("content-type", "application/json")
+                self.send_header("content-length", str(len(raw)))
+                self.end_headers()
+                self.wfile.write(raw)
+
             def _openai(self, reply: str) -> None:
                 self._sse([
                     {"choices": [{"delta": {"content": reply}}]},
@@ -224,7 +248,10 @@ class Endpoint:
                 endpoint.bodies.append(body)
                 reply = endpoint._answer(
                     text_of(body["messages"][-1]["content"]))
-                if self.path.endswith("/chat/completions"):
+                openai = self.path.endswith("/chat/completions")
+                if not body.get("stream"):
+                    self._buffered(reply, openai)
+                elif openai:
                     self._openai(reply)
                 else:
                     self._anthropic(reply)
@@ -498,25 +525,28 @@ def check_both_wires_count_alike(idea_dir: Path) -> list:
     """
     bad = []
     totals = {}
-    for wire in ("anthropic", "openai"):
+    for wire, extra, suffix in (("anthropic", [], ""), ("openai", [], ""),
+                                ("anthropic", ["--stream"], "_stream"),
+                                ("openai", ["--stream"], "_stream")):
         endpoint = Endpoint()
+        label = wire[:2] + suffix
         try:
             if run_table(idea_dir, endpoint,
                          ["--schedule", "2:1", "--wire", wire,
-                          "--label-prefix", wire[:2]]) != 0:
-                return [f"the {wire} run failed"]
+                          "--label-prefix", label] + extra) != 0:
+                return [f"the {wire}{suffix} run failed"]
         finally:
             endpoint.stop()
-        name = "anthropic_cached" if wire == "anthropic" else "openai_cached"
+        name = f"{wire}_cached{suffix}"
         use = json.loads((idea_dir / "playtest" / "table"
                           / f"run_{name}.json").read_text("utf-8"))["usage"]
-        totals[wire] = (use["in"] + use["cached"], use["calls"])
-    (a_tok, a_calls), (o_tok, o_calls) = totals["anthropic"], totals["openai"]
-    if a_calls != o_calls:
-        bad.append(f"{a_calls} calls on one wire against {o_calls} on the other")
-    elif a_tok != o_tok:
-        bad.append(f"the same {a_calls} calls counted {a_tok} tokens on the "
-                   f"anthropic wire and {o_tok} on the openai one")
+        totals[wire + suffix] = (use["in"] + use["cached"], use["calls"])
+    counts = {k: v for k, v in totals.items()}
+    if len(set(c for _, c in counts.values())) != 1:
+        bad.append(f"call counts differ across wires: {counts}")
+    elif len(set(t for t, _ in counts.values())) != 1:
+        bad.append(f"the same games counted different prompt totals "
+                   f"depending on wire and streaming: {counts}")
     return bad
 
 
