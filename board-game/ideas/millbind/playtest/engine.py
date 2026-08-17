@@ -435,3 +435,76 @@ def winners(state):
         return tied_cw
     return tied
 
+
+# ---------------------------------------------------------------------------
+# observation — HIDDEN_INFO is False, so every seat is shown the same board;
+# this exists for legibility, not concealment. A raw dump of `state` uses
+# variable names chosen for the engine's convenience (`crank_pin` one
+# coordinate beside `mill_pin` a per-seat list; a 37-entry `pins` dict that
+# is 34 nulls; no statement anywhere of which pins neighbour which, though
+# rules:turn[0] MESHING and the whole bind test are written entirely in
+# those terms; tooth height left to be inferred from a piece-type string).
+# `observation` translates that into idea.json's own vocabulary for a reader
+# who has the rulebook and not the code. See notes.md for the reasoning.
+# ---------------------------------------------------------------------------
+
+def _pid(p):
+    # str() of a (q, r) tuple is "(-1, -2)" — exactly the substring that
+    # appears inside every move tuple, e.g. ("place", (-1, -2), "gear_low"),
+    # so a pin id here can be matched by eye against the LEGAL MOVES list
+    # rather than converted between two different coordinate spellings.
+    return str(p)
+
+
+def observation(state, seat):
+    pieces = {}
+    for p, piece in state["pins"].items():
+        if piece is None:
+            continue
+        entry = {"piece": piece["type"], "mesh_height": _tier(piece)}
+        if piece["type"] == "mill":
+            entry["owner"] = piece["owner"]
+        pieces[_pid(p)] = entry
+
+    seats = []
+    for s in range(state["n_players"]):
+        mp = state["mill_pin"][s]
+        seats.append({
+            "seat": s,
+            "mill_pin": _pid(mp) if mp is not None else None,
+            "pellets": state["spindles"][s],
+        })
+
+    to_move = None if state["game_over"] else player_to_move(state)
+    crank_pin = state["crank_pin"]
+
+    return {
+        "phase": state["phase"],
+        "round": state["round"],
+        "to_move": to_move,
+        "start_player": state["start_player"],
+        "game_over": state["game_over"],
+        "crank_pin": _pid(crank_pin) if crank_pin is not None else None,
+        "supply": dict(state["supply"]),
+        "granary_pellets_remaining": state["pellets"],
+        "gear_placed_this_round": state["placed_this_round"],
+        "last_grind_clockwise_seats": list(state["last_grind_cw"]),
+        "you": seats[seat],
+        "seats": seats,
+        "board": {
+            # rules:setup[0]: the only pins a millstone or the crank may
+            # ever stand on. Listed even empty, because SHIFT/POWER offer
+            # any empty one of these as a destination.
+            "yard_pins": [_pid(p) for p in YARD_PINS],
+            "inner_pins": [_pid(p) for p in INNER_PINS],
+            # rules:turn[0] MESHING: two pieces on neighbouring pins mesh
+            # (subject to mesh_height below); pins that are not neighbours
+            # never mesh. This is the fact the whole bind test runs on, and
+            # nothing else in the state says which pins these are — a
+            # player at the table reads it off the board by eye.
+            "edges": [[_pid(a), _pid(b)] for a, b in EDGES],
+            # Only occupied pins are listed; an absent pin id here means
+            # empty, exactly as an absent piece on the physical board does.
+            "pieces": pieces,
+        },
+    }
