@@ -11,7 +11,7 @@ score-consistency had to be proven. Neither is true any more: builds happen
 here, git records who changed what, and nothing is scored. Keeping those
 checks would have been theatre.
 
-Five risks survive the change, and two of them are new:
+Six risks survive the change, and three of them are new:
 
 1. GATE EROSION (new, and the important one). With acceptance reduced to a
    deterministic gate, the cheapest way to make everything pass is to move
@@ -31,6 +31,12 @@ Five risks survive the change, and two of them are new:
    If the code it became is later deleted, the lesson is neither enforced nor
    remembered, and lessons.md goes on claiming otherwise. Delegated to
    graduation_check.py, which holds every marker to the tree.
+6. COMPOSITION DEBT (new). The golden blocks are tested one at a time, and a
+   brief may legally ask for two at once. test_checks.py fails outright on a
+   composition nobody has accounted for, because answering that costs one line.
+   It cannot fail on one accounted for as BROKEN: paying that debt means
+   changing geometry in blocks/, which is human-approved and PR-only. So the
+   debt is carried here, where it stays in view and can only shrink.
 
 Exit 0 green, 1 amber, 2 red.
 """
@@ -153,6 +159,27 @@ def check_graduations(findings: list) -> None:
               f"still prose")
 
 
+def check_composition_debt(findings: list) -> None:
+    """Block pairings that are legal, reachable, and not right yet.
+
+    The seam case is the one to keep in mind while reading these: a seat cut in
+    half by a tile boundary prints clean on both sides and returns GATE PASS, so
+    the debt is not something a build will ever surface. If it stops being
+    printed here it stops existing anywhere.
+    """
+    sys.path.insert(0, str(TOOLS))
+    import test_checks
+
+    carried = [(pair, reason)
+               for pair, (kind, reason) in sorted(test_checks.COMPOSITIONS.items())
+               if kind == "broken"]
+    for (producer, consumer), reason in carried:
+        findings.append((AMBER, "composition", f"{producer} -> {consumer}: {reason}"))
+    if not carried:
+        print(f"  note: {len(test_checks.COMPOSITIONS)} block compositions "
+              f"accounted for, none carried as broken")
+
+
 def _complexity(idea: dict) -> dict:
     components = idea.get("components") or []
     return {
@@ -218,6 +245,7 @@ def main() -> int:
     check_gate_erosion(findings)
     check_shipped_were_measured(findings)
     check_graduations(findings)
+    check_composition_debt(findings)
     check_degeneracy(findings)
     check_prompt_bloat(findings)
 

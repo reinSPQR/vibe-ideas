@@ -60,6 +60,9 @@ FORBIDDEN_PREFIXES = ("board-game/ideas/", "board-game/history/",
 
 SUITES = [
     ("gate", ["board-game/tools/test_gate.py"]),
+    # blocks.py is CODE tier, so a session may add a helper to it. The closure
+    # table in here fails on a block whose compositions nobody has accounted
+    # for, which is what stops the library growing faster than its tested space.
     ("checks", ["board-game/tools/test_checks.py"]),
     ("blocks", ["board-game/blocks/testbench.py"]),
     # A session can edit gate.py and rewrite lessons.md in the same run, so it
@@ -194,7 +197,11 @@ IN PRIORITY ORDER:
    a wrong path, or a missing block are cheap and high value.
 3. PROPOSE A BLOCK for geometry that builds keep hand-rolling — as code plus a
    testbench case, never as prose. blocks/ is human-approved, so this ships as
-   a PR and that is correct.
+   a PR and that is correct. A new block also owes an entry in
+   test_checks.COMPOSITIONS for every pairing with an existing one, saying
+   where it composes or why it cannot; the suite fails until it does. That is
+   deliberate. A library that grows faster than its tested space is how a
+   builder ends up composing two blocks nobody has ever run together.
 4. TIGHTEN AN AGENT'S INSTRUCTIONS where the record shows repeated
    misunderstanding.
 
@@ -286,7 +293,7 @@ def main() -> int:
                  "--body", f"Automated self-improvement session.\n\n"
                            f"Code-tier changes need review: {', '.join(code)}\n"
                            f"Doc-tier in the same branch: {', '.join(doc) or 'none'}\n\n"
-                           f"All three suites: ALL PASS."])
+                           f"All {len(SUITES)} suites: ALL PASS."])
         print(f"code-tier -> PR: {(pr.stdout or pr.stderr).strip()[-200:]}")
     else:
         sh(["git", "add", *doc])

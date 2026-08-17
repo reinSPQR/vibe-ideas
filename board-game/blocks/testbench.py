@@ -26,7 +26,18 @@ GATE = REPO_ROOT / "board-game" / "tools" / "gate.py"
 ERGO = REPO_ROOT / "board-game" / "tools" / "ergonomics_check.py"
 PY = REPO_ROOT / ".venv" / "bin" / "python"
 
-# --- one fixture per block -------------------------------------------------
+sys.path.insert(0, str(REPO_ROOT / "cadcode"))
+sys.path.insert(0, str(HERE))
+
+from blocks import seated_pair  # noqa: E402
+
+# The fixtures are source text copied into a throwaway project, so each makes
+# its own seated_pair call. These are for the BRIEFS below, which used to state
+# the same dimensions by hand and could therefore drift away from the geometry
+# they judge — the exact drift seated_pair exists to stop.
+PIECE_D, SEAT_D = seated_pair(20.0)
+
+# --- one fixture per block, then one for the blocks together ----------------
 
 FAMILY = """import cadquery as cq
 from blocks import shared_positions, add_piece_family
@@ -39,18 +50,51 @@ def gen_step():
 """
 
 WELLS = """import cadquery as cq
-from blocks import shared_positions, add_piece_family, cut_wells
+from blocks import shared_positions, add_piece_family, cut_wells, seated_pair
 
 BOARD_T = 8.0
+# The seat is DERIVED from the piece, not chosen beside it. This fixture used
+# to state diameter=26 for a 20mm token — 3.0mm per side, against the 0.40mm
+# seated_pair hands out — so the golden fixture demonstrated a clearance the
+# golden library would never produce.
+PIECE_D, SEAT_D = seated_pair(20.0)
 
 def gen_step():
     # ONE position list feeds both the wells and the pieces that sit in them.
     seats = shared_positions(4, 3, 40)
     board = cq.Workplane("XY").box(200, 150, BOARD_T).translate((0, 0, BOARD_T / 2))
-    board = cut_wells(board, seats, diameter=26, depth=5, top_z=BOARD_T)
+    board = cut_wells(board, seats, diameter=SEAT_D, depth=5, top_z=BOARD_T)
     asm = cq.Assembly()
     asm.add(board, name="board")
-    token = cq.Workplane("XY").cylinder(10, 10)
+    token = cq.Workplane("XY").cylinder(10, PIECE_D / 2)
+    add_piece_family(asm, token, seats, "token", lift=BOARD_T)
+    return asm
+"""
+
+TILED_WELLS = """import cadquery as cq
+from blocks import (add_piece_family, cut_wells, seated_pair, shared_positions,
+                    tiled_board)
+
+BOARD_W, BOARD_D, BOARD_T = 500.0, 300.0, 8.0
+PIECE_D, SEAT_D = seated_pair(20.0)
+
+def gen_step():
+    # Three blocks at once: a board too big for the bed, seats in it, and the
+    # pieces those seats hold. The seat grid is chosen to clear every tile seam
+    # — see test_checks.compose_tiled_wells for why nothing else would notice
+    # if it did not.
+    asm = cq.Assembly()
+    seats = shared_positions(4, 2, 100.0)
+    for tile in tiled_board(BOARD_W, BOARD_D, BOARD_T):
+        slab = (cq.Workplane("XY")
+                .box(tile["w"] - 0.4, tile["d"] - 0.4, tile["t"])
+                .translate((tile["x"], tile["y"], tile["t"] / 2)))
+        mine = [(x, y, 0.0) for x, y, _ in seats
+                if abs(x - tile["x"]) < tile["w"] / 2
+                and abs(y - tile["y"]) < tile["d"] / 2]
+        slab = cut_wells(slab, mine, diameter=SEAT_D, depth=5.0, top_z=tile["t"])
+        asm.add(slab, name=tile["name"])
+    token = cq.Workplane("XY").cylinder(10, PIECE_D / 2)
     add_piece_family(asm, token, seats, "token", lift=BOARD_T)
     return asm
 """
@@ -89,14 +133,21 @@ CASES = [
     ("cut_wells", WELLS, [{"name": "board", "qty": 1}, {"name": "token", "qty": 12}]),
     ("seated_pair", SEATED, [{"name": "plate", "qty": 1}, {"name": "peg", "qty": 1}]),
     ("tiled_board", TILED, [{"name": "board_tile", "qty": 6}]),
+    # Not a block, a composition: the only fixture where three of them meet.
+    # test_checks.COMPOSITIONS names it, and fails if it stops existing.
+    ("tiled_wells", TILED_WELLS,
+     [{"name": "board_tile", "qty": 6}, {"name": "token", "qty": 8}]),
 ]
 
 # The wells block exists to satisfy R2, so it is held to R2 as well as to the
-# gate: a seat a hand cannot reach into is not a golden block.
+# gate: a seat a hand cannot reach into is not a golden block. The numbers come
+# from the same seated_pair call the fixture builds from, so the brief cannot
+# drift away from the geometry it is judging.
 WELLS_BRIEF = {"parts": [
-    {"name": "token", "kind": "loose_piece", "bbox_mm": [20, 20, 10]},
+    {"name": "token", "kind": "loose_piece", "bbox_mm": [PIECE_D, PIECE_D, 10]},
     {"name": "board", "kind": "board", "bbox_mm": [200, 150, 8],
-     "recesses": [{"holds": "token", "width_mm": 26, "depth_mm": 5, "count": 12}]},
+     "recesses": [{"holds": "token", "width_mm": SEAT_D, "depth_mm": 5,
+                   "count": 12}]},
 ]}
 
 
