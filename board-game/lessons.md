@@ -26,6 +26,34 @@ A graduated lesson leaves the build prompts, so a marker that has quietly
 stopped being true is worse than one that never graduated: the lesson is
 neither enforced nor remembered.
 
+**Where it lands matters as much as that it landed.** A marker can be entirely
+true and still weak: the gate really does catch the blanket fillet, and every
+build still writes it, still fails, and still spends a repair round undoing it.
+A check is a smoke alarm. It works, and the house burns on schedule. So aim as
+far up this ladder as the lesson will go — ordered by how many
+non-deterministic hops sit between the fix and the geometry:
+
+| tier | lands in | |
+|---|---|---|
+| planner | `ideator`, `rules_check` | the defect is never proposed |
+| block | `blocks` | one hop, then right by construction |
+| brief | `brief_writer` | two hops: writer obeys template, builder obeys brief |
+| prompt | `builder` | two hops, and nothing verifies compliance |
+| check | `gate`, `ergonomics_check`, `interference`, `pipeline_queue` | after the build is already paid for |
+
+A lesson takes the best tier among its targets, so pairing an upstream fix with
+a gate check reads as the upstream fix. Landing at `check` is legal and
+sometimes the only honest answer, but `audit.py` raises it every run until the
+marker says why nothing above it could hold the fix:
+
+    [GRADUATED -> gate:"bed-size" | ceiling: the bed is 256mm and no amount of planning makes a part fit one that is not]
+
+A marker is read one line at a time, so it never wraps, however long it gets.
+
+Blocks are copied into each build rather than imported, so a graduation into
+`blocks.py` only reaches builds that took a fresh copy. `audit.py` names the
+in-flight builds holding a stale one, and names a block that no build calls.
+
 ---
 
 - [GRADUATED -> gate:"blanket-fillet"] Never fillet all three edge directions of a box at once (`.edges().fillet(r)`). OCCT synthesises a spherical vertex blend at each corner and tessellates it into phantom sliver bodies that pass a no-error check and fail the watertight/body count. Bake corner rounds into the 2D profile and apply top/bottom fillets afterwards.

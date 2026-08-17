@@ -11,7 +11,9 @@ score-consistency had to be proven. Neither is true any more: builds happen
 here, git records who changed what, and nothing is scored. Keeping those
 checks would have been theatre.
 
-Six risks survive the change, and three of them are new:
+Eight risks survive the change, and four of them are new. The last four share
+one blind spot, which a checker that only asks whether a fix EXISTS cannot
+see: a fix can be real, verified, and still not doing the work.
 
 1. GATE EROSION (new, and the important one). With acceptance reduced to a
    deterministic gate, the cheapest way to make everything pass is to move
@@ -31,12 +33,27 @@ Six risks survive the change, and three of them are new:
    If the code it became is later deleted, the lesson is neither enforced nor
    remembered, and lessons.md goes on claiming otherwise. Delegated to
    graduation_check.py, which holds every marker to the tree.
-6. COMPOSITION DEBT (new). The golden blocks are tested one at a time, and a
-   brief may legally ask for two at once. test_checks.py fails outright on a
-   composition nobody has accounted for, because answering that costs one line.
-   It cannot fail on one accounted for as BROKEN: paying that debt means
-   changing geometry in blocks/, which is human-approved and PR-only. So the
-   debt is carried here, where it stays in view and can only shrink.
+6. FIX TIER (new). A marker can be entirely true and still weak. `gate.py`
+   really does catch the blanket fillet, and every build still writes it,
+   still fails, and still spends a repair round undoing it. Nothing is lying;
+   the pipeline just pays that cost forever, because the fix landed at the
+   layer that detects rather than the layer that prevents. A check is a smoke
+   alarm: it works, and the house burns on schedule. AMBER, never RED — check
+   is sometimes the only honest tier, and the marker can say so with a
+   `| ceiling:` clause. Also flags a block nothing calls.
+7. A GRADUATION THAT DOES NOT REACH THE BUILD (new). `blocks.py` is COPIED
+   into each project, not imported, so a fix landed in the canonical file
+   reaches only builds that take a fresh copy. An in-flight project holding a
+   stale or hand-edited copy is running without the graduation while
+   graduation_check.py reads canonical and reports green. Shipped projects are
+   left alone: their files are the record of what was printed.
+8. COMPOSITION DEBT (new). The same question asked of the blocks themselves.
+   They are tested one at a time, and a brief may legally ask for two at once.
+   test_checks.py fails outright on a composition nobody has accounted for,
+   because answering that costs one line. It cannot fail on one accounted for
+   as BROKEN: paying that debt means changing geometry in blocks/, which is
+   human-approved and PR-only. So the debt is carried here, where it stays in
+   view and can only shrink.
 
 Exit 0 green, 1 amber, 2 red.
 """
@@ -54,6 +71,10 @@ AGENTS = REPO_ROOT / ".claude" / "agents"
 IDEAS = REPO_ROOT / "board-game" / "ideas"
 QUEUE = REPO_ROOT / "board-game" / "QUEUE.json"
 BASELINE = TOOLS / "thresholds_baseline.json"
+BLOCKS = REPO_ROOT / "board-game" / "blocks" / "blocks.py"
+#: Where a build keeps its own copy of blocks.py. `draft` counts: a draft that
+#: predates a graduation is what the owner approves the shape from.
+BUILD_DIRS = ("project", "draft")
 
 GREEN, AMBER, RED = "GREEN", "AMBER", "RED"
 
@@ -159,10 +180,131 @@ def check_graduations(findings: list) -> None:
               f"still prose")
 
 
+def _idea_dirs() -> list[Path]:
+    if not IDEAS.is_dir():
+        return []
+    return sorted(p for p in IDEAS.iterdir() if p.is_dir())
+
+
+def _queue_states() -> dict[str, str]:
+    if not QUEUE.is_file():
+        return {}
+    data = json.loads(QUEUE.read_text(encoding="utf-8"))
+    return {slug: item.get("state", "")
+            for slug, item in data.get("ideas", {}).items()}
+
+
+def _block_callers(symbol: str) -> list[str]:
+    """Ideas whose build code actually reaches for a block helper.
+
+    The copied blocks.py is skipped: it defines the symbol inside every
+    project whether or not one line of that project ever calls it, so counting
+    it would make every block look universally adopted.
+    """
+    pattern = re.compile(rf"\b{re.escape(symbol)}\b")
+    callers = set()
+    for idea in _idea_dirs():
+        for sub in BUILD_DIRS:
+            for path in (idea / sub).glob("**/*.py"):
+                if path.name == "blocks.py":
+                    continue
+                try:
+                    text = path.read_text(encoding="utf-8", errors="ignore")
+                except OSError:
+                    continue
+                if pattern.search(text):
+                    callers.add(idea.name)
+    return sorted(callers)
+
+
+def check_fix_tier(findings: list) -> None:
+    """Not whether a graduation is real — check_graduations answers that — but
+    how far upstream it got, and whether anything downstream uses it.
+
+    Both findings here are AMBER on purpose. A check-tier fix is sometimes the
+    only honest one, and a rule that forced an upstream landing would buy
+    fake planner constraints written to clear an audit. What the pipeline
+    cannot afford is the question going unasked.
+    """
+    sys.path.insert(0, str(TOOLS))
+    import graduation_check
+
+    good, broken, _ = graduation_check.scan()
+    if broken:
+        return  # check_graduations owns those; do not stack a second finding
+    mine: list[tuple[str, str, str]] = []
+    tally: dict[str, int] = {}
+    for entry in good:
+        tally[entry["tier"]] = tally.get(entry["tier"], 0) + 1
+        where = ", ".join(t["text"] for t in entry["targets"])
+        if entry["rank"] == graduation_check.CHECK_TIER and not entry["ceiling"]:
+            mine.append((AMBER, "fix-tier",
+                         f'"{entry["lesson"]}…" landed check-only, in {where}. '
+                         f'The gate catches it, which means every build still '
+                         f'writes it and still spends a repair round undoing '
+                         f'it. Land it in blocks.py (right by construction) or '
+                         f'the brief-writer template (never designed in), or '
+                         f'add `| ceiling: <why nothing upstream can catch '
+                         f'this>` to the marker'))
+        for target in entry["targets"]:
+            if target["module"] != "blocks" or not target["symbol"]:
+                continue
+            if not _block_callers(target["symbol"]):
+                mine.append((AMBER, "fix-tier",
+                             f'{target["text"]} is a block-tier graduation no '
+                             f'build calls. A block prevents the defect only '
+                             f'in the builds that reach for it, so this one '
+                             f'currently prevents nothing'))
+    findings.extend(mine)
+    if good:
+        # Printed even when there are findings: the findings are the numerator
+        # and this is the denominator, and reading one without the other is how
+        # two amber lines get mistaken for a pipeline in trouble.
+        ladder = ", ".join(f"{n} {tier}" for tier, n in sorted(tally.items()))
+        print(f"  note: graduations by tier: {ladder}")
+
+
+def check_block_copies(findings: list) -> None:
+    """blocks.py is copied into each build, so a graduation is only landed for
+    the builds holding a current copy.
+
+    Shipped ideas are exempt and must stay exempt: their files are the record
+    of what was actually printed, and rewriting them to match a later fix
+    would falsify that record. This is also why the finding lives here and not
+    in graduation_check.py — as a hard failure it would deadlock `improve.py`,
+    which lands a fix in canonical blocks.py and is forbidden from touching
+    board-game/ideas/ to bring the copies along.
+    """
+    if not BLOCKS.is_file():
+        findings.append((RED, "block-reach",
+                         f"{BLOCKS.name} is missing — every build copies it"))
+        return
+    canonical = BLOCKS.read_bytes()
+    states = _queue_states()
+    for idea in _idea_dirs():
+        if states.get(idea.name) == "shipped":
+            continue
+        for sub in BUILD_DIRS:
+            copy = idea / sub / "blocks.py"
+            if not copy.is_file() or copy.read_bytes() == canonical:
+                continue
+            findings.append((AMBER, "block-reach",
+                             f"{idea.name}/{sub}/blocks.py differs from "
+                             f"board-game/blocks/blocks.py — that build is not "
+                             f"getting whatever has graduated into the block "
+                             f"library since it was copied. Re-copy it before "
+                             f"the next build step, or if the difference is a "
+                             f"local edit, land it in the library instead"))
+
+
 def check_composition_debt(findings: list) -> None:
     """Block pairings that are legal, reachable, and not right yet.
 
-    The seam case is the one to keep in mind while reading these: a seat cut in
+    The tier ladder above asks how far upstream a fix landed. This asks the
+    neighbouring question about the blocks themselves: two of them that have
+    never been run together are untested space a brief can reach.
+
+    The seam case is the one to keep in mind while reading these. A seat cut in
     half by a tile boundary prints clean on both sides and returns GATE PASS, so
     the debt is not something a build will ever surface. If it stops being
     printed here it stops existing anywhere.
@@ -245,6 +387,8 @@ def main() -> int:
     check_gate_erosion(findings)
     check_shipped_were_measured(findings)
     check_graduations(findings)
+    check_fix_tier(findings)
+    check_block_copies(findings)
     check_composition_debt(findings)
     check_degeneracy(findings)
     check_prompt_bloat(findings)

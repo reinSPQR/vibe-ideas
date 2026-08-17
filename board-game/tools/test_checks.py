@@ -532,18 +532,83 @@ def check_seated_pair_agrees_with_r2() -> list:
     return findings
 
 
+def check_fix_tier_ladder_bites() -> list:
+    """The tier ladder's own sentinel.
+
+    The ladder is only worth anything if it reads a weak graduation as weak.
+    Two ways it could go quietly wrong: scoring a lesson by its worst target
+    instead of its best (so pairing a block with a gate check would look like
+    a check), and accepting any ceiling clause at all (so `| ceiling: no` would
+    buy silence forever).
+    """
+    import tempfile
+
+    import graduation_check as gc
+
+    filler = " " + "x" * 60
+    long_reason = "the print bed is a fixed physical size and no upstream tier can change it"
+    cases = [
+        # (label, marker body, expected tier or None if it must be rejected,
+        #  expected ceiling truthiness)
+        ("check_only", 'gate:"blanket-fillet"', "check", False),
+        ("best_of_several", "gate.check_bill, blocks.add_piece_family",
+         "block", False),
+        ("ceiling_accepted", f'gate:"blanket-fillet" | ceiling: {long_reason}',
+         "check", True),
+        ("ceiling_too_short", 'gate:"blanket-fillet" | ceiling: n/a', None, False),
+        ("ceiling_malformed", 'gate:"blanket-fillet" | because reasons', None, False),
+    ]
+
+    findings = []
+    original = gc.LESSONS
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "lessons.md"
+        try:
+            gc.LESSONS = path
+            for label, body, tier, has_ceiling in cases:
+                path.write_text(f"- [GRADUATED -> {body}]{filler}\n", encoding="utf-8")
+                good, broken, _ = gc.scan()
+                if tier is None:
+                    if not broken:
+                        findings.append(f"fix-tier/{label}: a ceiling clause that "
+                                        f"says nothing was accepted — the escape "
+                                        f"valve is free")
+                    continue
+                if broken or len(good) != 1:
+                    findings.append(f"fix-tier/{label}: expected one graduation, "
+                                    f"got {len(good)} and {broken}")
+                    continue
+                entry = good[0]
+                if entry["tier"] != tier:
+                    findings.append(f"fix-tier/{label}: scored {entry['tier']}, "
+                                    f"expected {tier}")
+                if bool(entry["ceiling"]) != has_ceiling:
+                    findings.append(f"fix-tier/{label}: ceiling was "
+                                    f"{entry['ceiling']!r}")
+        finally:
+            gc.LESSONS = original
+
+    untiered = sorted(set(gc.MODULES) - set(gc.TIERS))
+    if untiered:
+        findings.append(f"fix-tier/every_module_has_a_tier: {untiered} can be "
+                        f"graduated into but has no tier, so audit.py cannot "
+                        f"say how far upstream it is")
+    return findings
+
+
 def main() -> int:
     failures = run("rules", rules_check, RULES_CASES)
     failures += run("ergo", ergo_check, ERGO_CASES)
     failures += run("composition", lambda thunk: thunk(), COMPOSITION_CASES)
 
-    # These four assert against the tree rather than against a fixture, so they
-    # have no case list to be counted from. They used to run without being
-    # counted at all, which made the printed total quietly smaller than the
-    # number of things that could fail.
+    # These assert against the tree rather than against a fixture, so they have
+    # no case list to be counted from. They used to run without being counted at
+    # all, which made the printed total quietly smaller than the number of
+    # things that could fail.
     standalone = [
         ("tools/no_stdlib_shadowing", check_no_stdlib_shadowing),
         ("tools/graduation_checker_bites", check_graduation_checker_bites),
+        ("tools/fix_tier_ladder_bites", check_fix_tier_ladder_bites),
         ("blocks/composition_closure", check_composition_closure),
         ("blocks/closure_checker_bites", check_closure_checker_bites),
         ("blocks/seated_pair_agrees_with_r2", check_seated_pair_agrees_with_r2),
@@ -553,6 +618,7 @@ def main() -> int:
         failures += found
         if not found:
             print(f"  ok  {label}")
+
 
     if failures:
         print("\nFAILED:")

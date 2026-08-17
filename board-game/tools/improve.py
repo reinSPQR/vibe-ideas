@@ -187,6 +187,15 @@ IN PRIORITY ORDER:
    cannot resolve fails the suite, and rightly: graduating a lesson is what
    takes it OUT of the build prompts, so a claim nothing verifies leaves that
    lesson neither enforced nor remembered.
+   LAND IT AS FAR UPSTREAM AS IT WILL GO. The tier ladder is in lessons.md:
+   planner, then block, then brief, then prompt, then check. A gate check is
+   the cheapest thing to write and the weakest thing to have — it means every
+   build still writes the defect and still spends a repair round undoing it.
+   Ask what would stop the defect being BUILT, not what would catch it, and
+   say in the commit body which tier you landed at and which ones you ruled
+   out. If check really is the ceiling, add `| ceiling: <why nothing upstream
+   can hold this>` to the marker; audit.py raises every check-only graduation
+   that has no such reason.
    That list is a FLOOR, not the answer. It compares wording, and two lessons
    that say the same thing in different words score no higher than two
    unrelated ones — measured, not assumed. So read lessons.md yourself and
