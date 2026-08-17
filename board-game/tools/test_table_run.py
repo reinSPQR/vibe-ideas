@@ -144,7 +144,10 @@ class Endpoint:
     def _answer(self, text: str) -> str:
         self.seen.append(text)
         if "Debrief now" in text or "get smaller" in text:
-            return "Nothing mattered.\nI would not play again."
+            # A question held back until the debrief is still a question, and
+            # a run that only scans move replies loses it.
+            return ("Nothing mattered.\nI would not play again.\n"
+                    "RULES QUESTION rules:win never says who breaks a tie")
         if self.mode == "unreadable":
             return "I think I will take the small one, it seems wise."
         if self.mode == "out_of_range":
@@ -306,6 +309,13 @@ def check_full_run(idea_dir: Path) -> list:
     ends = [d for d in summary["debriefs"] if d["game"] == "RUN END"]
     if len(ends) != 4:
         bad.append(f"{len(ends)} closing answers, wanted one per seat (4)")
+    debrief_qs = [q for q in summary["rules_questions"]
+                  if "breaks a tie" in q["text"]]
+    if not debrief_qs:
+        bad.append("a rules question raised in a debrief was not recorded")
+    elif any(q["turn"] is not None for q in debrief_qs):
+        bad.append("a debrief question was stamped with a turn number it "
+                   "was not asked on")
 
     for record in summary["games"]:
         session = json.loads(Path(record["session"]).read_text(encoding="utf-8"))

@@ -583,13 +583,27 @@ def analyse(eng: ModuleType, idea: dict, *, games: int, ladder_games: int,
     # Read off the all-greedy baseline alone. The ladder batches mix a
     # challenger with a field of random players in one tally, so a kind chosen
     # there may only ever have been chosen by the dice.
+    # "Never legal" has to mean never, at any seat count and under any policy.
+    # Read off one table size alone it said `pass` was never once legal in
+    # deep-claim while the same file recorded 149 passes at two players, which
+    # would have told the ideator to delete a rule that fires whenever the
+    # board fills before a player's hand empties. So legality is unioned over
+    # everything played. What a COMPETENT policy declined to choose is a
+    # different question and stays on the baseline, because a kind only ever
+    # taken by the dice is a kind nobody wants.
     declared = list(getattr(eng, "MOVE_KINDS", []) or [])
-    legal = set(seats[str(table)]["competent"]["kinds_legal"])
+    legal: set = set()
+    for block in seats.values():
+        for batch in block.values():
+            if isinstance(batch, dict):
+                legal |= set(batch.get("kinds_legal") or [])
     chosen = set(seats[str(table)]["competent"]["kinds_chosen"])
     moves = {
         "declared": declared,
         "never_legal": sorted(k for k in declared if k not in legal),
-        "never_chosen": sorted(k for k in legal if k not in chosen),
+        "never_chosen": sorted(
+            k for k in set(seats[str(table)]["competent"]["kinds_legal"])
+            if k not in chosen),
     }
 
     sensitivity = run_sensitivity(eng, table, max(games // 4, 40), cap,

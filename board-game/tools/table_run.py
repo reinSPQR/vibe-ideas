@@ -450,10 +450,17 @@ class Run:
             await self.seats.open_seat(key, system)
             self.open_seats.add(key)
 
-    async def ask_seat(self, seat: int, text: str) -> str:
+    async def ask_seat(self, seat: int, text: str, where: str = "?") -> str:
         self.sent.setdefault(seat, []).append(text)
         reply, usage = await self.seats.ask(f"seat{seat}", text)
         self._bill(usage)
+        # Scanned here rather than only on move replies, because a player that
+        # held a question back until the debrief has still found one, and the
+        # first real run lost exactly that: a seat ended its debrief with a
+        # literal RULES QUESTION line while the run file reported none.
+        for text_ in QUESTION_RE.findall(strip_thinking(reply)):
+            self.questions.append({"game": where, "seat": seat,
+                                   "turn": None, "text": text_.strip()})
         return reply
 
     def leaked_seats(self) -> list:
@@ -511,14 +518,16 @@ class Run:
                 + [playtest.render_table(eng, session, state, label,
                                          self.compact)])
             parsed = None
+            asked_before = len(self.questions)
             for attempt in range(MAX_REPLY_RETRIES + 1):
                 prompt = block if attempt == 0 else (
                     f"That reply had no readable `CHOICE <n>` with n between 0 "
                     f"and {len(moves) - 1}. Send only the lines the brief asks "
                     f"for: CHOICE, WHY, then DECISION with one of "
                     f"{', '.join(DECISIONS)}.")
-                parsed = parse_reply(await self.ask_seat(seat, prompt),
-                                     len(moves))
+                parsed = parse_reply(
+                    await self.ask_seat(seat, prompt, label),
+                    len(moves))
                 if parsed:
                     break
             if not parsed:
@@ -528,10 +537,12 @@ class Run:
                     f"{label}. Fix the seat or the brief; do not let a policy "
                     f"finish this game and call the result a player's.")
 
-            for q in parsed["question"]:
-                self.questions.append({"game": label, "seat": seat,
-                                       "turn": len(session["moves"]),
-                                       "text": q})
+            # ask_seat already recorded any question in those replies. Stamp
+            # the turn onto the ones this turn produced, and only those: a
+            # question left over from the previous game's debrief has no turn
+            # and must not borrow one.
+            for entry in self.questions[asked_before:]:
+                entry["turn"] = len(session["moves"])
             session["moves"].append({
                 "seat": seat, "choice": parsed["choice"],
                 "move": str(moves[parsed["choice"]]), "by": "player",
@@ -630,7 +641,7 @@ class Run:
         for seat in range(seats):
             reply = await self.ask_seat(
                 seat, f"GAME OVER  {label}\n{ending}\n\nDebrief now, in six "
-                      f"lines or fewer, following your brief.{extra}")
+                      f"lines or fewer, following your brief.{extra}", label)
             self.debriefs.append({"game": label, "seat": seat,
                                   "text": reply.strip()})
 
@@ -638,7 +649,7 @@ class Run:
         for seat in sorted(seats_seen):
             reply = await self.ask_seat(
                 seat, "The run is over. Answer the last question in your "
-                      "brief: did this game get smaller?")
+                      "brief: did this game get smaller?", "RUN END")
             self.debriefs.append({"game": "RUN END", "seat": seat,
                                   "text": reply.strip()})
 

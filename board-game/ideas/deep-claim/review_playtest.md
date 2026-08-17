@@ -1,320 +1,417 @@
 # review_playtest — deep-claim
 
-Verdict: FAIL All four players independently reported the second half of every game had no decision in it, and the breaker showed the result is fixed by component arithmetic and seat order before the first puck is placed.
+Verdict: FAIL Across 21 recorded sessions and four independent tables, `place_small` strictly dominates `place_large` on any open bore, so the game is a fixed partition of 18 points handed out by turn order, and every player at every table said so unprompted.
 
-## The run
+Disposition: rework — `rules:turn[2]` and `rules:win` must settle whether sealing a shelf cancels the floor claim under it (the one sentence that would make a large puck interact with another player's score at all); `rules:setup[2]` and the `disc_large_*`/`disc_small_*` quantities must stop making 2-player supply an exact partition of the board's 12 scoring slots; `rules:setup[3]` must stop leaving seat order as the only thing that decides a 4-player game; `rules:win` must say what a game that ends level 18 times in 21 is; `rules:turn[4]`'s pass must become reachable or go; and `playtime_min` must match a game that is 12 placements long.
 
-Five games, all finished by agent players. No `--agent-turns`, no scripted
-seats, no handovers: every session file has `handed_over_at: null` and every
-recorded move has `"by": "player"`.
+This is a rework and not a kill by a narrow margin, and the margin is one
+sentence. See "Why this is not a kill yet" at the end. If the ideator's answer
+to the `rules:turn[2]` ambiguity is the reading the engine happened to pick,
+there is nothing left in this idea and it should come back as a kill rather
+than as a second rework.
 
-| game | seats | seed | seat 0 | seat 1 | seat 2 | seat 3 | decisions | result |
-|---|---|---|---|---|---|---|---|---|
-| g1 | 4 | 11 | A | B | C | **D (breaker)** | 12 | winners [0, 1], scores 5/5/4/4 |
-| g2 | 4 | 23 | **D (breaker)** | A | B | C | 12 | winners [0, 1], scores 5/5/4/4 |
-| g3 | 4 | 37 | B | **D (breaker)** | C | A | 12 | winners [0, 1], scores 5/5/4/4 |
-| g4 | 2 | 51 | **D (breaker)** | A | — | — | 12 | winners [0, 1], scores 9/9 |
-| g5 | 2 | 67 | A | **D (breaker)** | — | — | 12 | winners [0, 1], scores 9/9 |
+## What was run
 
-Four `board-game-player` agents were spawned once, at the start, and carried
-through every game by `SendMessage`. A and D played all five; B and C played
-the three 4-player games only. The breaker's seat was rotated deliberately so
-that it sat in seat 0 once at each player count.
+Machine half: `playtest.json`, 300 games at each of {2, 4} players against
+each of {random, greedy} plus a 4-rung 60-game ladder, `elapsed_s 1.3`,
+`hit_deadline false`, `leaks: []`. Verdict `not_a_game`, 8 findings
+(4 `rough_edges`, 3 `not_a_game`, 1 `rules_ambiguous`).
 
-Sessions replay from
-`board-game/ideas/deep-claim/playtest/table/g{1..5}.json`.
+Table half, four separate sittings, 21 sessions, 250 recorded decisions:
 
-**The seeds do nothing.** `engine.new_game` takes `rng` and never uses it —
-there is no randomness anywhere in this game. g1, g2 and g3 dealt byte-identical
-opening positions. The seeds are recorded above for form; a reader replaying
-any of these games will get the same board with any seed.
+| run | sessions | driver | model | tools | summary file |
+|---|---|---|---|---|---|
+| `g` | g1..g5 | Claude Code subagents over `SendMessage` | Claude | breaker had `Read` | none (its prose report is what this file replaces) |
+| `mm` | mm1..mm5 | `table_run.py` | `minimax/minimax-m3` | none | overwritten, gone |
+| `a` | a1..a5 | `table_run.py`, anthropic wire | `minimax/minimax-m3` | none | `run_anthropic_cached.json` |
+| `o` | o1..o5 | `table_run.py`, openai wire | `minimax/minimax-m3` | none | `run_openai_cached.json` |
+| smoke | smoke1 | `table_run.py`, chat wire, different brief | `minimax/minimax-m3` | none | `run_chat_openai_cached.json` |
 
-**One contamination, disclosed.** Player D (the breaker) used its `Read` tool
-to open `board-game/ideas/deep-claim/playtest.json` before its first move of
-game 1. It therefore played all five games and gave both its debriefs knowing
-the harness's seat-bias, tie-rate and sensitivity findings. I told it to stop
-before game 2 and it made no further reads. Its *play* was indistinguishable
-from the uncontaminated players' throughout, and its arithmetic arguments are
-checkable and check out, but any place below where D's report echoes a
-`playtest.json` finding should be read as an echo, not as independent
-corroboration. Where I rely on D, I say so and note whether B, C or A said the
-same thing without having read anything.
+Integrity, checked per session rather than taken from the summaries:
+`leaks: []` in every run file; `handed_over_at: null` and `"by": "player"` on
+all 250 moves in all 21 sessions, so no scripted seat finished any game
+despite `finish_with: greedy` being set.
 
-## Rules questions raised in play
+Two things about the runs a reader must not skip.
 
-**No player emitted a single `RULES QUESTION` line in 60 decisions.** Two said
-so explicitly when asked:
+**`seed_blind: true` is recorded but meaningless here, and the seeds are
+decoration.** `engine.new_game` takes `rng` and never touches it. There is no
+randomness anywhere in this game. The `a` and `o` runs used the same five
+seeds (24, 37, 50, 63, 76); the `mm` run used the same five again; the `g` run
+used a different five (11, 23, 37, 51, 67). All of them dealt the identical
+opening position. Three 4-player sessions inside one run are not three
+positions, they are one position played three times, and the debriefs say so
+directly. Where I count 12 four-player games below, that is 12 plays of one
+position by four tables, which is the right way to read it: the repetition is
+across tables and models, not across boards.
 
-> "Nothing in the rules was ambiguous enough to raise a RULES QUESTION; the
-> problem was entirely in how few of my turns had more than one meaningfully
-> different option." — Player C, final debrief
+**The `g` run's breaker read `playtest.json` before its first move.** It
+played all five `g` games and gave both debriefs knowing the harness's
+seat-bias and sensitivity findings. Nothing in the `g` run's conclusions about
+seat order counts as independent. The `mm`, `a` and `o` runs had no tools at
+all and reached the same conclusions without them, so where I cite seat order
+I cite those. The `g` run is used below only for the things it measured that
+the later runs did not.
 
-> "Nothing broken in the rules text itself" — Player B, final debrief
+**The `mm` run has no surviving debriefs.** `run_anthropic_cached.json` was
+overwritten by the `a` run and `run_openai_cached.json` by the `o` run, so
+`mm1..mm5` survive only as move logs. They are counted in the scoreline table
+and nowhere else.
 
-That matches `playtest/notes.md`, which declares **no `Undefined`** and one
-assumption. Nothing new of that kind came out of the table.
+## The scoreline, and the three games that broke it
 
-One near-question, the only thing a player had to work out rather than read:
+Replaying all 21 sessions through `engine.py` under the shipped
+`CHOICES["floor_burial"] = "chosen"`:
 
-> "Nothing genuinely ambiguous; the one thing I had to work out myself rather
-> than read off the rules text was whether placing a large puck on a bore whose
-> floor is already claimed is a 'free' point (yes — rule 2 only checks the
-> shelf's emptiness, not the floor's status), which the rules state clearly
-> enough on a close read, just not obviously." — Player A, final debrief,
-> concerning `rules:turn[2]`
+| | sessions | outcome |
+|---|---|---|
+| 4 players | 10 of 12 | `5/5/4/4`, winners `[0, 1]` |
+| 4 players | a1 | `4/5/4/3`, winners `[1]` |
+| 4 players | o3 | `5/5/5/3`, winners `[0, 1, 2]` |
+| 2 players | 7 of 9 | `9/9`, winners `[0, 1]` |
+| 2 players | a5 | `7/9`, winners `[1]` |
+| 2 players | smoke1 | `9/7`, winners `[0]` |
 
-Reading A went with: yes, it is a free point. This is a legibility complaint
-about `rules:turn[2]`, not a gap, and it is **not new** — it is the same
-sentence `notes.md` already flags for a different reason.
+Seat 1 is in the winning set of all 12 four-player sessions. Seat 0 is in 11
+of 12. Seat 2 is in one, and seat 3 is in none, across four different tables,
+two different model families and two wire formats. Eighteen of the 21
+sessions ended in a shared win.
 
-### What is new: the declared assumption is not a corner case
+**The three deviations are the same deviation, and it is a blunder every
+time.** I went into the sessions expecting to find a player who had found a
+line. What is there instead is three players trying the exact move the
+`concept` field advertises ("whether your last broad puck is worth spending
+to deny a rival's future floor claim"), losing by it, and saying so:
 
-`notes.md` declares one assumption, `floor_burial` at `rules:turn[2]`, and
-`playtest.json` scores it `blocking` with `worst_delta 0.2153` on a runaway
-statistic. The table found something the aggregate number does not say.
+- **a1**, seat 0, turn 4: `place_large 4` onto a bore whose floor nobody had
+  claimed. It is the only large puck in 250 recorded decisions ever placed
+  over an open floor. It cost seat 0 the shared win (4 instead of 5) and cost
+  the game two points that no one scored, which is why a1 is the only
+  4-player session that ended in 11 decisions instead of 12. Its own debrief:
+  *"Turn 4 — I sealed bore 4 thinking I'd denied a floor, but seat 1 just took
+  the last floor on bore 5 next turn. I should have small'd 5 myself."*
+- **a5**, seat 0, turn 0: opened `place_large`, as a declared experiment.
+  *"Last game was a forced tie at 2p. This turn I want to TEST whether
+  deviating from the script breaks the mirror."* It lost 7-9. Debrief: *"at
+  2p, large-first is fatal ... New move I now play every time: at 2p, NEVER
+  open with large."*
+- **o3**, seat 3, turn 3: `place_large 0` over seat 0's already-claimed floor.
+  Finished last on 3. Its own debrief: *"I tried the large-on-bore-0 deviation
+  and the result was worse for me, so no new move I would replay."* Seat 0
+  the same game: *"Deviation punished."*
 
-Every one of the 30 large-puck placements across the five games sealed a shelf
-over a floor that was **already claimed**. Not one large puck in 60 decisions
-was ever placed over an unclaimed floor, at either player count, by any of the
-four players. The burial condition was therefore live on 100% of large
-placements, i.e. on exactly half of every game — it is the normal case under
-the line every player independently converged on, not an edge case.
+So the correct claim is the stronger and worse one: **the equilibrium is
+fixed and every deviation from it is a self-punishing error.** The result is
+not merely fixed by arithmetic, it is fixed by a dominance relation that the
+players find in one game and cannot escape in five. Note also that seat 3 in
+o3 recorded an empty `why` on all three of its moves, the only seat in the
+run to do so, so o3 is the thinnest of the three deviations and should not be
+read as a considered line.
 
-Replaying the five recorded sessions with `CHOICES["floor_burial"] =
-"alternative"` and no other change:
+The mechanism is in the rules and is short. `rules:turn[2]` gives a large
+puck 1 point; `rules:turn[3]` gives a small puck 2; under the reading the
+engine took, no placement can ever lower anybody else's score. So on any bore
+with an open floor, small strictly dominates large, and no player ever has a
+reason to hold a puck back. The `o1` seat 2 debrief states it as a defect
+without being asked: *"smalls are strictly dominant over larges on empty
+bores, so large pucks only ever seal, never contest — kills the tension."*
 
-```
-g1 alternative reading -> scores [1.0, 1.0, 2.0, 2.0] winners [2, 3]
-g2 alternative reading -> scores [1.0, 1.0, 2.0, 2.0] winners [2, 3]
-g3 alternative reading -> scores [1.0, 1.0, 2.0, 2.0] winners [2, 3]
-g4 alternative reading -> scores [3.0, 3.0] winners [0, 1]
-g5 alternative reading -> scores [3.0, 3.0] winners [0, 1]
-```
+## Rules questions
 
-At four players the reading does not shift the game by 21.5% of anything; it
-**inverts the winner set completely**, from the two earliest seats to the two
-latest, in all three games. At two players it leaves the draw a draw. Whoever
-settles this sentence is not tuning a statistic, they are choosing which pair
-of seats wins every 4-player game. That specificity is new; the ambiguity
-itself is not.
+`rules_questions: []` in both `run_anthropic_cached.json` and
+`run_openai_cached.json`. Zero questions in 119 decisions across the `a` and
+`o` runs. The `g` run's four players emitted zero as well, and two said so
+explicitly (*"Nothing in the rules was ambiguous enough to raise a RULES
+QUESTION"*). That matches `playtest/notes.md`, which declares **no
+`Undefined`** and exactly one assumption. The rules text is not what is wrong
+with this game, and it is worth saying plainly rather than hunting for a gap.
 
-(Player D also named this ambiguity, in its game-1 debrief — but it had read
-`playtest.json`, so that mention is worth nothing. The 30-out-of-30 count and
-the winner inversion above come from the session files, not from a player.)
+Three qualifications on that zero.
 
-## Turns with no decision in them
+**One question was asked and the harness did not catch it.** `o1` seat 0 ended
+its debrief with a literal `RULES QUESTION` line, in the debrief body rather
+than in the move loop, so `rules_questions` stayed empty:
 
-`ARBITRARY yes` rate, self-reported, per player:
+> "RULES QUESTION rules:turn[1] - is sealing a shelf on a bore whose floor you
+> already own ever strategically interesting, or always strictly worse than
+> sealing an opponent's claimed floor?"
 
-| player | arbitrary | turns | rate |
-|---|---|---|---|
-| A | 10 | 21 | 48% |
-| B | 8 | 9 | 89% |
-| C | 6 | 9 | 67% |
-| D (breaker) | 17 | 21 | 81% |
-| **table** | **41** | **60** | **68%** |
+It cites `rules:turn[1]` but quotes `rules:turn[2]`; the id the ideator wants
+is `rules:turn[2]`. Two other seats raised the same thing (`o2` seat 0:
+*"sealing one's OWN floor (seat 2 did this twice) - is this ever useful?
+rules:turn[1] allows it, seems pointless"*; `o4` seat 0: *"Either the rule
+should force sealing opponent's floor when possible, or scoring should
+differ"*). This is a want, not a gap, but it is the same sentence as the real
+finding below.
 
-The distribution is not scattered. In **all five games** the final six of the
-twelve decisions — turns 6 through 11, every seat, without exception — were
-flagged arbitrary by whoever was sitting there:
+**The new finding: three seats played the declared ambiguity the other way
+round and nobody noticed.** `notes.md` declares `floor_burial` at
+`rules:turn[2]` and picks the reading where a sealed shelf leaves the floor
+claim scoring for its owner. At the table, players reasoned and moved as if
+the *alternative* reading were in force, and were silently scored under the
+chosen one:
 
-```
-g1  0A.  1B*  2C.  3D.  4A.  5B.  6C*  7D*  8A*  9B* 10C* 11D*
-g2  0D.  1A.  2B*  3C.  4D*  5A.  6B*  7C*  8D*  9A* 10B* 11C*
-g3  0B*  1D*  2C.  3A.  4B*  5D.  6C*  7A*  8B*  9D* 10C* 11A*
-g4  0D*  1A.  2D*  3A.  4D*  5A.  6D*  7A*  8D*  9A* 10D* 11A*
-g5  0A.  1D*  2A.  3D*  4A.  5D.  6A*  7D*  8A*  9D* 10A* 11D*
-                                   ^-- from here, every turn, every game
-```
+> "Plan: grab a floor on turn 4, then use my last large to take a shelf and
+> **bury a rival floor**." — `a1` seat 3
 
-The point at which it flips is the same in every game: the turn after the
-sixth and last floor is claimed. From there the board is six bores with
-claimed floors and open shelves, every remaining move is worth exactly +1, and
-the number of remaining shelves equals the number of remaining turns, so every
-player's final score is already fixed. Nobody has to be told this; all four
-players worked it out separately and said so in their WHY lines.
+> "Real decision: turn 7, sealing bore 1 **buried two rivals at once**. Best
+> move of the game for me." — `a2` seat 3
 
-One, from game 1 turn 8, Player A:
+> "2-player learned me something I didn't know before: you can voluntarily
+> seal your opponent's floor by playing a large on top of their shelf,
+> **sacrificing your own large to deny them +2** (and yourself -1). Seat 0 did
+> this to me in a5 turn 7 and it changed the game. That move is the whole
+> reason 2-player still has texture." — `a` run, seat 1, closing debrief
 
-> "exactly four turns remain for exactly four open shelf slots (everyone still
-> has large pucks to spend), so each of us is guaranteed +1 regardless of which
-> specific bore we pick — the choice among these four is interchangeable in raw
-> score"
+None of that happened. Under the shipped reading, `a2` seat 3's turn-7 seal
+buried nothing, and the `a5` turn-7 seal cost seat 1 nothing at all. A player
+built its entire account of why the 2-player game is worth playing on a rule
+that does not exist in the engine's reading, and the scoring never told it
+otherwise because a buried floor and a scoring floor look identical on the
+board. That is new relative to `notes.md`: the notes say the sentence is
+ambiguous, the table shows which way real players read it and that reading it
+wrong is invisible to them at the table.
 
-The last turn of every game had exactly one legal move.
+**The one legibility complaint from the `g` run is not new.** Player A there
+had to work out that a large puck on a bore with a claimed floor is a free
+point; same sentence, `rules:turn[2]`, already flagged.
 
-The first six turns are not much better. They are all "take a 2-point floor
-rather than a 1-point shelf", with the only variation being *which* symmetric
-empty bore, which several players also flagged arbitrary. Player C, who never
-read anything, put its whole game at one decision:
+## Turns with nothing in them
 
-> "Only ever turn 2 of each game ...: the choice to grab an open floor with a
-> small puck before rivals did. Every later turn in all three games had zero or
-> one legal move, all equal-value."
+**The `arbitrary` field is not usable and I am not going to average it.** The
+`mm` and `a`/`o` runs asked the question two different ways and neither worked.
+Per seat, per game, in order, for the two runs that still have summaries:
 
-## What the breaker found
+| run | seat | g1 | g2 | g3 | g4 | g5 |
+|---|---|---|---|---|---|---|
+| a (4p,4p,4p,2p,2p) | 0 | 0.00 | 0.00 | 0.33 | 0.50 | 0.17 |
+| a | 1 | 0.00 | 0.00 | 0.00 | 0.17 | 0.00 |
+| a | 2 | 1.00 | 1.00 | 1.00 | — | — |
+| a | 3 | 0.00 | 0.00 | 0.33 | — | — |
+| o | 0 | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 |
+| o | 1 | 0.33 | 0.33 | 0.00 | 0.50 | 0.50 |
+| o | 2 | 1.00 | 1.00 | 0.33 | — | — |
+| o | 3 | 0.00 | 0.33 | 0.00 | — | — |
 
-Player D never found a winning line, and after five games said plainly that
-none exists. Its account, which I have checked against the sessions:
+The `o` run's seat 0 answered "not arbitrary" on 21 of 21 turns and then wrote,
+of the same games:
 
-> "Neither a forced win nor a coincidence — a forced draw-among-the-favored-
-> share by pure arithmetic. At 4p, 6 bores mod 4 players leaves a remainder of
-> 2, and turn order hands that remainder to the two seats that act first in
-> rotation (seats 0 and 1 here, every game), so they tie at 5 and the other two
-> tie at 4, regardless of any decision either pair makes. At 2p, 6 floors and 6
-> shelves both divide evenly by 2 players, so greedy play mechanically splits
-> 3-3 and 3-3 for a 9-9 draw no matter who moves first."
+> "Zero decisions. Game ended 9-9 tied from turn 0. At 2p the game is even more
+> solved than at 4p." — `o4` seat 0
 
-It ran exactly one probe against the draw, by hand, in game 4: spend a large
-puck early to seal a bore whose floor nobody had claimed yet — the denial play
-the concept text advertises. It reported the probe strictly losing, and did not
-play it:
+> "No decisions in this game either. Pattern repeated exactly." — `o2` seat 0
 
-> "it burns scarce large-puck ammunition for 1 point and leaves you short in
-> the endgame shelf race."
+The `a` run's seat 1 answered "not arbitrary" on 20 of 21 turns and then wrote
+*"Barely a game. Six identical `place_small` rounds and a forced seal"* (`a2`)
+and *"Would not replay. 4 players is fine; the game itself is not"* (`a3`), and
+twice retracted its own answers in the debrief: *"on reflection both moves end
+the game with me at 5 points — that was arbitrary and I should have flagged it
+`yes`"* (`a1`). The cross-seat number measures how a seat reads the word, not
+how much the game contains. The `g` run's 68% used a third definition again and
+is not comparable to either of these.
 
-I traced that line independently on the game-4 position at turn 4 and it is
-right: sealing bore 5 there gives 7-9 to the opponent instead of 9-9, because
-the denier ends the game holding an unplayable small puck while the opponent
-places all three larges. Player A, in seat 0 of game 5 and with no knowledge of
-D's reasoning, ran its own hand-simulation of the same family of gambits and
-reached the same conclusion at game 5 turn 4:
+Two things in the table above are readable, because they are one seat across
+its own games. Seat 2 in both runs sat at 1.00 in every 4-player game, with the
+single exception of `o3` at 0.33, and `o3` is the game where seat 3 blundered.
+Seat 2's own account of that exception is the most damning line in the run:
 
-> "I tried working through a few sealing deviations by hand (seal now vs. seal
-> later vs. bank an early shelf) and each one still canceled out to an exact
-> tie against a mirroring opponent"
+> "Game three had one reactive moment (seat 3 sealing instead of taking a
+> floor, letting me grab bore 4) but that wasn't strategy I discovered, it was
+> an opponent's error I exploited. ... The game didn't get smaller through my
+> solving it — it got smaller through my confirming it was never large." —
+> `o` run, seat 2, closing debrief
 
-So: nothing to defend against, because there was nothing to attack with.
-Putting the breaker in seat 0 (g2, g4) changed nothing — the score line was
-identical. The breaker never won a game outright and never made another player
-respond to it. Its own summary:
+The one seat in the run that had a decision in a 4-player game had it because
+somebody else made a mistake.
 
-> "No, I never deviated from greedy after that one probe, because I could show
-> the probe losing by hand ... The other side never had to respond to me; both
-> of us were just executing the same forced allocation."
+## Did the game get smaller
 
-The denial mechanic named in the concept — "whether your last broad puck is
-worth spending to deny a rival's future floor claim" — was never once correct
-to play in 60 decisions, at either player count. Three of the four players
-raised this unprompted as the thing they wanted and could not have. B and C
-both reached it without reading anything.
+Eight closing debriefs across the `a` and `o` runs, each from a seat that
+played all five games and kept everything it learned. **Eight of eight say
+yes, and they name the game it was over.** They do not fully agree on when or
+on which player count is worse, and I have not resolved that.
 
-## Whether anybody wanted a second game
+> "This is a kill. The game should not be brought to a fourth evening." —
+> `a` run, seat 0
 
-Asked after game 1, before anyone knew the pattern would repeat, three of four
-said yes with a caveat and one said yes outright. Asked at the end, after
-seeing it repeat:
+> "After game one I knew the 5th-floor grab was the swing. After game two I
+> knew the full script ... After game three I had nothing to add. ... any
+> deviation from the script is punished." — `a` run, seat 0
 
-> "Two players: no — I proved by hand that with matched pucks-to-slots supply,
-> mirrored greedy play is a structural draw, and every deviation I tried also
-> drew; there's no game left to find there. Four players: mildly yes, but only
-> if the design fixes the fact that the last several turns per game were
-> mathematically forced +1-for-everyone sequences with zero decision content."
-> — Player A
+> "A 4-player session is, effectively, one game played three times. Anyone
+> reviewing this run will see that three of the five sessions contributed
+> almost no new information past the first." — `a` run, seat 1
 
-> "Two players: yes, once, out of curiosity whether a non-greedy or error-prone
-> opponent breaks the draw — but expect a draw against any competent opponent.
-> Four players: no. The outcome is fixed by seat order before anyone picks up a
-> puck, and I've now seen it land on the identical score line three times
-> running." — Player D (breaker)
+> "No — it was always this small. ... Nothing I learned in games two or three
+> changed anything; the cost of that learning was three playthroughs to
+> confirm a one-line strategy. ... It cost the game nothing, because there was
+> nothing in it to find. It cost the run three sessions to print that out." —
+> `a` run, seat 2
 
-> "I would not choose to play it again at four players. All three games at 4p
-> flattened into 'race the six floors turns 0-5, then place arbitrary large
-> pucks turns 6-12' with zero contested decisions in the second half." —
-> Player B
+> "The game shrank from 'puzzle with a real mid-game decision' to 'scripted.'
+> ... A fourth game would teach me nothing." — `a` run, seat 3
 
-> "I would not choose to play this again at four players. The whole game
-> compresses into one real decision (turn 2's floor race) followed by 4-5 turns
-> of forced or interchangeable large-puck placement." — Player C
+> "What I learned is not 'a line that wins regardless' but 'no line wins; the
+> seating wins.' ... this game is a math puzzle disguised as a strategy game,
+> and a motivated opponent cannot break it because there is nothing to break."
+> — `o` run, seat 0
 
-Nobody wanted a second game at four players. Two players said "once more, out
-of curiosity", both meaning curiosity about whether an opponent would blunder.
+> "Across five games I made exactly one decision that mattered per game (the
+> 'last empty floor' grab on turn 5), and even that was forced by symmetry —
+> refusing to take it would've handed the win to the opponent." — `o` run,
+> seat 1
 
-The unflattering ones, in full:
+> "By game three I deliberately deviated at turn 3 and it cost me, which is
+> the proof that there was nothing to find." — `o` run, seat 3
 
-> "Twelve components, twelve slots (2p) or six bores split unevenly across four
-> seats (4p) is math, not play; nothing I chose in the second half of any of
-> these five games mattered." — Player D
+Where they disagree, and I am leaving it unresolved: the `a` run's seats 0 and
+1 came out of a5 believing **2 players** is the surviving variant (*"2-player
+keeps being the interesting variant. 4-player is dead"*, `a5` seat 1), while
+the `o` run's seat 0 came out believing the opposite (*"the 2p variant is
+strictly worse than 4p because there's no denial mechanic at all"*, `o5`).
+Both are reasoning about the same ambiguous sentence from opposite readings of
+it, which is not a coincidence, and which is the strongest evidence in this
+report that `rules:turn[2]` is load-bearing. Four of the eight independently
+volunteer **3 players** as the untested count, which nobody has run.
 
-> "with four players and six bores, turn order alone decided the outcome all
-> three games (seats 0 and 1 won every time, seats 2 and 3 lost every time,
-> identical 5-5-4-4 scoreline each game) — that's a strong signal the four-
-> player mode is structurally unfair to later turn order, not a playtesting
-> fluke." — Player C
-
-> "I lost by 1 point purely because I was seat 2, further from first pick, so I
-> got fewer floor turns. That is a seating-order effect, not a decision I failed
-> to make." — Player B
+Note the two who wanted another game after game 1 in the `a` run (*"Would play
+again, yes. 4-player feels right"*, `a1` seat 0; *"Would play again at 4p; game
+is quick"*, `a1` seat 3) had both flipped to "would not" by game 3. The
+enthusiasm is a first-game artifact and should not be read as a table that
+enjoyed itself.
 
 ## Where the numbers and the table disagree
 
-Mostly they agree, and the agreement is damning rather than reassuring:
-`playtest.json` reports `tie_rate 1.0` at both counts under competent play and
-per-seat win rates of `[0.5, 0.5, 0.0, 0.0]` at 4p; the table produced 5 ties
-in 5 games and seats 0 and 1 sharing all three 4-player games. Three real
-disagreements:
+Mostly they agree and the agreement is not good news. `playtest.json` reports
+`tie_rate 1.0` at both counts under competent play and per-seat win rates of
+`[0.5, 0.5, 0.0, 0.0]` at 4 players; four tables produced 18 shared wins in 21
+sessions and seats 0 and 1 in the winning set of 23 of 24 four-player
+seat-games. Both halves are measuring the same thing and getting the same
+answer. Four real disagreements:
 
-1. **The ladder looks like depth; the table found none.** `playtest.json` has
-   `lookahead` at 63% against a random field versus `greedy` at 59%, which
-   reads as "looking ahead helps a little". At the table, four players
-   converged on the identical one-ply heuristic by their second or third turn
-   and never found a reason to deviate, and the two who tried search (A and D,
-   independently, by hand) both reported every deviation converging back to the
-   same tie. The ladder's own `lookahead vs greedy` row already says this —
-   25.0% against a fair share of 25% — and the table is the confirmation that
-   the 63% number is only measuring "beats a player who moves at random".
+1. **The ladder shows a skill gradient; the table found none, and the ladder
+   agrees with the table if you read the right row.** `playtest.json` has
+   `lookahead` at 66% and `greedy` at 60% against a random field, which reads
+   as depth. The row that matters is `lookahead` against a *greedy* field:
+   24.2% against a fair share of 25%. At the table, all four seats in each of
+   three separate runs converged on the same one-ply script by game 2 and
+   every attempt to search past it lost. The 66% number is measuring "beats
+   somebody moving at random" and nothing else. I would not bet on the two
+   `vs random` rungs as evidence of anything about this game.
 
-2. **Twelve decisions, six of which exist.** The `length` finding reasons about
-   "12 decisions at 4 players ... 2 to 5 minutes". The table says the last six
-   of those twelve are not decisions at any seat in any game. Whatever this
-   game is, it is a six-decision game with a six-turn scoring ritual attached,
-   against a claimed `playtime_min` of 20.
+2. **`dead_move:pass` is wrong as written, and the table caught it.**
+   `playtest.json` says of `rules:turn[4]`: *"the rules define this action and
+   it was never once legal in any game, so no player can ever take it."* Its
+   own stats block contradicts it: at 2 players against a random field,
+   `kinds_legal` includes `pass` and `kinds_chosen` records `"pass": 149`. The
+   `never_legal` list is computed at the reference table size of 4 only. And
+   at the table, a pass fired for real, once, in 250 decisions: `a5` turn 11,
+   seat 0, holding one small puck with no bore having both an open shelf and
+   an open floor. The finding is true at 4 players and false at 2, which is
+   exactly what `notes.md` predicted, and the harness's aggregate erased the
+   distinction. This is a measurement defect in the gate, not in the idea, but
+   the ideator must not read `dead_move:pass` as "delete `rules:turn[4]`".
 
-3. **The sensitivity delta understates the ambiguity.** `worst_delta 0.2153` on
-   `runaway` sounds like a tuning knob. Replayed on the actual games, the
-   alternative reading of `floor_burial` inverts the 4-player winner set from
-   seats [0, 1] to seats [2, 3] in all three games. Same rule, same games,
-   opposite winners. I am not picking a reading — that is exactly what this
-   stage must not do — but the harness's summary number does not convey that
-   this sentence chooses the winner.
+3. **The sensitivity number is right about the size and wrong about the
+   shape.** `worst_delta 0.5533` on `win_share` says the `floor_burial` flip
+   matters a lot. Replaying all 21 recorded sessions under
+   `CHOICES["floor_burial"] = "alternative"` with no other change gives, for
+   every canonical 4-player session, `1/1/2/2` with winners `[2, 3]`, and for
+   every 2-player session `3/3`. The reading does not tune a statistic, it
+   inverts which pair of seats wins every 4-player game while leaving the
+   2-player draw a draw. Caveat, stated because it cuts against my own
+   disposition: those are moves chosen under the other reading. Players who
+   knew a large puck erases 2 of a rival's points would not play those moves,
+   so this replay is evidence that the sentence chooses the winner, and is
+   *not* evidence about whether the burial game is any good. Nobody has played
+   the burial game.
 
-   *Acted on, 2026-08-16.* The cause was that every measure the sensitivity
-   check compared reads the game in aggregate, and `seat_edge` reads only the
-   best seat, so swapping which seat wins moved none of them: it scored the
-   flip at 2.5%. `run_sensitivity` now also compares the whole win-share
-   vector, and on the same 300 games the same flip scores 55.3%, which is what
-   `worst_delta` reports. The number in the paragraph above is the one the
-   harness gave on the day, and it is left standing because it is the reason
-   the harness changed.
+4. **Length.** `playtest.json` computes 12 decisions at 4 players and 2 to 5
+   minutes; `idea.json` claims `playtime_min: 20`. The table confirms 12 and
+   goes further: `a` seat 0 put the live window at two turns (*"That collapses
+   9 turns into a 2-turn decision window"*), and `o` seat 1 at one turn per
+   game. Twelve placements is the whole game, three per player at 4 players,
+   and half of every player's puck supply is never used. `a1` seat 2, mid-game:
+   *"all floors are taken so my smalls are dead."*
 
-One place where I will not resolve a contradiction: `playtest.json` records
-`dead_move:pass` — the rules define a pass that was never legal in any of 600
-scripted games. It was never legal in any of our 60 player decisions either,
-including the 2-player games where `notes.md` predicted it was most reachable.
-The players never noticed the rule existed, because the engine never offered
-it. Whether that is a rules defect or a components-arithmetic defect is not a
-question the table can settle.
+## Findings, by rule id
 
-## Why FAIL
+1. **`rules:turn[2]` and `rules:win`.** The declared `floor_burial` ambiguity
+   is not a corner case and not a statistic. Three seats across two runs
+   planned and justified moves on the burial reading and were scored on the
+   other one without ever finding out. The two runs' closing debriefs
+   disagree about which player count is playable *because* they disagree
+   about this sentence. Replayed, the sentence inverts the 4-player winner set
+   in every session.
+2. **`rules:turn[2]` vs `rules:turn[3]`.** A large puck scores 1 and a small
+   scores 2, and under the shipped reading no placement can ever reduce
+   another player's score, so `place_small` strictly dominates `place_large`
+   on any bore with an open floor and no player ever has a reason to hold a
+   puck back. This makes the decision named in `concept` ("whether your last
+   broad puck is worth spending to deny a rival's future floor claim") a move
+   that was correct zero times in 250 decisions, and that punished all three
+   players who tried it.
+3. **`rules:setup[2]` and the `disc_large_*` / `disc_small_*` quantities.** At
+   2 players, 6 large plus 6 small pucks against 6 shelves plus 6 floors is an
+   exact partition, and 7 of 9 two-player sessions ended dead level at 9-9. At
+   4 players the same counts put 12 large pucks against 6 shelves, so half of
+   every player's supply is dead on the table and players said so.
+4. **`rules:setup[3]`.** "Agree who goes first" is the whole 4-player game.
+   Seat 1 is in the winning set of 12 of 12 four-player sessions and seat 3 of
+   none, across four tables and two model families. `o2` seat 2: *"first-mover
+   seats 0 and 1 always win because there's no way to deny them a second
+   floor."* No rule anywhere compensates a later seat.
+5. **`rules:win`.** A shared win was the outcome of 18 of 21 sessions and of
+   100% of scripted games under competent play. The rule declares shared wins
+   and stops; whether that is the intended modal result of a 20-minute game is
+   a question the rules have to answer, not the table.
+6. **`rules:turn[4]`.** Pass is legal at 2 players (once in 9 table sessions,
+   149 times in 300 scripted games) and never at 4. See disagreement 2 above
+   before acting on the harness's `dead_move` line.
+7. **`playtime_min: 20`.** The game is 12 placements at every player count.
+8. **`rules:turn[2]`, legibility.** Three seats in the `o` run independently
+   asked whether sealing a bore whose floor you already own is ever anything
+   but a wasted move. The rules permit it and say nothing about it.
 
-Not for being quiet. For three things the table found that a brief should not
-be written on top of:
+## Why this is not a kill yet
 
-- **Every player, independently, reported there was nothing to decide.** 68%
-  self-declared arbitrary across the run, and the final six turns of all five
-  games arbitrary at every seat without exception. Two players who read nothing
-  and had no contact with each other said "one real decision per game" in almost
-  the same words.
-- **The outcome is determined before play.** Three 4-player games produced the
-  identical score line 5/5/4/4 with the identical winner set, across three
-  different seatings of four different players; two 2-player games produced
-  9/9. The breaker's arithmetic accounts for all five and was independently
-  reproduced by a second player.
-- **The advertised decision is unreachable.** "Whether your last broad puck is
-  worth spending to deny a rival's future floor claim" was never correct to
-  play in 60 decisions, and three players named its absence unprompted.
+The case for a kill is real and I want it on the record: the dominance of
+small over large is arithmetic (2 > 1 with no interaction), the 2-player draw
+is a component count dividing evenly into a slot count, the 4-player 5/5/4/4
+is a remainder handed to the first seats by rotation, and every player who
+looked for a way out of it in five games found only ways to lose. If those
+were the only facts, this would be a kill on the same grounds as any game
+whose problem is its own component arithmetic.
 
-None of that is a rules gap that made a game unplayable, and there is no line
-that wins every game — there is no line that wins any game. The FAIL is on the
-third ground in the brief: every player independently reporting there was
-nothing to decide.
+The reason it is not is that the *non-interaction* is not a component count.
+It is one undecided sentence in `rules:turn[2]`, declared as an assumption by
+the engine writer, scored `blocking` by the harness, and never once played the
+other way by anybody. Under the burial reading, a large puck is +1 to me and
+-2 to a named rival, self-sealing becomes a net loss, and small stops
+dominating large. That is precisely the interaction whose absence every player
+at every table complained about, and it is reachable by editing a sentence
+rather than by redesigning the game. The `a` run's seat 1 spent five games
+believing that rule was already in force and reported it as the reason
+2-player play had any texture; it is the only thing anyone at any table said
+was interesting.
+
+So: rework, and the rework is narrow. Settle `rules:turn[2]` toward burial and
+the rest of the findings become tuning. Settle it toward the reading the
+engine used and there is no move left in the game that touches another
+player's score, in which case do not rework it again, kill it.
+
+## Cost
+
+| | games | decisions | wall clock | tokens (in / out / cached) | calls | cost | model at every seat |
+|---|---|---|---|---|---|---|---|
+| `a` run | 5 | 59 | 1105.2 s | 101,425 / 65,287 / 470,659 | 82 | $0.1301 | `minimax/minimax-m3` |
+| `o` run | 5 | 60 | 559.2 s | 581,673 / 78,429 / 511,735 | 83 | $0.1233 | `minimax/minimax-m3` |
+| smoke1 | 1 | 11 | 346.4 s | 60,475 / 1,391 / 42,719 | 15 | not recorded | `minimax/minimax-m3` |
+| `mm` run | 5 | 60 | summary overwritten | — | — | — | `minimax/minimax-m3` |
+| `g` run | 5 | 60 | not recorded | — | — | — | Claude Code subagents |
+| `playtest.py` | 1,440 | — | 1.3 s | — | — | ~$0 | scripted policies |
+
+Two comparable model runs: 10 games, 119 decisions, 27.7 minutes of wall
+clock, $0.2534. The verdict on this idea cost about a quarter of a dollar and
+half an hour, against a brief-writer and a builder on the other side of a
+PASS.
