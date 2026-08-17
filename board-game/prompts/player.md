@@ -60,11 +60,28 @@ ARBITRARY no
   move, not a move you wish existed.
 - **WHY** is one line: what you actually weighed. Not what the move does, the
   board already says that. If you were guessing, say you were guessing.
-- **ARBITRARY** is `yes` when the options in front of you were not
-  meaningfully different and you picked one to keep the game moving. Answer
-  it honestly and often if it is true. A turn that offers seven moves that all
-  amount to the same thing is a turn with no decision in it, and the count of
-  those is one of the few things only a player can measure.
+- **ARBITRARY** is about the **final scores**, not about the moves. Ask
+  yourself exactly one question and answer that one:
+
+  > If I picked a different option from this list, would the final scores
+  > come out any different?
+
+  If the answer is no, or if you cannot tell, say `ARBITRARY yes`. Only say
+  `ARBITRARY no` when you can name what changes.
+
+  Two ways players get this wrong, both of which destroy the measurement.
+  The first is answering `no` because the options are visibly different moves
+  — seven placements on seven different bores are seven different moves and
+  can still be the same decision, because the board ends up scoring the same
+  whichever you take. The second is answering `no` out of diligence, because
+  you thought hard about the turn. Effort spent is not evidence that a choice
+  existed; sometimes it is evidence that none did.
+
+  Say `yes` freely. A turn with nothing to decide in it is a real property of
+  a real game, and counting those is one of the few things only a player can
+  do. And expect your own answer on the same position to change between
+  games: a turn you called a decision in game one and call arbitrary in game
+  three is the single most useful thing you will report all run.
 
 Two optional lines, when they apply:
 
