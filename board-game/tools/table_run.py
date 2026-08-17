@@ -252,6 +252,10 @@ class Seats:
                     {"Authorization": f"Bearer {self.api_key}",
                      "content-type": "application/json"},
                     {"model": self.model, "max_tokens": self.max_tokens,
+                     "stream": True,
+                     # Streaming otherwise omits usage entirely, and a run
+                     # that cannot say what it spent is not a measurement.
+                     "stream_options": {"include_usage": True},
                      "messages": [{"role": "system", "content": system}]
                                  + messages})
         block = {"type": "text", "text": system}
@@ -266,15 +270,28 @@ class Seats:
                  "anthropic-version": ANTHROPIC_VERSION,
                  "content-type": "application/json"},
                 {"model": self.model, "max_tokens": self.max_tokens,
+                 "stream": True,
                  "system": [block], "messages": messages})
 
     def _post(self, url: str, headers: dict, payload: dict) -> dict:
+        """POST and consume the event stream, returning text and usage.
+
+        Streaming is not an optimisation here, it is the only thing that
+        works. Asked for millbind's opening position without it, this endpoint
+        spent 38 seconds and returned an empty `content`, having buffered the
+        model's reasoning and dropped the answer behind it; asked with it, the
+        same prompt answered in 4 seconds. On harder positions the buffered
+        call does not return at all, it 504s, and no amount of retrying fixes
+        a request that cannot complete. The gateway documentation says
+        inference responses must stream, and it means it.
+        """
         # urllib announces itself as `Python-urllib/3.x`, which a gateway
         # behind Cloudflare rejects outright with a 403 and error code 1010
         # before the request reaches the model at all. Naming the tool is both
         # what fixes it and what an operator reading their own access log
         # would want to see.
-        headers = dict(headers, **{"user-agent": USER_AGENT})
+        headers = dict(headers, **{"user-agent": USER_AGENT,
+                                   "accept": "text/event-stream"})
         body = json.dumps(payload).encode("utf-8")
         for attempt in range(GATEWAY_RETRIES + 1):
             req = urllib.request.Request(url, data=body, headers=headers,
@@ -282,7 +299,7 @@ class Seats:
             try:
                 with urllib.request.urlopen(req,
                                             timeout=REQUEST_TIMEOUT) as resp:
-                    return json.loads(resp.read().decode("utf-8"))
+                    return self._consume(resp)
             except urllib.error.HTTPError as exc:
                 detail = exc.read().decode("utf-8", "replace")[:800]
                 # A gateway 502/503/504 is the upstream being slow or busy,
@@ -306,13 +323,57 @@ class Seats:
                 time.sleep(RETRY_BACKOFF * 2 ** attempt)
         raise RuntimeError(f"{url}: retries exhausted")
 
+    def _consume(self, resp) -> dict:
+        """Fold an SSE stream back into the one text and one usage we want.
+
+        Both wires send `data:` lines carrying JSON, and differ only in what
+        the JSON says: one nests the token under `delta.text`, the other under
+        `delta.content`, and each reports usage in its own place and its own
+        moment. Anything unparseable is skipped rather than raised on, because
+        a keep-alive comment or a field added next release must not end a game
+        forty decisions in.
+        """
+        chunks: list = []
+        usage: dict = {}
+        for raw in resp:
+            line = raw.decode("utf-8", "replace").strip()
+            if not line.startswith("data:"):
+                continue
+            payload = line[5:].strip()
+            if not payload or payload == "[DONE]":
+                continue
+            try:
+                event = json.loads(payload)
+            except ValueError:
+                continue
+            if self.wire == "openai":
+                for choice in event.get("choices") or []:
+                    piece = (choice.get("delta") or {}).get("content")
+                    if piece:
+                        chunks.append(piece)
+                if event.get("usage"):
+                    usage = event["usage"]
+            else:
+                kind = event.get("type")
+                if kind == "content_block_delta":
+                    delta = event.get("delta") or {}
+                    # `text_delta` only. A `thinking_delta` is the model's
+                    # scratch work and is not what the seat answered.
+                    if delta.get("type") == "text_delta" and delta.get("text"):
+                        chunks.append(delta["text"])
+                elif kind == "message_start":
+                    usage.update((event.get("message") or {}).get("usage") or {})
+                elif kind == "message_delta":
+                    usage.update(event.get("usage") or {})
+        return {"text": "".join(chunks), "usage": usage}
+
     async def ask(self, key: str, text: str) -> tuple:
         self.history[key].append({"role": "user", "content": text})
         url, headers, payload = self._body(key)
         data = await asyncio.to_thread(self._post, url, headers, payload)
+        reply = data["text"]
+        raw = data["usage"] or {}
         if self.wire == "openai":
-            reply = data["choices"][0]["message"]["content"] or ""
-            raw = data.get("usage") or {}
             # The two wires count the prompt differently and the difference is
             # silent: `prompt_tokens` is the whole prompt with the cached part
             # inside it, while Anthropic's `input_tokens` counts only what was
@@ -326,11 +387,6 @@ class Seats:
                      "out": raw.get("completion_tokens", 0),
                      "cached": cached}
         else:
-            # Only `text` blocks. A reasoning model also sends `thinking`
-            # blocks, and those are its scratch work rather than its answer.
-            reply = "".join(b.get("text", "") for b in data.get("content", [])
-                            if b.get("type") == "text")
-            raw = data.get("usage") or {}
             usage = {"in": raw.get("input_tokens", 0),
                      "out": raw.get("output_tokens", 0),
                      "cached": raw.get("cache_read_input_tokens", 0),

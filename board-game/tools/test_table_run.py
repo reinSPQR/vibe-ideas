@@ -163,34 +163,60 @@ class Endpoint:
             def log_message(self, *a):
                 return
 
-            def _json(self, reply: str) -> None:
-                payload = {"content": [{"type": "text", "text": reply}],
-                           "usage": USAGE}
-                raw = json.dumps(payload).encode()
+            def _sse(self, events: list) -> None:
+                """The only shape the tool accepts, on either wire.
+
+                Buffered replies are not supported and must not be, because a
+                real endpoint answered a buffered request with 38 seconds and
+                an empty body, then answered the same prompt streamed in 4.
+                A fixture that served JSON would let that regression back in.
+                """
                 self.send_response(200)
-                self.send_header("content-type", "application/json")
-                self.send_header("content-length", str(len(raw)))
+                self.send_header("content-type", "text/event-stream")
                 self.end_headers()
-                self.wfile.write(raw)
+                for event in events:
+                    self.wfile.write(f"data: {json.dumps(event)}\n\n".encode())
+                self.wfile.write(b"data: [DONE]\n\n")
+                self.wfile.flush()
 
             def _openai(self, reply: str) -> None:
-                payload = {"choices": [{"message": {"content": reply}}],
-                           "usage": {
-                               # The whole prompt, cached part included: the
-                               # other wire's field excludes it, and a harness
-                               # that adds the two on this one reports double.
-                               "prompt_tokens": (USAGE["input_tokens"]
-                                                 + USAGE["cache_read_input_tokens"]),
-                               "completion_tokens": USAGE["output_tokens"],
-                               "prompt_tokens_details": {
-                                   "cached_tokens":
-                                       USAGE["cache_read_input_tokens"]}}}
-                raw = json.dumps(payload).encode()
-                self.send_response(200)
-                self.send_header("content-type", "application/json")
-                self.send_header("content-length", str(len(raw)))
-                self.end_headers()
-                self.wfile.write(raw)
+                self._sse([
+                    {"choices": [{"delta": {"content": reply}}]},
+                    {"choices": [], "usage": {
+                        # The whole prompt, cached part included: the other
+                        # wire's field excludes it, and a harness that adds
+                        # the two on this one reports double.
+                        "prompt_tokens": (USAGE["input_tokens"]
+                                          + USAGE["cache_read_input_tokens"]),
+                        "completion_tokens": USAGE["output_tokens"],
+                        "prompt_tokens_details": {
+                            "cached_tokens":
+                                USAGE["cache_read_input_tokens"]}}},
+                ])
+
+            def _anthropic(self, reply: str) -> None:
+                self._sse([
+                    {"type": "message_start",
+                     "message": {"usage": {
+                         "input_tokens": USAGE["input_tokens"],
+                         "cache_read_input_tokens":
+                             USAGE["cache_read_input_tokens"],
+                         "cache_creation_input_tokens": 0}}},
+                    {"type": "content_block_start", "index": 0,
+                     "content_block": {"type": "text", "text": ""}},
+                    # Scratch work on the same stream, which must not reach
+                    # the parser: a CHOICE the model wrote while still
+                    # weighing is not the move it settled on.
+                    {"type": "content_block_delta", "index": 0,
+                     "delta": {"type": "thinking_delta",
+                               "thinking": "CHOICE 7 maybe? no."}},
+                    {"type": "content_block_delta", "index": 0,
+                     "delta": {"type": "text_delta", "text": reply}},
+                    {"type": "content_block_stop", "index": 0},
+                    {"type": "message_delta",
+                     "usage": {"output_tokens": USAGE["output_tokens"]}},
+                    {"type": "message_stop"},
+                ])
 
             def do_POST(self):
                 size = int(self.headers["content-length"])
@@ -201,7 +227,7 @@ class Endpoint:
                 if self.path.endswith("/chat/completions"):
                     self._openai(reply)
                 else:
-                    self._json(reply)
+                    self._anthropic(reply)
 
         return Handler
 
