@@ -78,7 +78,7 @@ QUEUE_SCRIPT = REPO_ROOT / "board-game" / "tools" / "pipeline_queue.py"
 # pipeline_queue.py, not a second source of truth.
 GATE_ACTIONS = {"approve": False, "reject": True, "rework": True, "ship": False}
 
-LENSES = ("printability", "fidelity", "playability")
+LENSES = ("rules", "playtest", "printability", "fidelity", "playability")
 
 # Rough front-to-back order: closest to shipping first, terminal states last —
 # mirrors pipeline_queue.py's PRIORITY, plus the states it doesn't schedule.
