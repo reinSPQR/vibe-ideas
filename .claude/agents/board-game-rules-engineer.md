@@ -106,8 +106,8 @@ def apply_move(state, move, rng): ...    # may mutate; MUST return the state
 def is_over(state): ...                  # -> bool
 def scores(state): ...                   # -> one float per seat, valid always
 def winners(state): ...                  # -> seat indices, valid once over
-def determinize(state, seat, rng): ...   # OPTIONAL, see below
-def observation(state, seat): ...        # OPTIONAL, see below
+def determinize(state, seat, rng): ...   # only if HIDDEN_INFO, see below
+def observation(state, seat): ...        # ALWAYS, see below
 ```
 
 Rules of the contract, all of which the harness relies on:
@@ -131,26 +131,71 @@ Rules of the contract, all of which the harness relies on:
 - **A stuck seat is not your problem to fix.** If a player has no legal move
   and the rules do not provide a pass, return `[]`. The harness reports that
   as a deadlock, which is exactly what it is.
-- **`HIDDEN_INFO = True` needs `determinize` AND `observation`.** They are two
-  different jobs and a game with anything face-down needs both.
+- **`determinize` is only for `HIDDEN_INFO = True`.** It resamples everything
+  `seat` cannot see, consistently with what `seat` has observed, and returns
+  the state. It exists for the lookahead policy: without it that policy can
+  see the face-down pieces, so its win rate is an oracle's, not a skill
+  measurement. A perfect-information game does not need it.
 
-  `determinize(state, seat, rng)` resamples everything `seat` cannot see,
-  consistently with what `seat` has observed, and returns the state. It exists
-  for the lookahead policy: without it that policy can see the face-down
-  pieces, so its win rate is an oracle's, not a skill measurement.
+- **`observation` is for every engine, hidden information or not.** It answers
+  one question — *what does this seat see when it looks at the table?* — and
+  that question has an answer in an open game too. Write it in three passes,
+  in this order, because the later ones must never undo the earlier.
 
-  `observation(state, seat)` returns plain data holding **only what that seat
-  is allowed to look at**: everything public, plus that seat's own private
-  holdings, and nothing else. Not a summary and not a rendering, just the
-  state with what the seat cannot see removed or replaced by a count. It
-  exists because a person sits at this table too: `playtest.py table` shows
-  this and only this to whoever is deciding. An `observation` that leaks a
-  face-down identity turns the whole exercise into a cheat, so err toward
-  removing a field you are unsure about, and say in `notes.md` what you
-  removed.
+  **1. Remove what the seat may not see.** Everything public, plus that
+  seat's own private holdings, and nothing else. A leaked face-down identity
+  turns the whole exercise into a cheat, so err toward removing a field you
+  are unsure about and say in `notes.md` what you removed. This pass wins
+  every conflict with the two below: an unreadable observation wastes a run,
+  a leaky one produces a number that looks like a result and is not.
 
-  A perfect-information game needs neither, and the whole state is the
-  observation.
+  On a perfect-information game this pass removes nothing. That is not a
+  reason to skip the function, which is the mistake this paragraph exists to
+  stop — see pass 3.
+
+  **2. Add back what is derivable from what the seat may see.** Withholding a
+  fact the seat could compute is not security, it is a tax: a person at the
+  table gets it by looking, and a seat that has to derive it spends its whole
+  budget on arithmetic instead of on play. Blindcap gets this right and says
+  so — a socket probed in both holes has its species carried through, because
+  the two revealed groove patterns already determine it for anyone at the
+  table, so hiding it would only have cost the reader a lookup. The same
+  argument covers a board's adjacency, a piece's effective height, whose
+  piece is whose.
+
+  The line, and it is not the same line as pass 1: **what a seat reads off
+  the object by looking belongs here; what requires it to think does not.**
+  Which pins touch, which tooth height a piece carries, how many tiles are
+  left in the reserve — all read by eye. Which moves would be illegal, how
+  strong a position is, what the best move is — that is the harness playing
+  the game and the seat rubber-stamping it, and it corrupts a run more
+  quietly than a leak does.
+
+  **3. Say it in the rulebook's words.** The reader has `idea.json`'s rules
+  and has never seen your code. Your state dict is named for your convenience
+  while writing `apply_move`, which is a different purpose and usually a
+  different vocabulary. Name the seat's own things as the seat's own so it
+  need not index an array to find its own pieces. Drop your internal progress
+  counters — a phase name and whose turn it is are rules; `setup_place_turn`,
+  `arm_count` and `activity_flag` are your state machine, and a reader cannot
+  tell which of them constrain it. Give the fact the rules are written in
+  terms of, not the coordinates it can be derived from.
+
+  This pass is why the function is required even when pass 1 is empty. Both
+  perfect-information engines in this pipeline skipped `observation` on the
+  correct reasoning that there was nothing to hide, and `playtest.observe()`
+  falls back to handing over the raw state dict. A model seated at Millbind
+  then spent 4381 output tokens trying to work out whether `crank_pin:
+  [-2, -1]` was one coordinate or a per-seat array — the field printed beside
+  it, `mill_pin`, was a per-seat array of coordinates — and never reached a
+  decision. Four calls on that one position returned four scattered moves.
+  Every table run on that game died there, and the rules were fine.
+
+  Nothing checks pass 3. `observation_leaks()` cross-checks against
+  `determinize` and catches a violation of pass 1; no tool in this pipeline
+  can tell an honest observation from a readable one. That is why it is
+  written down here, and why `notes.md` has to state what you presented and
+  what you left out.
 
 # Performance
 
@@ -189,6 +234,10 @@ Then write `board-game/ideas/<slug>/playtest/notes.md`:
   simplified adjacency, a physical fact reduced to a graph property)
 - anything in the rules that turned out to be unreachable while you were
   writing it, even if you did not need to raise for it
+- what `observation` presents and what it withholds, one line each, separating
+  what a seat may not see from what you judged it could work out for itself.
+  No tool checks the second of those, so this note is the only record that
+  anybody thought about it
 
 # Modes
 

@@ -31,14 +31,17 @@ HTML file.
 Under `--serve`, any idea with at least one built `.stl` also gets a "view 3D
 model" link to `/viewer/<slug>` — a per-idea page that loads three.js from a
 CDN (no npm/build step, matching this file's own no-build philosophy) and
-lets you spin every `.stl`/`.step` under that idea's `project/` (the
+lets you spin every `.stl`/`.step` under that idea's build dir (the
 assembled whole and every individual part), with wireframe and an
 axis-aligned cross-section (GPU clip plane + a stencil-buffer-filled cut
 face, the same technique panda-social-cc-agent's monitor uses, minus its
-CSG-rebuilt-solid refinement). This is `--serve`-only, not part of the
-one-shot file: a full parts tree can run tens of megabytes, too large to
-embed as base64 the way hero renders are — the viewer streams files from
-`/viewer/<slug>/file/<path>` instead, scoped to that idea's `project/` dir.
+CSG-rebuilt-solid refinement). The build dir is `project/` once
+board-game-builder has run in build mode, else `draft/` — a still-drafted
+idea already has a model under `draft/build/`, and the viewer shows that one
+too (see `model_root()`). This is `--serve`-only, not part of the one-shot
+file: a full parts tree can run tens of megabytes, too large to embed as
+base64 the way hero renders are — the viewer streams files from
+`/viewer/<slug>/file/<path>` instead, scoped to that idea's build dir.
 
 This is the one place allowed to read `journal.JOURNAL_LOG` — see the warning
 in `journal.py`'s docstring before adding a second one. Everything else here
@@ -133,12 +136,24 @@ def embed_image(path: Path | None) -> str:
     return f"data:image/png;base64,{data}"
 
 
+def model_root(slug: str) -> Path | None:
+    """Where a build's .stl/.step files live — `project/` once
+    board-game-builder has run in build mode, else `draft/` for an idea
+    still at the draft stage (a draft already renders its own model under
+    `draft/build/`). Same order as audit.py's BUILD_DIRS: project first."""
+    for sub in ("project", "draft"):
+        candidate = IDEAS / slug / sub
+        if candidate.is_dir():
+            return candidate
+    return None
+
+
 def find_model_files(slug: str) -> list[dict]:
-    """.step/.stl files under this idea's project dir, for the /viewer page —
+    """.step/.stl files under this idea's build dir, for the /viewer page —
     the assembled whole plus every individual part. Skips __pycache__ and the
     *_review dirs (rendered PNGs, not models)."""
-    root = IDEAS / slug / "project"
-    if not root.is_dir():
+    root = model_root(slug)
+    if root is None:
         return []
     out = []
     for path in sorted(root.rglob("*")):
@@ -1073,7 +1088,11 @@ def make_handler(interval: int):
                 self._send(200, "application/json", body)
                 return
             if rest.startswith("file/"):
-                root = (IDEAS / slug / "project").resolve()
+                root = model_root(slug)
+                if root is None:
+                    self._send(404, "text/plain", b"not found")
+                    return
+                root = root.resolve()
                 target = (root / urllib.parse.unquote(rest[len("file/"):])).resolve()
                 try:
                     target.relative_to(root)

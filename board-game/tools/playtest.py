@@ -497,6 +497,14 @@ def run_batch(eng, policy_of_seat, n_players: int, games: int, cap: int,
         "turns_p90": (sorted(turns)[int(0.9 * (len(turns) - 1))] if turns else 0.0),
         "branching_mean": statistics.fmean(branching) if branching else 0.0,
         "branching_median": statistics.median(branching) if branching else 0.0,
+        # The median says whether a turn is interesting; the widest position
+        # says whether a seat at this table can answer at all, and they are
+        # not close on a game whose first action is its broadest. Millbind
+        # runs a median of 53 and a maximum of 118, so a table run reading
+        # only the median sails past its own warning and dies on turn seven.
+        "branching_p90": (sorted(branching)[int(0.9 * (len(branching) - 1))]
+                          if branching else 0.0),
+        "branching_max": max(branching) if branching else 0.0,
         "forced_fraction": (sum(1 for b in branching if b <= 1) / len(branching)
                             if branching else 0.0),
         "margin_mean": statistics.fmean(margins) if margins else 0.0,
