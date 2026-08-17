@@ -289,10 +289,18 @@ class Seats:
         if self.wire == "openai":
             reply = data["choices"][0]["message"]["content"] or ""
             raw = data.get("usage") or {}
-            usage = {"in": raw.get("prompt_tokens", 0),
+            # The two wires count the prompt differently and the difference is
+            # silent: `prompt_tokens` is the whole prompt with the cached part
+            # inside it, while Anthropic's `input_tokens` counts only what was
+            # not served from cache. Reported as-is they look like one wire
+            # costing twice the other for the same five games. Both are
+            # normalised to "in = what was not cached", so in + cached is the
+            # prompt on either.
+            cached = (raw.get("prompt_tokens_details")
+                      or {}).get("cached_tokens", 0) or 0
+            usage = {"in": max((raw.get("prompt_tokens") or 0) - cached, 0),
                      "out": raw.get("completion_tokens", 0),
-                     "cached": (raw.get("prompt_tokens_details")
-                                or {}).get("cached_tokens", 0)}
+                     "cached": cached}
         else:
             # Only `text` blocks. A reasoning model also sends `thinking`
             # blocks, and those are its scratch work rather than its answer.

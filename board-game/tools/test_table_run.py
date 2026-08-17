@@ -170,12 +170,35 @@ class Endpoint:
                 self.end_headers()
                 self.wfile.write(raw)
 
+            def _openai(self, reply: str) -> None:
+                payload = {"choices": [{"message": {"content": reply}}],
+                           "usage": {
+                               # The whole prompt, cached part included: the
+                               # other wire's field excludes it, and a harness
+                               # that adds the two on this one reports double.
+                               "prompt_tokens": (USAGE["input_tokens"]
+                                                 + USAGE["cache_read_input_tokens"]),
+                               "completion_tokens": USAGE["output_tokens"],
+                               "prompt_tokens_details": {
+                                   "cached_tokens":
+                                       USAGE["cache_read_input_tokens"]}}}
+                raw = json.dumps(payload).encode()
+                self.send_response(200)
+                self.send_header("content-type", "application/json")
+                self.send_header("content-length", str(len(raw)))
+                self.end_headers()
+                self.wfile.write(raw)
+
             def do_POST(self):
                 size = int(self.headers["content-length"])
                 body = json.loads(self.rfile.read(size))
                 endpoint.bodies.append(body)
-                self._json(endpoint._answer(
-                    text_of(body["messages"][-1]["content"])))
+                reply = endpoint._answer(
+                    text_of(body["messages"][-1]["content"]))
+                if self.path.endswith("/chat/completions"):
+                    self._openai(reply)
+                else:
+                    self._json(reply)
 
         return Handler
 
@@ -428,6 +451,39 @@ def check_rules_running_out(idea_dir: Path) -> list:
     return bad
 
 
+def check_both_wires_count_alike(idea_dir: Path) -> list:
+    """The same games on either wire must report the same prompt size.
+
+    They do not report it the same way. `prompt_tokens` is the whole prompt
+    with the cached part inside it; `input_tokens` counts only what was not
+    served from cache. Add the cached figure to both and one wire appears to
+    cost twice the other for identical work, which is exactly the false
+    result this harness was built to produce comparisons for.
+    """
+    bad = []
+    totals = {}
+    for wire in ("anthropic", "openai"):
+        endpoint = Endpoint()
+        try:
+            if run_table(idea_dir, endpoint,
+                         ["--schedule", "2:1", "--wire", wire,
+                          "--label-prefix", wire[:2]]) != 0:
+                return [f"the {wire} run failed"]
+        finally:
+            endpoint.stop()
+        name = "anthropic_cached" if wire == "anthropic" else "openai_cached"
+        use = json.loads((idea_dir / "playtest" / "table"
+                          / f"run_{name}.json").read_text("utf-8"))["usage"]
+        totals[wire] = (use["in"] + use["cached"], use["calls"])
+    (a_tok, a_calls), (o_tok, o_calls) = totals["anthropic"], totals["openai"]
+    if a_calls != o_calls:
+        bad.append(f"{a_calls} calls on one wire against {o_calls} on the other")
+    elif a_tok != o_tok:
+        bad.append(f"the same {a_calls} calls counted {a_tok} tokens on the "
+                   f"anthropic wire and {o_tok} on the openai one")
+    return bad
+
+
 CASES = [
     ("reply_parsing_is_strict", lambda d: check_parse()),
     ("a_whole_run_end_to_end", check_full_run),
@@ -439,6 +495,7 @@ CASES = [
     ("a_rerun_will_not_quietly_destroy_the_sessions",
      check_refuses_to_overwrite),
     ("rules_running_out_is_reported_not_raised", check_rules_running_out),
+    ("both_wires_count_the_same_prompt_alike", check_both_wires_count_alike),
 ]
 
 
