@@ -118,7 +118,42 @@ FAIL → invoke `board-game-ideator` in **rework** mode with the verdict
 verbatim; leave the state at `proposed` and `release <slug>`, exactly like a
 mechanical `rules_check.py` failure.
 
-PASS → `pipeline_queue.py advance <slug> --to rules_ok`.
+PASS → play it. Reading rules and playing them are different tests, and prose
+can be vague and still sound complete:
+
+```bash
+.venv/bin/python board-game/tools/playtest.py board-game/ideas/<slug>
+```
+
+An engine has to exist first. If `playtest/engine.py` is missing, invoke
+`board-game-rules-engineer` in **write** mode and let it run `--quick`
+itself. `PLAYTEST ERROR` means the engine is broken, which is the engineer's
+defect and not the game's — send it back in **patch** mode with the error.
+
+Then seat players at it:
+
+```bash
+.venv/bin/python board-game/tools/table_run.py board-game/ideas/<slug> \
+    --schedule 4:3,2:2 --wire anthropic
+```
+
+Adjust `--schedule` to the idea's own `players.min` and `players.max`; the
+point is to touch both ends of the range it claims to support. This needs
+`PLAYTEST_BASE_URL`, `PLAYTEST_API_KEY` and `PLAYTEST_MODEL`, which it reads
+from `.env`. If they are absent, say so and advance anyway on the machine half
+alone — a table that cannot run is a missing measurement, not a failing idea.
+
+Then invoke `board-game-lens-playtest`, which reads both halves and writes
+`review_playtest.md`. Its verdict is the one that counts:
+
+- PASS → `pipeline_queue.py advance <slug> --to rules_ok`.
+- `Disposition: rework` → `board-game-ideator` in **rework** mode with the
+  findings verbatim; state stays `proposed`, `release <slug>`.
+- `Disposition: kill` → do **not** rework it. `pipeline_queue.py advance
+  <slug> --to killed`, and put the one-sentence reason in `TASTE.md` so the
+  next `propose` does not walk back into the same shape. A game whose problem
+  is its own component arithmetic cannot be reworded into a good one, and
+  sending it round again spends a cycle to rediscover that.
 
 ### `brief`
 Invoke `board-game-brief-writer` in **write** mode. It writes `brief.json` +
@@ -286,7 +321,7 @@ What is worth an entry, by action:
 | action | narrate |
 |---|---|
 | `propose` | what the ideator was going for, and what its novelty search actually turned up |
-| `rules_gate` | the `rules_check.py` findings verbatim, the `board-game-lens-rules` verdict line, and what the rework changed (either one triggers) |
+| `rules_gate` | the `rules_check.py` findings verbatim, the `board-game-lens-rules` verdict line, the playtest verdict with its disposition, one quoted player line from the table, and what the rework changed (any of them triggers). On a `kill`, say what the players found and what it cost to find it — that is the only step in this pipeline that ends an idea on evidence rather than on taste |
 | `brief` | the dimensions it chose, and every entry in `unstated_in_spec` — those are the places the spec ran out and somebody guessed |
 | `draft` | what the draft looks like and anything that surprised the builder |
 | `build` / `repair` | the gate findings verbatim (`--body-file .../gate.json`), including any `unmeasured` entries, then what the repair actually changed — not "fixed the overhang", but which number moved |

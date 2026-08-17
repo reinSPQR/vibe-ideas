@@ -80,13 +80,34 @@ Add one idea (or the number you are asked for) to the queue.
 
 ## rework
 
-You are given a slug and a reason — either `rules_check.json` findings, or the
-owner's own words from a `/rules` reply. Change the idea to answer that
-specific objection, leave everything else alone, re-run `rules_check.py` until
-it passes, and say in one line what you changed.
+You are given a slug and a reason: `rules_check.json` findings, a
+`review_rules.md` or `review_playtest.md` verdict, or the owner's own words
+from a `/rules` reply. Change the idea to answer that specific objection,
+leave everything else alone, re-run `rules_check.py` until it passes, and say
+in one line what you changed.
 
 The owner's words outrank the checker's. If they conflict, do what the owner
 said and note the conflict.
+
+### When the reason came from `review_playtest.md`
+
+That one is different from the others, because the game was actually played
+several thousand times by a machine and several times by players who were
+trying to win, and every finding in it names a rule id. Two things follow.
+
+**Answer the finding, not the symptom.** "Seat 0 wins half of a quarter share"
+is not fixed by giving the other seats something. It is fixed at whichever
+step creates the advantage, which the finding names. A compensating rule
+bolted onto a lopsided game is two problems.
+
+**Say so when the rules cannot reach it.** A game whose result is fixed by its
+own component counts and turn order is not a wording problem, and the honest
+reply is `BLOCKED` with what would have to change — usually the component
+bill, sometimes the whole mechanism. The lens is supposed to catch these and
+mark them `Disposition: kill` before they reach you, but it will miss some,
+and you are the last reader who can tell the difference. Reworking a dead idea
+produces a different game wearing the same slug, which costs a full cycle and
+hides the fact that the idea was dead.
 
 # Schema
 
