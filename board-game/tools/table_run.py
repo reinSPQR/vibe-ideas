@@ -290,13 +290,14 @@ class SdkBackend(Backend):
 
     name = "sdk"
 
-    def __init__(self, model: str, max_tokens: int):
+    def __init__(self, model: str, max_tokens: int, env: dict):
         try:
             from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient
         except ImportError:
             raise SystemExit(
                 "TABLE ERROR --driver sdk needs the Agent SDK: "
-                "`.venv/bin/pip install claude-agent-sdk`. It reads "
+                "`uv pip install --python .venv/bin/python "
+                "claude-agent-sdk`. It reads "
                 "ANTHROPIC_BASE_URL and ANTHROPIC_AUTH_TOKEN, which this "
                 "driver sets from PLAYTEST_BASE_URL and PLAYTEST_API_KEY, and "
                 "the endpoint must speak the Anthropic Messages format; an "
@@ -306,14 +307,36 @@ class SdkBackend(Backend):
         self._client_cls = ClaudeSDKClient
         self.model = model
         self.max_tokens = max_tokens
+        self.env = env
         self.clients: dict = {}
+        self.cost = 0.0
 
     async def open_seat(self, key: str, system: str) -> None:
         options = self._options_cls(
             model=self.model,
             system_prompt=system,
+            # `tools=[]` is the one that does the work. `allowed_tools=[]`
+            # reads like it removes them and does not: it is a pre-approval
+            # list, and with it alone the SDK still ships the seat all 28 tool
+            # schemas, Read and Bash and Agent among them. That is the exact
+            # hole this driver was built to close, so it is closed with the
+            # option that measurably empties the `tools` array on the wire and
+            # left with a comment, because the other option will look
+            # sufficient to the next person who reads this.
+            tools=[],
             allowed_tools=[],
+            # One turn per question. A player answers; it does not deliberate
+            # in a loop the harness cannot see.
+            max_turns=1,
             permission_mode="default",
+            # Load nothing from `.claude/`. Left to its default the SDK picks
+            # up this repo's CLAUDE.md, skills and agent definitions, so the
+            # seat would carry a system prompt the chat driver never sends and
+            # the comparison would be measuring the difference between two
+            # briefs rather than between two drivers. It would also hand a
+            # player context about the pipeline it is being played inside.
+            setting_sources=[],
+            env=self.env,
         )
         client = self._client_cls(options=options)
         await client.connect()
@@ -327,12 +350,16 @@ class SdkBackend(Backend):
             for block in getattr(message, "content", None) or []:
                 if hasattr(block, "text"):
                     chunks.append(block.text)
+            # Both AssistantMessage and ResultMessage carry usage, and the
+            # ResultMessage arrives last with the total for the whole turn,
+            # so taking the last one seen is taking the authoritative one.
             raw = getattr(message, "usage", None)
             if isinstance(raw, dict):
                 usage = {"in": raw.get("input_tokens", 0),
                          "out": raw.get("output_tokens", 0),
                          "cached": raw.get("cache_read_input_tokens", 0),
                          "cache_write": raw.get("cache_creation_input_tokens", 0)}
+            self.cost += getattr(message, "total_cost_usd", None) or 0.0
         return "".join(chunks), usage
 
     async def close(self) -> None:
@@ -602,9 +629,26 @@ async def run(args: argparse.Namespace) -> int:
         return 2
 
     if args.driver == "sdk":
-        os.environ.setdefault("ANTHROPIC_BASE_URL", base_url)
-        os.environ.setdefault("ANTHROPIC_AUTH_TOKEN", api_key)
-        backend: Backend = SdkBackend(model, args.max_tokens)
+        # The SDK drives a Claude Code binary that assumes it is talking to
+        # api.anthropic.com, and sends capabilities a custom endpoint rejects
+        # outright rather than ignores. Adaptive reasoning is the sharp one:
+        # Claude Code sends `thinking: {"type": "adaptive"}` for every model
+        # name it does not recognise, which is every custom model name, and a
+        # `400` naming the `thinking` field is what comes back. The other two
+        # drop pre-release body fields and the attribution block, both of
+        # which have to survive an endpoint that reshapes requests. Anything
+        # already set in the environment wins, so an operator who knows their
+        # endpoint handles one of these can say so.
+        guards = {
+            "ANTHROPIC_BASE_URL": base_url,
+            "ANTHROPIC_AUTH_TOKEN": api_key,
+            "ANTHROPIC_MODEL": model,
+            "CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING": "1",
+            "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1",
+            "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+        }
+        env = {k: os.environ.get(k) or v for k, v in guards.items()}
+        backend: Backend = SdkBackend(model, args.max_tokens, env)
     else:
         backend = ChatBackend(base_url, api_key, model, args.wire,
                               args.max_tokens, not args.no_cache)
@@ -644,6 +688,9 @@ async def run(args: argparse.Namespace) -> int:
         "breaker_seat": args.breaker_seat,
         "seconds": round(elapsed, 1),
         "usage": run_state.usage,
+        # Only the SDK reports a price; the chat driver sees tokens and has no
+        # idea what the endpoint charges for them.
+        "cost_usd": round(getattr(backend, "cost", 0.0), 4) or None,
         "leaks": run_state.leaked_seats(),
         "games": run_state.games,
         "rules_questions": run_state.questions,

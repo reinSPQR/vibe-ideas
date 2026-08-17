@@ -36,6 +36,10 @@ import table_run  # noqa: E402
 
 MOVE_LINE = re.compile(r"^  (\d+)  ", re.M)
 
+# Fixed so the accounting is checkable by multiplication rather than by trust.
+USAGE = {"input_tokens": 10, "output_tokens": 5,
+         "cache_read_input_tokens": 7, "cache_creation_input_tokens": 0}
+
 # A game small enough to finish in a handful of decisions, so a fixture run is
 # a second rather than a minute, and simple enough that the expected scores can
 # be worked out by hand: each seat takes tokens off a shared pile and the
@@ -101,12 +105,45 @@ IDEA = {
 }
 
 
+def text_of(content) -> str:
+    """A message body is a string on one wire and a list of blocks on another.
+
+    The driver has to read both, so the stand-in endpoint has to serve both,
+    and the newlines have to survive: the fixture model finds its move by
+    matching the numbered list in the position block, exactly as a real one
+    would.
+    """
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "\n".join(b.get("text", "") for b in content
+                         if isinstance(b, dict))
+    return str(content)
+
+
+def last_prompt(messages: list) -> str:
+    """The most recent thing the table actually asked, scanning backwards.
+
+    Not simply the last message. The chat driver's last message is the
+    question; the SDK appends its own material after it, so a fixture that
+    reads only the tail sees the SDK's furniture and answers the wrong
+    question. A real model reads the whole conversation and has no such
+    problem, which is why this belongs to the fixture and not to the driver.
+    """
+    for message in reversed(messages):
+        text = text_of(message.get("content"))
+        if "LEGAL MOVES" in text or "Debrief now" in text or "get smaller" in text:
+            return text
+    return text_of(messages[-1].get("content")) if messages else ""
+
+
 class Endpoint:
     """A model that always takes the first option, and can be told to misbehave."""
 
     def __init__(self, mode: str = "good"):
         self.mode = mode
         self.seen: list = []
+        self.bodies: list = []
         self.server = HTTPServer(("127.0.0.1", 0), self._handler())
         self.port = self.server.server_address[1]
         self.thread = threading.Thread(target=self.server.serve_forever,
@@ -139,22 +176,62 @@ class Endpoint:
             def log_message(self, *a):
                 return
 
-            def do_POST(self):
-                size = int(self.headers["content-length"])
-                body = json.loads(self.rfile.read(size))
-                last = body["messages"][-1]["content"]
-                reply = endpoint._answer(
-                    last if isinstance(last, str) else str(last))
+            def _json(self, reply: str) -> None:
                 payload = {"content": [{"type": "text", "text": reply}],
-                           "usage": {"input_tokens": 10, "output_tokens": 5,
-                                     "cache_read_input_tokens": 7,
-                                     "cache_creation_input_tokens": 0}}
+                           "usage": USAGE}
                 raw = json.dumps(payload).encode()
                 self.send_response(200)
                 self.send_header("content-type", "application/json")
                 self.send_header("content-length", str(len(raw)))
                 self.end_headers()
                 self.wfile.write(raw)
+
+            def _sse(self, reply: str) -> None:
+                """Server-sent events, because the SDK will not accept less.
+
+                Claude Code sets `stream: true` on every inference request and
+                treats a buffered JSON body as a malformed response, so an
+                endpoint that answers the chat driver perfectly well is
+                invisible to the SDK driver. That is a real deployment
+                constraint on anyone pointing the SDK at their own endpoint,
+                and the fixture reproduces it rather than papering over it.
+                """
+                self.send_response(200)
+                self.send_header("content-type", "text/event-stream")
+                self.end_headers()
+                message = {"id": "fixture", "type": "message",
+                           "role": "assistant", "model": "fixture",
+                           "content": [], "stop_reason": None, "usage": USAGE}
+                for name, data in (
+                        ("message_start", {"type": "message_start",
+                                           "message": message}),
+                        ("content_block_start",
+                         {"type": "content_block_start", "index": 0,
+                          "content_block": {"type": "text", "text": ""}}),
+                        ("content_block_delta",
+                         {"type": "content_block_delta", "index": 0,
+                          "delta": {"type": "text_delta", "text": reply}}),
+                        ("content_block_stop",
+                         {"type": "content_block_stop", "index": 0}),
+                        ("message_delta",
+                         {"type": "message_delta",
+                          "delta": {"stop_reason": "end_turn"},
+                          "usage": {"output_tokens": USAGE["output_tokens"]}}),
+                        ("message_stop", {"type": "message_stop"})):
+                    self.wfile.write(
+                        f"event: {name}\ndata: {json.dumps(data)}\n\n"
+                        .encode())
+                    self.wfile.flush()
+
+            def do_POST(self):
+                size = int(self.headers["content-length"])
+                body = json.loads(self.rfile.read(size))
+                endpoint.bodies.append(body)
+                reply = endpoint._answer(last_prompt(body["messages"]))
+                if body.get("stream"):
+                    self._sse(reply)
+                else:
+                    self._json(reply)
 
         return Handler
 
@@ -293,6 +370,58 @@ def check_unreadable_stops(idea_dir: Path, mode: str) -> list:
     return [f"a {mode} reply did not stop the run"]
 
 
+def check_sdk_driver(idea_dir: Path) -> list:
+    """The SDK path plays the same game, with no tools and nothing borrowed.
+
+    Two things here are worth a fixture rather than a comment. The seat must
+    reach the model with an empty `tools` array: `allowed_tools=[]` reads like
+    it does that and does not, and with it alone the SDK ships the seat all 28
+    tool schemas, `Read` among them, which is the hole this whole driver
+    exists to close. And the SDK's own reported usage has to be treated as a
+    floor, because it makes housekeeping calls of its own that never reach the
+    accounting.
+    """
+    try:
+        import claude_agent_sdk  # noqa: F401
+    except ImportError:
+        return ["claude-agent-sdk is not installed: "
+                "`uv pip install --python .venv/bin/python claude-agent-sdk`"]
+
+    endpoint = Endpoint()
+    bad = []
+    try:
+        code = run_driver(idea_dir, endpoint,
+                          ["--schedule", "2:1", "--driver", "sdk",
+                           "--label-prefix", "s"])
+    finally:
+        endpoint.stop()
+    if code != 0:
+        return [f"driver exited {code}"]
+
+    summary = json.loads((idea_dir / "playtest" / "table" / "run_sdk.json")
+                         .read_text(encoding="utf-8"))
+    if len(summary["games"]) != 1:
+        bad.append(f"{len(summary['games'])} games recorded, wanted 1")
+    if summary["leaks"]:
+        bad.append(f"leak reported: {summary['leaks']}")
+    if any(len(body.get("tools") or []) for body in endpoint.bodies):
+        worst = max(len(b.get("tools") or []) for b in endpoint.bodies)
+        bad.append(f"the seat was sent {worst} tool schemas; `tools=[]` is "
+                   f"the option that empties them, not `allowed_tools=[]`")
+
+    session = json.loads(Path(summary["games"][0]["session"])
+                         .read_text(encoding="utf-8"))
+    eng = playtest.load_engine(Path(session["engine"]))
+    state, _ = playtest.replay(eng, session)
+    if not eng.is_over(state):
+        bad.append("the session does not replay to a finished game")
+    if summary["usage"]["calls"] >= len(endpoint.bodies):
+        bad.append("the SDK's housekeeping calls have stopped happening, so "
+                   "the comparison may now compare like with like: recheck "
+                   "before trusting either driver's call count")
+    return bad
+
+
 CASES = [
     ("reply_parsing_is_strict", lambda d: check_parse()),
     ("a_whole_run_end_to_end", check_full_run),
@@ -301,6 +430,7 @@ CASES = [
      lambda d: check_unreadable_stops(d, "unreadable")),
     ("an_index_past_the_end_stops_the_run",
      lambda d: check_unreadable_stops(d, "out_of_range")),
+    ("the_sdk_driver_hands_the_seat_no_tools", check_sdk_driver),
 ]
 
 
