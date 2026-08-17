@@ -81,9 +81,14 @@ import playtest  # noqa: E402  (path is set immediately above)
 # over with a policy move that the report would then read as a player's.
 MAX_REPLY_RETRIES = 2
 REQUEST_TIMEOUT = 300.0
-# A gateway 5xx is the upstream being busy. Retried with a growing pause,
-# because losing a run at decision forty costs everything spent to get there.
-GATEWAY_RETRIES = 3
+# A gateway 5xx is the upstream being busy, and a busy gateway stays busy for
+# longer than a few seconds: this budget started at three tries over 24s and a
+# run died on the first call of a game because the previous run had just
+# pushed 165 requests through the same endpoint. Doubling each time gives
+# roughly two minutes of patience, which costs nothing when the endpoint is
+# healthy and is the difference between a finished run and a wasted one when
+# it is not.
+GATEWAY_RETRIES = 5
 RETRY_BACKOFF = 4.0
 # Generous, because a reasoning model spends most of this on scratch work the
 # player never sees and runs out mid-thought at anything tighter. Measured on
@@ -96,6 +101,19 @@ USER_AGENT = "board-game-table/1.0 (playtest gate R1c)"
 # A base URL either carries its own version segment or expects the client to
 # add one, and getting it wrong is a 404 rather than anything informative.
 VERSIONED = re.compile(r"/v\d+$")
+
+
+def backoff_total(attempts: int) -> float:
+    """How long the retries have already waited, for the error message."""
+    return RETRY_BACKOFF * (2 ** (attempts + 1) - 1)
+
+
+def retry_after(headers) -> float | None:
+    try:
+        value = headers.get("retry-after") if headers else None
+        return min(float(value), 120.0) if value else None
+    except (TypeError, ValueError):
+        return None
 
 
 def api_path(base_url: str, tail: str) -> str:
@@ -274,12 +292,18 @@ class Seats:
                 # the same money twice.
                 if exc.code < 500 or attempt == GATEWAY_RETRIES:
                     raise RuntimeError(
-                        f"{exc.code} from {url}: {detail}") from None
-                time.sleep(RETRY_BACKOFF * (attempt + 1))
+                        f"{exc.code} from {url} after {attempt + 1} attempts "
+                        f"over {backoff_total(attempt):.0f}s: {detail}"
+                    ) from None
+                # `Retry-After` when the gateway says how long it wants, since
+                # guessing shorter than it asked is how a retry storm starts.
+                time.sleep(retry_after(exc.headers) or RETRY_BACKOFF * 2 ** attempt)
             except (urllib.error.URLError, TimeoutError) as exc:
                 if attempt == GATEWAY_RETRIES:
-                    raise RuntimeError(f"{url} unreachable: {exc}") from None
-                time.sleep(RETRY_BACKOFF * (attempt + 1))
+                    raise RuntimeError(
+                        f"{url} unreachable after {attempt + 1} attempts "
+                        f"over {backoff_total(attempt):.0f}s: {exc}") from None
+                time.sleep(RETRY_BACKOFF * 2 ** attempt)
         raise RuntimeError(f"{url}: retries exhausted")
 
     async def ask(self, key: str, text: str) -> tuple:
