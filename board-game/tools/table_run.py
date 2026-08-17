@@ -446,12 +446,19 @@ class Run:
         state, rng = playtest.replay(eng, session)
         last_seen = {s: 0 for s in range(seats)}
         stuck = False
+        undefined = None
 
         for seat in range(seats):
             await self.ensure_seat(seat, systems[seat])
 
         while not eng.is_over(state):
-            moves = eng.legal_moves(state)
+            try:
+                moves = eng.legal_moves(state)
+            except Exception as exc:
+                if not playtest.is_undefined(exc):
+                    raise
+                undefined = str(exc)
+                break
             if not moves:
                 stuck = True
                 break
@@ -487,9 +494,23 @@ class Run:
                 "why": parsed["why"], "arbitrary": parsed["arbitrary"],
                 "note": parsed["note"] or None,
             })
-            state = eng.apply_move(state, moves[parsed["choice"]], rng)
+            try:
+                state = eng.apply_move(state, moves[parsed["choice"]], rng)
+            except Exception as exc:
+                # The engine reaching a place the rules do not cover is the
+                # single most valuable thing this whole stage can produce, and
+                # it arrives as an exception. Ending the run on a stack trace
+                # would throw away the game that got there, and the game that
+                # got there is the reproduction: a seed and a list of choices
+                # that walks anybody straight back to the gap.
+                if not playtest.is_undefined(exc):
+                    raise
+                undefined = str(exc)
+                session["undefined_after_move"] = len(session["moves"])
+                break
             last_seen[seat] = len(session["moves"])
 
+        session["undefined"] = undefined
         over = eng.is_over(state)
         scores = [round(s, 2) for s in eng.scores(state)]
         winners = list(eng.winners(state)) if over else []
@@ -503,7 +524,7 @@ class Run:
             "label": label, "seats": seats, "seed": seed,
             "seed_blind": session["seed_blind"], "stuck": stuck,
             "finished": over, "decisions": decisions, "scores": scores,
-            "winners": winners,
+            "winners": winners, "undefined": undefined,
             "arbitrary_rate": round(arbitrary / max(decisions, 1), 3),
             "arbitrary_by_seat": {
                 str(s): round(
@@ -516,13 +537,18 @@ class Run:
         }
         self.games.append(record)
 
+        if undefined:
+            self.questions.append({"game": label, "seat": None,
+                                   "turn": decisions,
+                                   "text": f"ENGINE REFUSED: {undefined}"})
         await self.collect_debriefs(seats, label, scores, winners, game_no,
-                                    stuck, over)
+                                    stuck, over, undefined)
         return record
 
     async def collect_debriefs(self, seats: int, label: str, scores: list,
                                winners: list, game_no: int, stuck: bool,
-                               over: bool) -> None:
+                               over: bool, undefined: str | None = None
+                               ) -> None:
         """Scores and the winner go to every seat, and nothing else.
 
         A group playing the same game several times in an evening knows who
@@ -530,7 +556,18 @@ class Run:
         the "did this game get smaller" question can be answered at all. What
         does not go out is any hidden state the game itself never reveals.
         """
-        if stuck:
+        if undefined:
+            # The players are told the rules ran out and what the rules were
+            # silent about, because a person at a table would be looking at
+            # the same jam and would have an opinion about it. What they must
+            # not be told is how to resolve it, which is the whole finding.
+            ending = ("The game stopped mid-play. "
+                      "The rules do not cover the position it reached:"
+                      "\n\n" + undefined + "\n\n"
+                      "Nobody is going to rule on that. Debrief on the "
+                      "game up to that point, and say whether you saw it "
+                      "coming.")
+        elif stuck:
             ending = ("The game stopped: nobody had a legal move and the rules "
                       "do not say what happens then.")
         elif not over:
@@ -676,6 +713,12 @@ async def run(args: argparse.Namespace) -> int:
           f"calls {use['calls']}"
           + (f", cost ${use['cost_usd']:.4f}" if use["cost_usd"] else ""))
     print(f"  rules questions raised in play: {len(run_state.questions)}")
+    gaps = [g for g in run_state.games if g["undefined"]]
+    if gaps:
+        print(f"  RULES RAN OUT in {len(gaps)}/{len(run_state.games)} games:")
+        for g in gaps:
+            print(f"    {g['label']} after {g['decisions']} decisions: "
+                  f"{g['undefined'][:160]}")
     leaks = run_state.leaked_seats()
     if leaks:
         print("  LEAK  a seat was sent something addressed to another seat: "

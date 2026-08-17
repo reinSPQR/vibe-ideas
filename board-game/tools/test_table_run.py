@@ -366,6 +366,61 @@ def check_refuses_to_overwrite(idea_dir: Path) -> list:
     return bad
 
 
+GAP_ENGINE = ENGINE.replace(
+    "def apply_move(state, move, rng):",
+    "def apply_move(state, move, rng):\n"
+    "    if len(state['pile']) == 5:\n"
+    "        raise Undefined(\"rules:turn[3]: the rules do not say what "
+    "happens when the pile runs to five\")")
+
+
+def check_rules_running_out(idea_dir: Path) -> list:
+    """An engine refusing mid-game is the best thing this stage produces.
+
+    It arrives as an exception, and the tempting thing is to let it end the
+    run. That would throw away the game that reached the gap, and that game is
+    the reproduction: a seed and a list of choices that walks anybody straight
+    back to it. So it is caught, recorded on the session, put to the players as
+    something to react to, and reported. What must never happen is the harness
+    ruling on it, because the silence is the finding.
+    """
+    (idea_dir / "playtest" / "engine.py").write_text(GAP_ENGINE,
+                                                     encoding="utf-8")
+    endpoint = Endpoint()
+    bad = []
+    try:
+        code = run_table(idea_dir, endpoint,
+                         ["--schedule", "2:1", "--label-prefix", "gap"])
+    finally:
+        endpoint.stop()
+    if code != 0:
+        return [f"a rules gap ended the run with exit {code} instead of "
+                f"being reported as the finding it is"]
+
+    summary = json.loads((idea_dir / "playtest" / "table"
+                          / "run_anthropic_cached.json").read_text("utf-8"))
+    game = summary["games"][0]
+    if not game["undefined"]:
+        bad.append("the game was not marked as having hit a rules gap")
+    elif "rules:turn[3]" not in game["undefined"]:
+        bad.append(f"the gap lost its rule id: {game['undefined']!r}")
+    if game["finished"]:
+        bad.append("a game that stopped at a rules gap was recorded finished")
+    if not any("ENGINE REFUSED" in q["text"]
+               for q in summary["rules_questions"]):
+        bad.append("the gap was not raised as a rules question")
+    if not any("The rules do not cover the position it reached" in seen
+               for seen in endpoint.seen):
+        bad.append("the players were never told the game stopped on a gap")
+    if not any("rules:turn[3]" in seen for seen in endpoint.seen):
+        bad.append("the players were told it stopped but not on what")
+
+    session = json.loads(Path(game["session"]).read_text(encoding="utf-8"))
+    if not session["moves"]:
+        bad.append("nothing was recorded, so the gap cannot be reproduced")
+    return bad
+
+
 CASES = [
     ("reply_parsing_is_strict", lambda d: check_parse()),
     ("a_whole_run_end_to_end", check_full_run),
@@ -376,6 +431,7 @@ CASES = [
      lambda d: check_unreadable_stops(d, "out_of_range")),
     ("a_rerun_will_not_quietly_destroy_the_sessions",
      check_refuses_to_overwrite),
+    ("rules_running_out_is_reported_not_raised", check_rules_running_out),
 ]
 
 
