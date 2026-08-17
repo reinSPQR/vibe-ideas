@@ -1,8 +1,8 @@
-"""test_table_run.py — fixtures for the agent-played table, with no model.
+"""test_table_run.py — fixtures for the played table, with no model.
 
 `table_run.py` cannot be tested against a real endpoint on every change: it
 would cost money, it would be slow, and worst of all its answers would move
-between runs, so a failure would never tell you whether the driver broke or
+between runs, so a failure would never tell you whether the harness broke or
 the model had an off day. So the model is replaced by a local HTTP server that
 answers deterministically, and everything that is actually this file's job
 becomes checkable: that a seat only ever sees its own position, that a reply
@@ -108,7 +108,7 @@ IDEA = {
 def text_of(content) -> str:
     """A message body is a string on one wire and a list of blocks on another.
 
-    The driver has to read both, so the stand-in endpoint has to serve both,
+    The tool has to write both, so the stand-in endpoint has to read both,
     and the newlines have to survive: the fixture model finds its move by
     matching the numbered list in the position block, exactly as a real one
     would.
@@ -119,22 +119,6 @@ def text_of(content) -> str:
         return "\n".join(b.get("text", "") for b in content
                          if isinstance(b, dict))
     return str(content)
-
-
-def last_prompt(messages: list) -> str:
-    """The most recent thing the table actually asked, scanning backwards.
-
-    Not simply the last message. The chat driver's last message is the
-    question; the SDK appends its own material after it, so a fixture that
-    reads only the tail sees the SDK's furniture and answers the wrong
-    question. A real model reads the whole conversation and has no such
-    problem, which is why this belongs to the fixture and not to the driver.
-    """
-    for message in reversed(messages):
-        text = text_of(message.get("content"))
-        if "LEGAL MOVES" in text or "Debrief now" in text or "get smaller" in text:
-            return text
-    return text_of(messages[-1].get("content")) if messages else ""
 
 
 class Endpoint:
@@ -186,52 +170,12 @@ class Endpoint:
                 self.end_headers()
                 self.wfile.write(raw)
 
-            def _sse(self, reply: str) -> None:
-                """Server-sent events, because the SDK will not accept less.
-
-                Claude Code sets `stream: true` on every inference request and
-                treats a buffered JSON body as a malformed response, so an
-                endpoint that answers the chat driver perfectly well is
-                invisible to the SDK driver. That is a real deployment
-                constraint on anyone pointing the SDK at their own endpoint,
-                and the fixture reproduces it rather than papering over it.
-                """
-                self.send_response(200)
-                self.send_header("content-type", "text/event-stream")
-                self.end_headers()
-                message = {"id": "fixture", "type": "message",
-                           "role": "assistant", "model": "fixture",
-                           "content": [], "stop_reason": None, "usage": USAGE}
-                for name, data in (
-                        ("message_start", {"type": "message_start",
-                                           "message": message}),
-                        ("content_block_start",
-                         {"type": "content_block_start", "index": 0,
-                          "content_block": {"type": "text", "text": ""}}),
-                        ("content_block_delta",
-                         {"type": "content_block_delta", "index": 0,
-                          "delta": {"type": "text_delta", "text": reply}}),
-                        ("content_block_stop",
-                         {"type": "content_block_stop", "index": 0}),
-                        ("message_delta",
-                         {"type": "message_delta",
-                          "delta": {"stop_reason": "end_turn"},
-                          "usage": {"output_tokens": USAGE["output_tokens"]}}),
-                        ("message_stop", {"type": "message_stop"})):
-                    self.wfile.write(
-                        f"event: {name}\ndata: {json.dumps(data)}\n\n"
-                        .encode())
-                    self.wfile.flush()
-
             def do_POST(self):
                 size = int(self.headers["content-length"])
                 body = json.loads(self.rfile.read(size))
                 endpoint.bodies.append(body)
-                reply = endpoint._answer(last_prompt(body["messages"]))
-                if body.get("stream"):
-                    self._sse(reply)
-                else:
-                    self._json(reply)
+                self._json(endpoint._answer(
+                    text_of(body["messages"][-1]["content"])))
 
         return Handler
 
@@ -244,11 +188,11 @@ def make_idea(root: Path) -> Path:
     return idea_dir
 
 
-def run_driver(idea_dir: Path, endpoint: Endpoint, extra: list) -> int:
+def run_table(idea_dir: Path, endpoint: Endpoint, extra: list) -> int:
     os.environ["PLAYTEST_BASE_URL"] = endpoint.url()
     os.environ["PLAYTEST_API_KEY"] = "fixture"
     os.environ["PLAYTEST_MODEL"] = "fixture-model"
-    # The driver narrates a real run, which is right there and noise here.
+    # The tool narrates a real run, which is right there and noise here.
     with contextlib.redirect_stdout(io.StringIO()):
         return table_run.main([str(idea_dir)] + extra)
 
@@ -276,6 +220,22 @@ def check_parse() -> list:
     if not table_run.parse_reply("CHOICE 1\nARBITRARY yes", 5)["arbitrary"]:
         bad.append("ARBITRARY yes was not read as arbitrary")
 
+    # A reasoning model's scratch work turns up inside the reply on some
+    # gateways. It has to be cut, not searched: a CHOICE the model wrote while
+    # still weighing options is not the move it settled on.
+    thought = table_run.parse_reply(
+        "<mm:think>Maybe CHOICE 0, or CHOICE 1. Let me weigh both.</mm:think>\n"
+        "CHOICE 4\nWHY it forces the reply I want\nARBITRARY no", 5)
+    if not thought or thought["choice"] != 4:
+        bad.append(f"a reply with a think block parsed as {thought!r}")
+    tail = table_run.parse_reply(
+        "still weighing this</think>\nCHOICE 2\nWHY settled\nARBITRARY no", 5)
+    if not tail or tail["choice"] != 2:
+        bad.append(f"a reply with a trimmed think block parsed as {tail!r}")
+    if table_run.parse_reply(
+            "<think>I could take CHOICE 1 here and then", 5) is not None:
+        bad.append("read a move out of a thought the model never finished")
+
     for text, why in (
             ("I pick the second one", "prose with no CHOICE line"),
             ("CHOICE 9", "an index past the end of the list"),
@@ -291,16 +251,16 @@ def check_full_run(idea_dir: Path) -> list:
     endpoint = Endpoint()
     bad = []
     try:
-        code = run_driver(idea_dir, endpoint,
+        code = run_table(idea_dir, endpoint,
                           ["--schedule", "4:1,2:1", "--label-prefix", "f"])
     finally:
         endpoint.stop()
     if code != 0:
-        return [f"driver exited {code}"]
+        return [f"table_run exited {code}"]
 
     summary = json.loads(
         (idea_dir / "playtest" / "table"
-         / "run_chat_anthropic_cached.json").read_text(encoding="utf-8"))
+         / "run_anthropic_cached.json").read_text(encoding="utf-8"))
     if len(summary["games"]) != 2:
         bad.append(f"{len(summary['games'])} games recorded, wanted 2")
     if summary["leaks"]:
@@ -336,7 +296,7 @@ def check_seat_isolation(idea_dir: Path) -> list:
     """No seat may ever be handed a block addressed to another seat."""
     endpoint = Endpoint()
     try:
-        run_driver(idea_dir, endpoint,
+        run_table(idea_dir, endpoint,
                    ["--schedule", "4:1", "--label-prefix", "iso"])
     finally:
         endpoint.stop()
@@ -358,7 +318,7 @@ def check_unreadable_stops(idea_dir: Path, mode: str) -> list:
     """
     endpoint = Endpoint(mode=mode)
     try:
-        run_driver(idea_dir, endpoint, ["--schedule", "2:1",
+        run_table(idea_dir, endpoint, ["--schedule", "2:1",
                                         "--label-prefix", f"{mode}_"])
     except SystemExit as exc:
         message = str(exc)
@@ -370,58 +330,6 @@ def check_unreadable_stops(idea_dir: Path, mode: str) -> list:
     return [f"a {mode} reply did not stop the run"]
 
 
-def check_sdk_driver(idea_dir: Path) -> list:
-    """The SDK path plays the same game, with no tools and nothing borrowed.
-
-    Two things here are worth a fixture rather than a comment. The seat must
-    reach the model with an empty `tools` array: `allowed_tools=[]` reads like
-    it does that and does not, and with it alone the SDK ships the seat all 28
-    tool schemas, `Read` among them, which is the hole this whole driver
-    exists to close. And the SDK's own reported usage has to be treated as a
-    floor, because it makes housekeeping calls of its own that never reach the
-    accounting.
-    """
-    try:
-        import claude_agent_sdk  # noqa: F401
-    except ImportError:
-        return ["claude-agent-sdk is not installed: "
-                "`uv pip install --python .venv/bin/python claude-agent-sdk`"]
-
-    endpoint = Endpoint()
-    bad = []
-    try:
-        code = run_driver(idea_dir, endpoint,
-                          ["--schedule", "2:1", "--driver", "sdk",
-                           "--label-prefix", "s"])
-    finally:
-        endpoint.stop()
-    if code != 0:
-        return [f"driver exited {code}"]
-
-    summary = json.loads((idea_dir / "playtest" / "table" / "run_sdk.json")
-                         .read_text(encoding="utf-8"))
-    if len(summary["games"]) != 1:
-        bad.append(f"{len(summary['games'])} games recorded, wanted 1")
-    if summary["leaks"]:
-        bad.append(f"leak reported: {summary['leaks']}")
-    if any(len(body.get("tools") or []) for body in endpoint.bodies):
-        worst = max(len(b.get("tools") or []) for b in endpoint.bodies)
-        bad.append(f"the seat was sent {worst} tool schemas; `tools=[]` is "
-                   f"the option that empties them, not `allowed_tools=[]`")
-
-    session = json.loads(Path(summary["games"][0]["session"])
-                         .read_text(encoding="utf-8"))
-    eng = playtest.load_engine(Path(session["engine"]))
-    state, _ = playtest.replay(eng, session)
-    if not eng.is_over(state):
-        bad.append("the session does not replay to a finished game")
-    if summary["usage"]["calls"] >= len(endpoint.bodies):
-        bad.append("the SDK's housekeeping calls have stopped happening, so "
-                   "the comparison may now compare like with like: recheck "
-                   "before trusting either driver's call count")
-    return bad
-
-
 CASES = [
     ("reply_parsing_is_strict", lambda d: check_parse()),
     ("a_whole_run_end_to_end", check_full_run),
@@ -430,7 +338,6 @@ CASES = [
      lambda d: check_unreadable_stops(d, "unreadable")),
     ("an_index_past_the_end_stops_the_run",
      lambda d: check_unreadable_stops(d, "out_of_range")),
-    ("the_sdk_driver_hands_the_seat_no_tools", check_sdk_driver),
 ]
 
 
