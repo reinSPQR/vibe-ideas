@@ -113,7 +113,15 @@ VERSIONED = re.compile(r"/v\d+$")
 
 
 def backoff_total(attempts: int) -> float:
-    """How long the retries have already waited, for the error message."""
+    """The sleeping the retries have done, which is NOT how long they took.
+
+    Named for what it is, because the old name went into an error message as
+    "after 6 attempts over 252s" and read as wall clock. It is not: the
+    requests themselves are missing from it, and on a gateway that holds a
+    dead request for its full 60-second ceiling they are most of the time.
+    That run actually took about 484s, and the halved figure is what led to a
+    confident and wrong reading of how fast the gateway gives up.
+    """
     return RETRY_BACKOFF * (2 ** (attempts + 1) - 1)
 
 
@@ -287,19 +295,33 @@ class Seats:
     def _post(self, url: str, headers: dict, payload: dict) -> dict:
         """POST and return the reply text and its usage, streamed or not.
 
-        Which is better is a property of the endpoint, not of this file, so it
-        is a flag and the default is off. Measured on this gateway with five
-        interleaved pairs of the same prompt: buffered ran 3.4-4.2s and
-        returned a complete reply 5 times out of 5; streamed ran 3.7-63s and
-        returned 4 out of 5, the failure being a 63-second stream that ended
-        empty. An earlier single pair pointed the other way and a whole commit
-        was written on it; one pair on an endpoint whose latency varies twenty
-        fold is not evidence of anything.
+        Which is better is a property of the endpoint AND of how long the
+        seat thinks, which is why this answer changed twice. On narrow
+        positions buffered wins: five interleaved pairs of the same prompt ran
+        3.4-4.2s buffered and returned 5 of 5, against 3.7-63s streamed and
+        4 of 5. That measurement is still true and it is not the one that
+        matters, because a run does not die on a narrow position.
 
-        Streaming stays available because some gateways require it and an
-        intermediary can kill a long silent request, and because a reasoning
-        model's `thinking_delta` events are cleaner to drop as they arrive
-        than to strip from the text afterwards.
+        On the position that actually kills runs — Millbind's turn 5, 114
+        legal moves — four interleaved pairs each way:
+
+            buffered  1 of 4 usable: 504 at 60.3s, 504 at 60.2s,
+                      an empty reply that spent all 8192 output tokens,
+                      and one CHOICE that landed at 58.9s
+            streamed  3 of 4 usable, no 504 at all: one empty reply at the
+                      same 8192 cap, then 6083, 4740 and 5018 output tokens
+                      returning a CHOICE in 35-37s
+
+        The mechanism is the same in both halves and explains both. This seat
+        needs five to eight thousand output tokens to weigh a hundred options,
+        the gateway kills a request that has been silent for 60 seconds, and
+        a buffered request is silent for its whole life. Streaming keeps
+        bytes moving so the ceiling never applies, which is why it wins here
+        and lost on a prompt that answered in four seconds.
+
+        The remaining failure is not the wire and streaming does not touch it:
+        a seat that spends the entire 8192-token budget deliberating returns
+        nothing on either transport. That one is the width of the position.
         """
         # urllib announces itself as `Python-urllib/3.x`, which a gateway
         # behind Cloudflare rejects outright with a 403 and error code 1010
@@ -310,6 +332,7 @@ class Seats:
         if self.stream:
             headers["accept"] = "text/event-stream"
         body = json.dumps(payload).encode("utf-8")
+        began = time.monotonic()
         for attempt in range(GATEWAY_RETRIES + 1):
             req = urllib.request.Request(url, data=body, headers=headers,
                                          method="POST")
@@ -329,8 +352,9 @@ class Seats:
                 if exc.code < 500 or attempt == GATEWAY_RETRIES:
                     raise RuntimeError(
                         f"{exc.code} from {url} after {attempt + 1} attempts "
-                        f"over {backoff_total(attempt):.0f}s: {detail}"
-                    ) from None
+                        f"over {time.monotonic() - began:.0f}s "
+                        f"({backoff_total(attempt):.0f}s of it waiting to "
+                        f"retry): {detail}") from None
                 # `Retry-After` when the gateway says how long it wants, since
                 # guessing shorter than it asked is how a retry storm starts.
                 time.sleep(retry_after(exc.headers) or RETRY_BACKOFF * 2 ** attempt)
@@ -338,7 +362,9 @@ class Seats:
                 if attempt == GATEWAY_RETRIES:
                     raise RuntimeError(
                         f"{url} unreachable after {attempt + 1} attempts "
-                        f"over {backoff_total(attempt):.0f}s: {exc}") from None
+                        f"over {time.monotonic() - began:.0f}s "
+                        f"({backoff_total(attempt):.0f}s of it waiting to "
+                        f"retry): {exc}") from None
                 time.sleep(RETRY_BACKOFF * 2 ** attempt)
         raise RuntimeError(f"{url}: retries exhausted")
 
@@ -567,6 +593,24 @@ class Run:
                         bad.add(f"seat {seat} was sent a block for seat {other}")
         return sorted(bad)
 
+    def abandon(self, session: dict, label: str, why: str):
+        """Write the partial game before giving up, whatever gave up.
+
+        It is a seed and a list of choices, so it is the reproduction:
+        whoever picks this up walks straight back to the position that could
+        not be answered, and that position is the finding. There are two ways
+        a turn ends a run — the seat sends something unreadable, or the
+        gateway sends nothing — and only the first one used to save. The
+        second is the one that fires on a wide position, so the case that
+        most needed a reproduction was the case that left none.
+        """
+        session["abandoned_at"] = len(session["moves"])
+        session["abandoned_because"] = why
+        out = self.idea_dir / "playtest" / "table" / f"{label}.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(session, indent=2), encoding="utf-8")
+        return out
+
     async def play_game(self, seats: int, seed: int, label: str,
                         systems: dict, game_no: int) -> dict:
         eng = self.eng
@@ -604,6 +648,12 @@ class Run:
                 playtest.played_lines(session, last_seen[seat])
                 + [playtest.render_table(eng, session, state, label,
                                          self.compact)])
+            # One line per decision, before the request rather than after it.
+            # A run that dies inside a four-minute retry sequence should say
+            # which turn and how wide the position was while it is still
+            # hanging, not in a traceback that mentions neither.
+            print(f"    {label} t{len(session['moves'])} seat{seat} "
+                  f"{len(moves)} moves", flush=True)
             parsed = None
             asked_before = len(self.questions)
             rejected = []
@@ -613,7 +663,26 @@ class Run:
                     f"and {len(moves) - 1}. Send only the lines the brief asks "
                     f"for: CHOICE, WHY, then DECISION with one of "
                     f"{', '.join(DECISIONS)}.")
-                reply = await self.ask_seat(seat, prompt, label)
+                try:
+                    reply = await self.ask_seat(seat, prompt, label)
+                except Exception as exc:
+                    # A gateway that gives up is the same loss as a seat that
+                    # answers in prose: the position that caused it is the
+                    # finding, and without the game so far nobody can get back
+                    # to it. This path used to raise straight out and leave no
+                    # file at all, which is how a 504 after four minutes told
+                    # us nothing about which turn it died on.
+                    out = self.abandon(
+                        session, label,
+                        f"seat {seat} got no reply from the gateway on a "
+                        f"position offering {len(moves)} moves: "
+                        f"{type(exc).__name__}: {exc}")
+                    raise SystemExit(
+                        f"TABLE ERROR seat {seat} got no reply in game "
+                        f"{label} at turn {len(session['moves'])}, on a "
+                        f"position offering {len(moves)} moves. The game so "
+                        f"far is saved at {out}, so the position replays. "
+                        f"{type(exc).__name__}: {exc}") from exc
                 parsed = parse_reply(reply, len(moves))
                 if parsed:
                     break
@@ -627,19 +696,10 @@ class Run:
                 shown = "\n  ---\n".join(
                     (repr(r[:400]) if r.strip() else "(empty reply)")
                     for r in rejected)
-                # Write the partial game before giving up. It is a seed and a
-                # list of choices, so it is the reproduction: whoever picks
-                # this up can walk straight back to the position that could
-                # not be answered, and that position is the finding. The same
-                # argument as for a rules gap, which this code already got
-                # right and this path did not.
-                session["abandoned_at"] = len(session["moves"])
-                session["abandoned_because"] = (
+                out = self.abandon(
+                    session, label,
                     f"seat {seat} returned nothing readable on a position "
                     f"offering {len(moves)} moves")
-                out = self.idea_dir / "playtest" / "table" / f"{label}.json"
-                out.parent.mkdir(parents=True, exist_ok=True)
-                out.write_text(json.dumps(session, indent=2), encoding="utf-8")
                 raise SystemExit(
                     f"TABLE ERROR seat {seat} could not produce a readable "
                     f"CHOICE after {MAX_REPLY_RETRIES + 1} attempts in game "
@@ -831,23 +891,35 @@ async def run(args: argparse.Namespace) -> int:
     # The machine half, if it has run, already knows how wide this game's
     # turns are. Saying so before the first request costs nothing and is
     # cheaper than discovering it forty decisions in.
+    #
+    # Read the WIDEST position, not the median. A run does not die on a
+    # typical turn, it dies on the worst one it meets, and one unanswerable
+    # position ends the game whatever the other ninety-nine look like.
+    # Millbind is the case that proves it: median 53, which is under the
+    # threshold and printed nothing, and a maximum of 118 that killed every
+    # attempt on turn seven. The median stays in the message because a game
+    # that is wide everywhere and a game with one wide opening are different
+    # problems and the pair of numbers tells them apart.
     report = idea_dir / "playtest.json"
     if report.is_file():
         try:
             stats = json.loads(report.read_text(encoding="utf-8"))["stats"]
             widest = max(
-                (block["competent"]["branching_median"], seats)
+                (block["competent"]["branching_max"],
+                 block["competent"]["branching_median"], seats)
                 for seats, block in stats["seats"].items()
-                if block.get("competent", {}).get("branching_median"))
+                if block.get("competent", {}).get("branching_max"))
             if widest[0] > PLAYABLE_BRANCHING:
-                print(f"WIDE  playtest.json records a median of {widest[0]:.0f} "
-                      f"legal moves per turn at {widest[1]} players. Past "
-                      f"about {PLAYABLE_BRANCHING} a seat spends its whole "
-                      f"budget weighing options and returns nothing, so "
-                      f"expect this run to stop on an empty reply. That is a "
-                      f"fact about the game's branching factor, not a "
-                      f"transport problem, and truncating the list to fit "
-                      f"would measure a different game.")
+                print(f"WIDE  playtest.json records positions of up to "
+                      f"{widest[0]:.0f} legal moves at {widest[2]} players "
+                      f"(median {widest[1]:.0f}). Past about "
+                      f"{PLAYABLE_BRANCHING} a seat spends its whole budget "
+                      f"weighing options and returns nothing, so expect this "
+                      f"run to stop on an empty reply or a gateway timeout at "
+                      f"the first such position. That is a fact about the "
+                      f"game's branching factor, not a transport problem, and "
+                      f"truncating the list to fit would measure a different "
+                      f"game.")
         except (KeyError, ValueError, TypeError):
             pass
 
@@ -943,10 +1015,13 @@ def main(argv: list | None = None) -> int:
                     help="games per seat count, e.g. 4:3,2:2")
     ap.add_argument("--wire", choices=("anthropic", "openai"),
                     default="anthropic")
-    ap.add_argument("--stream", action="store_true",
-                    help="consume the reply as server-sent events. Required "
-                         "by some gateways; measured slower and less reliable "
-                         "on the one this was built against")
+    ap.add_argument("--stream", action=argparse.BooleanOptionalAction,
+                    default=True,
+                    help="consume the reply as server-sent events. On by "
+                         "default: a buffered request that goes quiet for a "
+                         "minute is a request this gateway kills, and a seat "
+                         "thinking about a wide position goes quiet for "
+                         "exactly that long. --no-stream to compare")
     ap.add_argument("--no-cache", action="store_true",
                     help="anthropic wire only: drop the cache_control marker "
                          "on the static brief, to measure what it saves")

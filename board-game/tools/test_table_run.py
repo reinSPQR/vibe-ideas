@@ -121,6 +121,10 @@ def text_of(content) -> str:
     return str(content)
 
 
+class Gone(Exception):
+    """The gateway giving up, as distinct from the model answering badly."""
+
+
 class Endpoint:
     """A model that always takes the first option, and can be told to misbehave."""
 
@@ -150,6 +154,8 @@ class Endpoint:
                     "RULES QUESTION rules:win never says who breaks a tie")
         if self.mode == "unreadable":
             return "I think I will take the small one, it seems wise."
+        if self.mode == "gateway_dies" and len(self.seen) > 1:
+            raise Gone()
         if self.mode == "out_of_range":
             return "CHOICE 999\nWHY off the end\nDECISION real"
         idx = MOVE_LINE.search(text)
@@ -246,8 +252,14 @@ class Endpoint:
                 size = int(self.headers["content-length"])
                 body = json.loads(self.rfile.read(size))
                 endpoint.bodies.append(body)
-                reply = endpoint._answer(
-                    text_of(body["messages"][-1]["content"]))
+                try:
+                    reply = endpoint._answer(
+                        text_of(body["messages"][-1]["content"]))
+                except Gone:
+                    self.send_response(504)
+                    self.send_header("content-length", "0")
+                    self.end_headers()
+                    return
                 openai = self.path.endswith("/chat/completions")
                 if not body.get("stream"):
                     self._buffered(reply, openai)
@@ -265,6 +277,20 @@ def make_idea(root: Path) -> Path:
     (idea_dir / "idea.json").write_text(json.dumps(IDEA), encoding="utf-8")
     (idea_dir / "playtest" / "engine.py").write_text(ENGINE, encoding="utf-8")
     return idea_dir
+
+
+def summary_of(idea_dir: Path) -> dict:
+    """The one run summary in this idea's table directory.
+
+    Named by the transport, so hard-coding `run_anthropic_cached.json` here
+    made three cases fail the day the streaming default flipped — a change
+    that affected none of what they check. A case that does not care which
+    wire it ran on should not have to be edited when the wire changes.
+    """
+    found = sorted((idea_dir / "playtest" / "table").glob("run_*.json"))
+    if len(found) != 1:
+        raise AssertionError(f"wanted one run summary, found {found}")
+    return json.loads(found[0].read_text(encoding="utf-8"))
 
 
 def run_table(idea_dir: Path, endpoint: Endpoint, extra: list) -> int:
@@ -344,9 +370,7 @@ def check_full_run(idea_dir: Path) -> list:
     if code != 0:
         return [f"table_run exited {code}"]
 
-    summary = json.loads(
-        (idea_dir / "playtest" / "table"
-         / "run_anthropic_cached.json").read_text(encoding="utf-8"))
+    summary = summary_of(idea_dir)
     if len(summary["games"]) != 2:
         bad.append(f"{len(summary['games'])} games recorded, wanted 2")
     if summary["leaks"]:
@@ -439,6 +463,54 @@ def check_unreadable_stops(idea_dir: Path, mode: str) -> list:
     return [f"a {mode} reply did not stop the run"]
 
 
+def check_a_dead_gateway_still_leaves_the_game(idea_dir: Path) -> list:
+    """A transport that gives up must leave the position behind it.
+
+    This is the same argument as an unreadable reply and it took a real run to
+    notice the code only made it in one of the two places. Millbind died on a
+    504 after 252 seconds and wrote nothing at all: no session, no turn
+    number, no move count, just a traceback through `urlopen`. The position
+    that caused it is the entire finding — a wide position is exactly what a
+    gateway times out on — and the one case that most needed a reproduction
+    was the one case that produced none.
+    """
+    endpoint = Endpoint(mode="gateway_dies")
+    retries, backoff = table_run.GATEWAY_RETRIES, table_run.RETRY_BACKOFF
+    table_run.GATEWAY_RETRIES, table_run.RETRY_BACKOFF = 1, 0.0
+    try:
+        run_table(idea_dir, endpoint, ["--schedule", "2:1",
+                                       "--label-prefix", "dead_"])
+    except SystemExit as exc:
+        message = str(exc)
+        bad = []
+        if "504" not in message:
+            bad.append(f"the error hides what the gateway said: {message!r}")
+        # Turn and width are what tell a reader whether this was the wire or
+        # the position, and a traceback carries neither.
+        if " at turn " not in message or " moves" not in message:
+            bad.append("the error names neither the turn nor how many moves "
+                       "the position offered, so the run cannot be located")
+        saved = list((idea_dir / "playtest" / "table").glob("dead_*.json"))
+        if not saved:
+            return bad + ["the partial game was not written, so the position "
+                          "the gateway died on cannot be replayed"]
+        session = json.loads(saved[0].read_text(encoding="utf-8"))
+        if session.get("abandoned_at") is None:
+            bad.append("the saved session does not record being abandoned")
+        if "504" not in (session.get("abandoned_because") or ""):
+            bad.append("the saved session does not say the gateway was why")
+        # A reproduction is a seed and a list of choices. Zero moves would
+        # still satisfy every check above and replay to nothing.
+        if not session.get("moves"):
+            bad.append("the saved session holds no moves, so it replays to "
+                       "the opening rather than to the position")
+        return bad
+    finally:
+        table_run.GATEWAY_RETRIES, table_run.RETRY_BACKOFF = retries, backoff
+        endpoint.stop()
+    return ["a dead gateway did not stop the run"]
+
+
 def check_refuses_to_overwrite(idea_dir: Path) -> list:
     """A second run on the same labels must stop before spending anything.
 
@@ -506,8 +578,7 @@ def check_rules_running_out(idea_dir: Path) -> list:
         return [f"a rules gap ended the run with exit {code} instead of "
                 f"being reported as the finding it is"]
 
-    summary = json.loads((idea_dir / "playtest" / "table"
-                          / "run_anthropic_cached.json").read_text("utf-8"))
+    summary = summary_of(idea_dir)
     game = summary["games"][0]
     if not game["undefined"]:
         bad.append("the game was not marked as having hit a rules gap")
@@ -541,7 +612,10 @@ def check_both_wires_count_alike(idea_dir: Path) -> list:
     """
     bad = []
     totals = {}
-    for wire, extra, suffix in (("anthropic", [], ""), ("openai", [], ""),
+    # Both transports explicitly, so this stays a comparison of the two
+    # rather than of the default against itself.
+    for wire, extra, suffix in (("anthropic", ["--no-stream"], ""),
+                                ("openai", ["--no-stream"], ""),
                                 ("anthropic", ["--stream"], "_stream"),
                                 ("openai", ["--stream"], "_stream")):
         endpoint = Endpoint()
@@ -574,6 +648,8 @@ CASES = [
      lambda d: check_unreadable_stops(d, "unreadable")),
     ("an_index_past_the_end_stops_the_run",
      lambda d: check_unreadable_stops(d, "out_of_range")),
+    ("a_dead_gateway_still_leaves_the_game",
+     check_a_dead_gateway_still_leaves_the_game),
     ("a_rerun_will_not_quietly_destroy_the_sessions",
      check_refuses_to_overwrite),
     ("rules_running_out_is_reported_not_raised", check_rules_running_out),
