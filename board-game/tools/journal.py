@@ -1,58 +1,46 @@
 #!/usr/bin/env python3
-"""journal.py — narrates what happens to an idea, to a Telegram channel of its
-own, and to a local log file kept solely for `dashboard.py`.
+"""Keep complete local pipeline history and send one kind of journal notice.
 
-    python3 board-game/tools/journal.py append <slug> --kind gate --by gate.py \\
-        --summary "GATE FAIL — 3 findings" --body-file gate.json
+Routine events recorded with ``append`` are written only to
+``board-game/.journal_log.jsonl`` for ``dashboard.py``. The journal Telegram
+channel receives only ``rules_ready``: a proposal that has passed every gate
+before the table gate and is about to be table-tested.
 
-Every idea generates a running story in the journal channel: who did what, what
-they decided, what the checkers said verbatim, and what you said back. It is a
-separate channel from the approval gates on purpose — the gate channel holds
-the two messages that need you to press something, and burying those under
-fifteen progress notes is how a gate stops being read.
+    python3 board-game/tools/journal.py append <slug> --kind gate \
+        --by gate.py --summary "RULES PASS"
+    python3 board-game/tools/journal.py rules_ready <slug>
 
-**Nothing in the pipeline reads any of this.** `JOURNAL_LOG` below exists for
-exactly one reader: `dashboard.py`, generating a page for the owner to look
-at. No agent, no `improve.py`, no `audit.py` may open it — if you are adding
-code to this pipeline and you are tempted to `open(JOURNAL_LOG)` from
-anywhere other than `dashboard.py`, stop. That matters more than it sounds. A
-log that feeds back into the system stops being a record of what happened and
-becomes another surface to optimise — agents write for the reader they
-expect, and the unflattering detail, the guess that turned out wrong, the
-finding that was waved away, is exactly what disappears first. Keeping this
-to one reader, who never talks back to the pipeline, is what keeps that
-boundary free instead of a rule someone has to remember.
+For a rework, ``pipeline_queue.py`` saves the immediately previous idea before
+the ideator changes it. ``rules_ready`` compares against that snapshot and
+bolds every changed rule block in the Telegram message. Repeating
+``rules_ready`` for an unchanged ``idea.json`` is deduplicated.
 
-So: write plainly, include what went badly, and never round a failure up into
-something tidier than it was.
-
-Configure `TELEGRAM_CHAT_JOURNAL` in `.env` (a second chat or channel; the
-same bot token works for both). Without it, entries print to stdout, which is
-also how you read them before any bot exists. Either way, every entry is also
-appended to `JOURNAL_LOG` (one JSON object per line, untruncated) for the
-dashboard to read.
-
-`pipeline_queue.py` narrates every state transition on its own, so the
-skeleton is automatic. The interesting entries are the ones the driver and the
-agents add: why an idea was proposed, what a brief had to guess at, what a
-repair actually changed.
+Nothing in the pipeline may read the local journal log. It has exactly one
+reader: ``dashboard.py``. This keeps narrative history from becoming another
+input agents learn to optimise.
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
+import html
 import json
 import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+IDEAS = REPO_ROOT / "board-game" / "ideas"
 JOURNAL_LOG = REPO_ROOT / "board-game" / ".journal_log.jsonl"
+SNAPSHOT_NAME = ".idea_before_rework.json"
+NOTICE_NAME = ".rules_ready_notice.json"
+MESSAGE_LIMIT = 3200
+BLOCK_TEXT_LIMIT = 2400
 
-# Kept short and concrete on purpose — a vocabulary nobody can remember gets
-# used as `note` for everything, and then the story stops being skimmable.
 KINDS = {
     "proposed": "the idea was invented",
     "gate": "a deterministic checker ran",
@@ -65,15 +53,13 @@ KINDS = {
     "owner": "you decided something",
     "state": "the pipeline moved it",
     "note": "anything else worth remembering",
+    "rules_ready": "the rules passed every pre-table gate",
 }
-
-MAX_BODY = 2500
 
 
 def record(slug: str, kind: str, by: str, summary: str,
            body: str, title: str, at: str) -> None:
-    """Append one untruncated entry to `JOURNAL_LOG`, for `dashboard.py` only —
-    see the module docstring before adding another reader."""
+    """Append one untruncated entry for the dashboard only."""
     JOURNAL_LOG.parent.mkdir(parents=True, exist_ok=True)
     line = json.dumps({
         "at": at, "slug": slug, "kind": kind, "by": by,
@@ -85,25 +71,162 @@ def record(slug: str, kind: str, by: str, summary: str,
 
 def append(slug: str, kind: str, by: str, summary: str,
            body: str = "", title: str = "") -> None:
-    import telegram  # deferred: telegram owns the transport, journal owns the voice
-
-    telegram.load_env()
+    """Record routine history locally. This function never sends Telegram."""
     now = datetime.now(timezone.utc)
-    stamp = now.strftime("%H:%M")
     record(slug, kind, by, summary, body, title, now.isoformat())
 
-    head = f"{title or slug} · {kind}\n{stamp} · {by}\n\n{summary.strip()}"
-    if body.strip():
-        detail = body.strip()
-        if len(detail) > MAX_BODY:
-            detail = detail[:MAX_BODY] + f"\n… [{len(detail) - MAX_BODY} more chars]"
-        head += "\n\n" + detail
 
-    chat = os.environ.get("TELEGRAM_CHAT_JOURNAL", "").strip()
-    if not chat:
-        print(f"--- journal ({slug}) ---\n{head}")
-        return
-    telegram.send(head, chat=chat)
+def _read_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _text(value: Any) -> str:
+    if isinstance(value, dict) and "text" in value:
+        value = value["text"]
+    if isinstance(value, (dict, list)):
+        value = json.dumps(value, ensure_ascii=False, sort_keys=True)
+    return str(value).strip()
+
+
+def _same(left: Any, right: Any) -> bool:
+    return json.dumps(left, sort_keys=True, ensure_ascii=False) == json.dumps(
+        right, sort_keys=True, ensure_ascii=False)
+
+
+def _escaped_segments(value: Any) -> list[str]:
+    """Escape and split without dropping content or cutting an HTML entity."""
+    segments: list[str] = []
+    current = ""
+    for character in _text(value):
+        escaped = html.escape(character)
+        if current and len(current) + len(escaped) > BLOCK_TEXT_LIMIT:
+            segments.append(current)
+            current = escaped
+        else:
+            current += escaped
+    segments.append(current)
+    return segments
+
+
+def _blocks(label: str, value: Any, previous: Any,
+            is_rework: bool) -> list[str]:
+    changed = is_rework and not _same(value, previous)
+    rendered = []
+    for index, segment in enumerate(_escaped_segments(value), start=1):
+        suffix = f" (continued {index})" if index > 1 else ""
+        content = f"{html.escape(label + suffix)}\n{segment}"
+        rendered.append(f"<b>{content}</b>" if changed else content)
+    return rendered
+
+
+def _indexed(previous: dict, section: str, index: int) -> Any:
+    values = (previous.get("rules") or {}).get(section) or []
+    return values[index] if index < len(values) else None
+
+
+def render_rules_ready(idea: dict, previous: dict | None = None,
+                       rework_number: int | None = None) -> list[str]:
+    """Render self-contained HTML chunks, bolding changed rework blocks."""
+    is_rework = previous is not None
+    title = _text(idea.get("title") or idea.get("slug") or "Untitled")
+    slug = _text(idea.get("slug") or "unknown")
+    if is_rework:
+        suffix = f" {rework_number}/10" if rework_number else ""
+        phase = f"REWORK{suffix}"
+    else:
+        phase = "INITIAL PROPOSAL"
+    blocks = [
+        f"<b>RULES READY FOR TABLE</b>\n{html.escape(title)} "
+        f"({html.escape(slug)})\n{phase}",
+    ]
+    blocks.extend(_blocks(
+        "CONCEPT", idea.get("concept", ""),
+        previous.get("concept") if previous else None, is_rework))
+    blocks.extend(_blocks(
+        "PLAYERS", idea.get("players", {}),
+        previous.get("players") if previous else None, is_rework))
+    if "action_types" in idea:
+        blocks.extend(_blocks(
+            "ACTION TYPES", idea["action_types"],
+            previous.get("action_types") if previous else None, is_rework))
+
+    rules = idea.get("rules") or {}
+    for section in ("setup", "turn", "end"):
+        current = rules.get(section) or []
+        prior = ((previous.get("rules") or {}).get(section) or []
+                 if previous else [])
+        for index, value in enumerate(current):
+            blocks.extend(_blocks(
+                f"{section.upper()} {index + 1}", value,
+                _indexed(previous, section, index) if previous else None,
+                is_rework))
+        if is_rework and len(prior) > len(current):
+            for index in range(len(current), len(prior)):
+                blocks.extend(_blocks(
+                    f"REMOVED {section.upper()} {index + 1}",
+                    prior[index], None, True))
+
+    if "win" in rules:
+        old_win = (previous.get("rules") or {}).get("win") if previous else None
+        blocks.extend(_blocks("WIN", rules["win"], old_win, is_rework))
+
+    current_components = [
+        {"name": value.get("name"), "qty": value.get("qty")}
+        for value in idea.get("components", [])
+    ]
+    prior_components = [
+        {"name": value.get("name"), "qty": value.get("qty")}
+        for value in (previous or {}).get("components", [])
+    ]
+    blocks.extend(_blocks(
+        "COMPONENT BILL", current_components, prior_components, is_rework))
+
+    chunks: list[str] = []
+    current = ""
+    for block in blocks:
+        candidate = block if not current else current + "\n\n" + block
+        if current and len(candidate) > MESSAGE_LIMIT:
+            chunks.append(current)
+            current = block
+        else:
+            current = candidate
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+def pretable_gate_failure(idea_dir: Path, idea: dict) -> str | None:
+    """Return why this iteration is not eligible for a journal notification."""
+    import rules_check
+
+    findings = rules_check.check(idea)
+    if findings:
+        return f"rules_check has {len(findings)} finding(s)"
+
+    idea_path = idea_dir / "idea.json"
+    review_path = idea_dir / "review_rules.md"
+    if not review_path.is_file():
+        return "review_rules.md is missing"
+    if review_path.stat().st_mtime < idea_path.stat().st_mtime:
+        return "review_rules.md is older than idea.json"
+    first_line = next(
+        (line.strip() for line in review_path.read_text(
+            encoding="utf-8", errors="ignore").splitlines() if line.strip()), "")
+    if first_line.casefold() != "verdict: pass":
+        return "board-game-lens-rules did not return Verdict: PASS"
+
+    playtest_path = idea_dir / "playtest.json"
+    if not playtest_path.is_file():
+        return "playtest.json is missing"
+    if playtest_path.stat().st_mtime < idea_path.stat().st_mtime:
+        return "playtest.json is older than idea.json"
+    if _read_json(playtest_path).get("pass") is not True:
+        return "playtest.py did not pass"
+    return None
 
 
 def cmd_append(args) -> int:
@@ -111,9 +234,57 @@ def cmd_append(args) -> int:
     if args.body_file:
         source = Path(args.body_file)
         if source.is_file():
-            text = source.read_text(encoding="utf-8", errors="ignore")
-            body = (body + "\n\n" + text).strip() if body else text
+            detail = source.read_text(encoding="utf-8", errors="ignore")
+            body = (body + "\n\n" + detail).strip() if body else detail
     append(args.slug, args.kind, args.by, args.summary, body, args.title or "")
+    return 0
+
+
+def cmd_rules_ready(args) -> int:
+    import telegram
+
+    idea_dir = IDEAS / args.slug
+    idea_path = idea_dir / "idea.json"
+    if not idea_path.is_file():
+        raise SystemExit(f"missing idea: {idea_path}")
+    idea = _read_json(idea_path)
+    failed = pretable_gate_failure(idea_dir, idea)
+    if failed:
+        raise SystemExit(
+            f"refusing rules-ready Telegram for {args.slug}: {failed}")
+    digest = _digest(idea_path)
+    marker_path = idea_dir / NOTICE_NAME
+    if marker_path.is_file() and _read_json(marker_path).get("idea_sha256") == digest:
+        print(f"{args.slug}: rules-ready Telegram already sent for this iteration")
+        return 0
+
+    snapshot_path = idea_dir / SNAPSHOT_NAME
+    snapshot = _read_json(snapshot_path) if snapshot_path.is_file() else {}
+    previous = snapshot.get("idea")
+    rework_number = snapshot.get("rework_number")
+    chunks = render_rules_ready(idea, previous, rework_number)
+
+    telegram.load_env()
+    chat = os.environ.get("TELEGRAM_CHAT_JOURNAL", "").strip()
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+    if not (token and chat):
+        print("--- journal Telegram not configured; rules-ready notice is here ---")
+        print("\n\n".join(chunks))
+        return 0
+    for chunk in chunks:
+        telegram.send(chunk, chat=chat, parse_mode="HTML")
+
+    now = datetime.now(timezone.utc)
+    marker = {
+        "idea_sha256": digest,
+        "sent_at": now.isoformat(),
+        "message_count": len(chunks),
+    }
+    marker_path.write_text(json.dumps(marker, indent=2), encoding="utf-8")
+    record(args.slug, "rules_ready", "rules_gate",
+           "all pre-table gates passed; rules sent to journal Telegram",
+           "", idea.get("title", args.slug), now.isoformat())
+    print(f"{args.slug}: sent rules-ready Telegram ({len(chunks)} message(s))")
     return 0
 
 
@@ -121,16 +292,21 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    p = sub.add_parser("append", help="narrate one event")
+    p = sub.add_parser("append", help="record one local dashboard event")
     p.add_argument("slug")
     p.add_argument("--kind", required=True, choices=sorted(KINDS))
     p.add_argument("--by", required=True,
                    help="who acted: an agent name, a tool name, or 'owner'")
     p.add_argument("--summary", required=True, help="one line, in plain words")
-    p.add_argument("--title", help="the game's name, for the message header")
-    p.add_argument("--body", help="optional detail, sent verbatim")
+    p.add_argument("--title", help="the game's name")
+    p.add_argument("--body", help="optional detail recorded verbatim")
     p.add_argument("--body-file", help="file whose contents become the detail")
     p.set_defaults(fn=cmd_append)
+
+    p = sub.add_parser(
+        "rules_ready", help="send passed rules to the journal Telegram channel")
+    p.add_argument("slug")
+    p.set_defaults(fn=cmd_rules_ready)
 
     args = ap.parse_args()
     return args.fn(args)

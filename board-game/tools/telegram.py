@@ -111,10 +111,11 @@ def _message_id(raw: str) -> int | None:
 
 
 def send(text: str, photo: Path | None = None, chat: str | None = None,
-          buttons: list[list[dict]] | None = None) -> int | None:
-    """`chat` overrides the destination — the journal uses it to narrate into
-    its own channel, so the gate channel keeps holding only the two messages
-    that need a decision. `buttons` is an inline-keyboard row list
+          buttons: list[list[dict]] | None = None,
+          parse_mode: str | None = None) -> int | None:
+    """`chat` overrides the destination. The rules-ready journal notice uses
+    this to keep the gate channel reserved for messages needing a decision.
+    `buttons` is an inline-keyboard row list
     (`[[{"text": ..., "callback_data": ...}, ...]]`) — attached to the photo
     when there is one, otherwise to the text message. Returns the sent
     message's id (the button-bearing one, if there is one) so a caller can
@@ -134,14 +135,17 @@ def send(text: str, photo: Path | None = None, chat: str | None = None,
         cmd = ["curl", "-s", f"https://api.telegram.org/bot{token}/sendPhoto",
                "-F", f"chat_id={chat}", "-F", f"photo=@{photo}",
                "-F", f"caption={caption}"]
+        if parse_mode:
+            cmd += ["-F", f"parse_mode={parse_mode}"]
         if markup:
             cmd += ["-F", f"reply_markup={markup}"]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
         message_id = _message_id(result.stdout)
         if rest:
-            send_text_only(token, chat, rest)
+            send_text_only(token, chat, rest, parse_mode=parse_mode)
     else:
-        message_id = send_text_only(token, chat, text, buttons=buttons)
+        message_id = send_text_only(
+            token, chat, text, buttons=buttons, parse_mode=parse_mode)
     print(f"sent ({len(text)} chars"
           f"{', with render' if photo else ''}"
           f"{', with buttons' if buttons else ''})")
@@ -149,13 +153,16 @@ def send(text: str, photo: Path | None = None, chat: str | None = None,
 
 
 def send_text_only(token: str, chat: str, text: str,
-                    buttons: list[list[dict]] | None = None) -> int | None:
+                    buttons: list[list[dict]] | None = None,
+                    parse_mode: str | None = None) -> int | None:
     chunks = [text[i:i + 3500] for i in range(0, len(text), 3500)] or [""]
     message_id = None
     for i, chunk in enumerate(chunks):
         cmd = ["curl", "-s", f"https://api.telegram.org/bot{token}/sendMessage",
                "-d", f"chat_id={chat}",
                "--data-urlencode", f"text={chunk}"]
+        if parse_mode:
+            cmd += ["-d", f"parse_mode={parse_mode}"]
         if buttons and i == len(chunks) - 1:
             markup = json.dumps({"inline_keyboard": buttons})
             cmd += ["--data-urlencode", f"reply_markup={markup}"]

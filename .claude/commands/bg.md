@@ -109,7 +109,7 @@ through the same rework budget before `board-game-ideator` is invoked again:
 ```
 
 exit 0 → the round is granted; continue exactly as below.
-exit 1 → the idea already used its three rules-gate reworks and this command
+exit 1 → the idea already used its ten rules-gate reworks and this command
 has already moved it to `killed` for you. Do **not** invoke the ideator. Put
 the one-sentence reason in `TASTE.md` (same as a `Disposition: kill`, below)
 and `release <slug>`.
@@ -148,6 +148,21 @@ defect and not the game's — send it back in **patch** mode with the error.
 
 Then seat players at it:
 
+Only after `rules_check.py`, `board-game-lens-rules`, the rules engine, and
+`playtest.py` have all passed, send the one journal Telegram notification for
+this iteration. It must happen here, immediately before the table gate:
+
+```bash
+.venv/bin/python board-game/tools/journal.py rules_ready <slug>
+```
+
+The command sends the complete rule proposal and deduplicates retries of the
+same `idea.json`. `gate_rework` and owner `rework` preserve the immediately
+previous proposal; when that snapshot exists, the notification is labelled as
+a rework and changed rule blocks are bold. Do not send this notification for a
+failed or incomplete pre-table gate, and do not substitute any other journal
+Telegram message.
+
 ```bash
 .venv/bin/python board-game/tools/table_run.py board-game/ideas/<slug> \
     --schedule 4:3,2:2 --wire anthropic
@@ -172,7 +187,7 @@ Then invoke `board-game-lens-playtest`, which reads both halves and writes
 - `Disposition: rework` → `gate_rework --stage lens_playtest --reason
   "<verdict verbatim>"`. exit 0 → `board-game-ideator` in **rework** mode
   with the findings verbatim; state stays `proposed`, `release <slug>`. exit
-  1 → the idea is already `killed` (three rules-gate reworks spent and still
+  1 → the idea is already `killed` (ten rules-gate reworks spent and still
   failing); do not invoke the ideator, put the reason in `TASTE.md` as below,
   `release <slug>`.
 - `Disposition: kill` → do **not** rework it and do **not** call
@@ -334,9 +349,8 @@ design:
 
 ## Narrate it
 
-`pipeline_queue.py` already narrates every state change to the owner's journal
-channel. Your job is the half a state machine cannot produce: **why**. After
-each action, add one entry:
+The local dashboard keeps a complete event history. `pipeline_queue.py`
+records state changes automatically, and agents may add useful detail with:
 
 ```bash
 .venv/bin/python board-game/tools/journal.py append <slug> --kind <kind> \
@@ -359,6 +373,12 @@ What is worth an entry, by action:
 Write it for a person who was not here. Include what went badly: a guess that
 turned out wrong is the most useful line in the whole story, and nothing in
 this pipeline ever reads the journal back, so there is nobody to impress.
+
+These `append` entries are local only. They never send Telegram. The journal
+Telegram channel receives exactly one kind of message: `journal.py
+rules_ready <slug>` after all pre-table gates pass and before `table_run.py`
+starts. Do not send proposals, failures, state changes, builds, repairs, owner
+actions, panel results, or any other event to that channel.
 
 Never summarise a checker's output into your own words when you could paste
 it — the owner is trying to see what the machine actually said.

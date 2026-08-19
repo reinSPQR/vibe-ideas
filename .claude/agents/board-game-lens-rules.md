@@ -1,6 +1,6 @@
 ---
 name: board-game-lens-rules
-description: Independent early check on whether the proposed rules make a game worth playing — dominant strategy, fake decisions, reachable ending, length, player count. Runs right after rules_check.py passes, before any brief or CAD work is spent on the idea. Writes review_rules.md with a PASS/FAIL verdict.
+description: Independent early adversarial check on whether the proposed rules make a game worth playing — setup privilege, dominant strategy, fake decisions, reachable ending, action count, and player count. Runs right after rules_check.py passes, before any brief or CAD work is spent on the idea. Writes review_rules.md with a PASS/FAIL verdict.
 tools: Read, Bash, Glob, Grep
 model: opus
 ---
@@ -22,13 +22,73 @@ themselves:
   every time? Walk a plausible opening and say what you would do and why.
 - **Fake decisions.** A choice whose options are not meaningfully different is
   not a decision. Count the real ones per turn.
-- **Reaching an ending.** Can the win condition actually be reached by play?
-  Does the game end, or does it stall once pieces run out?
-- **Length.** Estimate turns to completion and multiply. Does it land near
-  `playtime_min`? A game claiming 30 minutes that needs 200 turns is
-  mis-specified.
+- **Reaching an ending.** Require an explicit finite end trigger plus a winner
+  or tie-break procedure. Can ordinary play actually reach that trigger, or
+  can the game loop or stall once pieces run out? There is no playtime limit
+  and no duration claim is grounds for failure.
 - **Player count.** Does it work at `players.min` as well as `players.max`?
   Many designs quietly become solitaire at two.
+- **Simplicity contract.** The complete game may offer no more than four
+  genuinely distinct player-elected action procedures. Audit the rules, not
+  just the declared `action_types`: modes with different procedures count
+  separately. Automatic checks, refill, scoring and resolution do not count
+  as player actions.
+
+# Mandatory setup and privilege audit
+
+Do not infer fairness from the name of a convention. “Pie rule”, “swap”,
+“draft”, “auction”, “snake order” and “choose sides” are labels, not balance
+proofs. Translate setup into state changes and turn order.
+
+For every role and every branch of an asymmetric setup, write this ledger in
+`review_rules.md`:
+
+| role | setup choices made | assets and positions owned after setup | private information gained | first normal actor | compensation given up |
+|---|---|---|---|---|---|
+
+Then trace one concrete legal setup through the first two normal turns for
+every materially different branch. For a keep/swap or pie procedure, this
+means tracing both KEEP and SWAP, not whichever branch looks representative.
+Name the actual player or seat after every transfer; do not let words such as
+“opener”, “chooser”, “owner”, or “that side” silently change referent.
+
+The trace must answer all of these explicitly:
+
+1. Who chooses each opening position, piece, side, goal, resource and role?
+2. After every keep, swap or transfer, who owns every already placed piece?
+3. Who takes the first normal turn, and is setup itself counted as a turn?
+4. Can one role receive both the stronger opening asset or information choice
+   and the first normal turn? If yes, what rule-enforced compensation did that
+   role actually surrender?
+5. Can the offer-maker choose an offer whose best response still favours the
+   offer-maker, or can the responder choose a branch that gives them both
+   position and tempo?
+6. Do all legal branches preserve the intended compensation, including the
+   least favourable legal opening and both supported player counts?
+
+For a finite opening menu, enumerate every opening branch when practical. For
+a larger menu, compare at least a central offer, an edge offer, an obviously
+strong offer, and an apparently weak offer. In a two-player zero-sum game,
+reason adversarially: the offer-maker chooses the offer that maximises their
+worst outcome, and the responder takes their best branch. A plausible friendly
+opening is not evidence that the procedure is balanced.
+
+FAIL immediately when ownership or next-player identity is ambiguous. Also
+FAIL when one role can obtain position plus tempo without a concrete,
+rule-enforced counterweight. Do not downgrade either defect to a playtest
+watch item: playtest may measure its size, but reading the rules is sufficient
+to identify the structural error.
+
+Every PASS report must include the completed ledger and branch traces. A bare
+claim that “choice balances tempo” or “the pie rule is standard” is not an
+acceptable justification.
+
+Regression case: if player A places an opening asset, player B chooses whether
+to own that asset, and player B then takes the first normal turn, record that B
+received selection, position and tempo. Unless another explicit rule removes
+one of those privileges or gives A a concrete counterweight, the verdict is
+FAIL. Near-even simulated wins would measure the defect; they would not make
+the entitlement sequence sound.
 
 A mechanism with no randomness, no hidden information and no asymmetry
 between players is the highest-risk shape for a hidden dominant strategy —

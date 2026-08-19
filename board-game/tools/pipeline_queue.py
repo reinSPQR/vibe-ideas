@@ -65,14 +65,10 @@ TASTE = REPO_ROOT / "board-game" / "TASTE.md"
 # the code, and more repair rounds spend effort at the wrong address.
 REPAIR_BUDGET = 2
 
-# Three rules-gate reworks, then kill. This is the same shape as REPAIR_BUDGET
-# but for the earlier loop: `rules_check.py`, `board-game-lens-rules`, and
-# `board-game-lens-playtest` sending an idea back to `board-game-ideator` in
-# rework mode. An idea that still cannot clear one of those gates after three
-# rewrites is not one wording change from working — it is the same finding
-# every time, or the ideator is guessing. Reworking it a fourth time spends a
-# whole cycle to learn what the third already showed.
-REWORK_BUDGET = 3
+# Rules-gate reworks permitted before the next failed gate kills the idea.
+# This budget is intentionally larger than the geometry repair budget because
+# game rules can need several distinct balancing passes before table testing.
+REWORK_BUDGET = 10
 
 # How long a claim taken by `next` stays valid without being advanced or
 # released. The whole point of a claim is that `next` stops handing the same
@@ -85,9 +81,8 @@ REWORK_BUDGET = 3
 CLAIM_TTL_SECONDS = 45 * 60
 
 # How long to wait for the queue lock before giving up. Every holder does
-# local file I/O only — the journal's network calls are deliberately flushed
-# *after* the lock is released — so real contention is milliseconds and
-# anything approaching this timeout means a stuck process, not a busy one.
+# local file I/O only, so real contention is milliseconds and anything
+# approaching this timeout means a stuck process, not a busy one.
 LOCK_TIMEOUT_SECONDS = 30.0
 
 # state -> (what to run next, state it moves to on success)
@@ -149,6 +144,24 @@ def save(data: dict) -> None:
     os.replace(tmp, QUEUE)
 
 
+def snapshot_before_rework(slug: str, rework_number: int | None = None) -> None:
+    """Preserve the current proposal so a later rules-ready notice can show
+    exactly what changed. Each rework replaces the prior snapshot because the
+    comparison must always be against the immediately preceding iteration."""
+    idea_path = IDEAS / slug / "idea.json"
+    if not idea_path.is_file():
+        raise SystemExit(
+            f"cannot snapshot {slug} before rework: {idea_path} is missing")
+    snapshot_path = idea_path.parent / ".idea_before_rework.json"
+    snapshot = {
+        "rework_number": rework_number,
+        "idea": json.loads(idea_path.read_text(encoding="utf-8")),
+    }
+    tmp = snapshot_path.with_suffix(snapshot_path.suffix + f".tmp.{os.getpid()}")
+    tmp.write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
+    os.replace(tmp, snapshot_path)
+
+
 @contextlib.contextmanager
 def locked(timeout: float = LOCK_TIMEOUT_SECONDS):
     """Hold an exclusive lock on the queue for the body of the block.
@@ -181,11 +194,10 @@ def locked(timeout: float = LOCK_TIMEOUT_SECONDS):
         handle.close()
 
 
-# Journal entries queued during a transaction, sent once the lock is released.
-# `journal.append` talks to Telegram over the network; doing that while holding
-# the queue lock would make every other driver wait on someone else's HTTP
-# round-trip, and a hung request would block the pipeline rather than just one
-# message.
+# Journal entries queued during a transaction and written once the lock is
+# released. Routine entries are local dashboard history only. The sole
+# Telegram journal event is emitted explicitly by `journal.py rules_ready`
+# after every pre-table gate has passed.
 _pending_journal: list[dict] = []
 
 
@@ -298,14 +310,10 @@ def require_state(item: dict, slug: str, cmd: str) -> None:
 
 def log(item: dict, frm: str, to: str, note: str = "",
         by: str = "pipeline", kind: str = "state") -> None:
-    """Record a transition in the queue, and narrate it to the journal channel.
+    """Record a transition in the queue and in the local dashboard journal.
 
-    Both, always, from one place. The queue's log is what the pipeline reads;
-    the journal is what the owner reads, and it lives only in Telegram. Firing
-    them together is the only way the story cannot quietly fall behind the
-    state. The journal half is queued rather than sent here, and flushed by
-    `transaction()` once the lock is off — same call, same order, just not on
-    somebody else's critical path.
+    Both are written from one place so dashboard history cannot quietly fall
+    behind queue state. Telegram is deliberately not involved here.
     """
     item.setdefault("log", []).append(
         {"at": now(), "from": frm, "to": to, "note": note})
@@ -469,9 +477,8 @@ def cmd_gate_rework(args) -> int:
     This is `rules_gate`'s counterpart to `cmd_repair`: same shape, earlier
     loop. `rules_check.py`, `board-game-lens-rules`, and
     `board-game-lens-playtest` all funnel a failing idea back here before the
-    caller reworks it. On the `REWORK_BUDGET`th failure this kills the idea
-    outright instead of granting another round — three rewrites that still
-    cannot clear a gate mean the game itself is the problem, not its wording.
+    caller reworks it. Once `REWORK_BUDGET` rounds have been granted, the next
+    failed gate kills the idea instead of granting another round.
     """
     with transaction() as data:
         item = entry(data, args.slug)
@@ -489,6 +496,7 @@ def cmd_gate_rework(args) -> int:
                   f"rework rounds spent — killed, do not rework again. Record "
                   f"the reason in TASTE.md.")
             return 1
+        snapshot_before_rework(args.slug, used + 1)
         item["rework_used"] = used + 1
         log(item, frm, frm,
             f"rework round {used + 1}/{REWORK_BUDGET} ({args.stage}): {args.reason}",
@@ -644,6 +652,7 @@ def cmd_rework(args) -> int:
     with transaction() as data:
         item = entry(data, args.slug)
         require_state(item, args.slug, "rework")
+        snapshot_before_rework(args.slug)
         frm = item["state"]
         item["state"] = "proposed"
         item["rework_reason"] = args.reason
