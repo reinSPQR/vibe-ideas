@@ -8,6 +8,7 @@ happens next.
     python3 board-game/tools/pipeline_queue.py add <slug> --title "..."
     python3 board-game/tools/pipeline_queue.py advance <slug> --to built --note "..."
     python3 board-game/tools/pipeline_queue.py repair <slug>        # consume one round
+    python3 board-game/tools/pipeline_queue.py gate_rework <slug> --stage rules_check --reason "..."
     python3 board-game/tools/pipeline_queue.py release <slug>       # step ended, no move
     python3 board-game/tools/pipeline_queue.py ship <slug>          # owner: gate 2 yes
     python3 board-game/tools/pipeline_queue.py ship <slug> --accept-unmeasured "..."
@@ -63,6 +64,15 @@ TASTE = REPO_ROOT / "board-game" / "TASTE.md"
 # evidence is that past two rounds the problem is usually the spec rather than
 # the code, and more repair rounds spend effort at the wrong address.
 REPAIR_BUDGET = 2
+
+# Three rules-gate reworks, then kill. This is the same shape as REPAIR_BUDGET
+# but for the earlier loop: `rules_check.py`, `board-game-lens-rules`, and
+# `board-game-lens-playtest` sending an idea back to `board-game-ideator` in
+# rework mode. An idea that still cannot clear one of those gates after three
+# rewrites is not one wording change from working — it is the same finding
+# every time, or the ideator is guessing. Reworking it a fourth time spends a
+# whole cycle to learn what the third already showed.
+REWORK_BUDGET = 3
 
 # How long a claim taken by `next` stays valid without being advanced or
 # released. The whole point of a claim is that `next` stops handing the same
@@ -268,11 +278,12 @@ def drop_claim(item: dict) -> dict | None:
 # (e.g. `approve` freezing a pre-rework render as the reference). Refuse
 # instead of guessing.
 EXPECTED_STATE = {
-    "approve": {"awaiting_owner"},
-    "rework":  {"awaiting_owner"},
-    "reject":  {"awaiting_owner", "awaiting_ship"},
-    "ship":    {"awaiting_ship"},
-    "amend":   {"blocked"},
+    "approve":     {"awaiting_owner"},
+    "rework":      {"awaiting_owner"},
+    "gate_rework": {"proposed"},
+    "reject":      {"awaiting_owner", "awaiting_ship"},
+    "ship":        {"awaiting_ship"},
+    "amend":       {"blocked"},
 }
 
 
@@ -342,7 +353,8 @@ def cmd_add(args) -> int:
             raise SystemExit(f"'{args.slug}' is already in the queue")
         data["ideas"][args.slug] = {
             "slug": args.slug, "title": args.title or args.slug,
-            "state": "proposed", "repairs_used": 0, "created": now(), "log": [],
+            "state": "proposed", "repairs_used": 0, "rework_used": 0,
+            "created": now(), "log": [],
         }
         # The idea now exists, so the propose slot this driver was holding has
         # done its job and the next tick is free to propose again.
@@ -355,6 +367,38 @@ def cmd_add(args) -> int:
         })
     print(f"added {args.slug} (proposed)")
     return 0
+
+
+def _rules_ok_gate_complete(slug: str) -> str | None:
+    """Return a refusal reason when an idea is not allowed to leave the rules
+    gate, or None when it may.
+
+    The rules gate is not over when `rules_check.py` and `board-game-lens-rules`
+    pass. The gate only finishes when the game has actually been played —
+    by scripted policies (`playtest.py`) and by LLM players at the table
+    (`table_run.py`) — and `board-game-lens-playtest` has written its verdict.
+    `review_playtest.md` is that verdict. If it is missing, or older than the
+    rules it judged, the idea is still at the gate: it has never had players sit
+    at it under these rules. The `advance --to rules_ok` must refuse so this gap
+    can never be walked through silently.
+    """
+    try:
+        idea = IDEAS / slug / "idea.json"
+        review = IDEAS / slug / "review_playtest.md"
+        if not review.is_file():
+            return (f"refusing proposed -> rules_ok: no "
+                    f"board-game/ideas/{slug}/review_playtest.md — the game has "
+                    f"not been played by LLM players and judged by "
+                    f"board-game-lens-playtest. Run playtest.py, table_run.py, "
+                    f"then the lens before advancing.")
+        if review.stat().st_mtime < idea.stat().st_mtime:
+            return (f"refusing proposed -> rules_ok: review_playtest.md is older "
+                    f"than idea.json — the rules changed after the last playtest "
+                    f"and the verdict no longer judges them. Re-run the gate "
+                    f"(playtest.py, table_run.py, board-game-lens-playtest).")
+    except FileNotFoundError:
+        return f"refusing proposed -> rules_ok: idea.json is missing for {slug}"
+    return None
 
 
 def cmd_advance(args) -> int:
@@ -373,6 +417,10 @@ def cmd_advance(args) -> int:
         frm = item["state"]
         if args.to not in PIPELINE:
             raise SystemExit(f"unknown state '{args.to}'")
+        if args.to == "rules_ok":
+            block = _rules_ok_gate_complete(args.slug)
+            if block:
+                raise SystemExit(block)
         item["state"] = args.to
         unmeasured = gate_unmeasured(args.slug)
         item["unmeasured"] = unmeasured
@@ -410,6 +458,42 @@ def cmd_repair(args) -> int:
         log(item, frm, "repairing", f"repair round {used + 1}/{REPAIR_BUDGET}",
             kind="repair")
     print(f"{args.slug}: repair round {used + 1}/{REPAIR_BUDGET}")
+    return 0
+
+
+def cmd_gate_rework(args) -> int:
+    """Consume one rules-gate rework round. Refuses past the budget — the
+    caller is meant to kill the idea, not send it to `board-game-ideator`
+    again.
+
+    This is `rules_gate`'s counterpart to `cmd_repair`: same shape, earlier
+    loop. `rules_check.py`, `board-game-lens-rules`, and
+    `board-game-lens-playtest` all funnel a failing idea back here before the
+    caller reworks it. On the `REWORK_BUDGET`th failure this kills the idea
+    outright instead of granting another round — three rewrites that still
+    cannot clear a gate mean the game itself is the problem, not its wording.
+    """
+    with transaction() as data:
+        item = entry(data, args.slug)
+        require_state(item, args.slug, "gate_rework")
+        used = int(item.get("rework_used", 0))
+        frm = item["state"]
+        if used >= REWORK_BUDGET:
+            item["state"] = "killed"
+            item["kill_reason"] = (
+                f"rework budget exhausted ({used}/{REWORK_BUDGET} rules-gate "
+                f"reworks) and still failing {args.stage}: {args.reason}")
+            drop_claim(item)
+            log(item, frm, "killed", item["kill_reason"], kind="rework")
+            print(f"REWORK BUDGET EXHAUSTED {args.slug}: {used}/{REWORK_BUDGET} "
+                  f"rework rounds spent — killed, do not rework again. Record "
+                  f"the reason in TASTE.md.")
+            return 1
+        item["rework_used"] = used + 1
+        log(item, frm, frm,
+            f"rework round {used + 1}/{REWORK_BUDGET} ({args.stage}): {args.reason}",
+            kind="rework")
+    print(f"{args.slug}: rework round {used + 1}/{REWORK_BUDGET}")
     return 0
 
 
@@ -602,6 +686,8 @@ def cmd_next(args) -> int:
                     "state": state, "action": action, "next_state": to,
                     "repairs_used": item.get("repairs_used", 0),
                     "repair_budget": REPAIR_BUDGET,
+                    "rework_used": item.get("rework_used", 0),
+                    "rework_budget": REWORK_BUDGET,
                     "dir": str(IDEAS / slug),
                 }
                 if claim_this:
@@ -660,7 +746,9 @@ def cmd_list(args) -> int:
                              key=lambda kv: PRIORITY.index(kv[1]["state"])
                              if kv[1]["state"] in PRIORITY else 99):
         repairs = item.get("repairs_used", 0)
+        rework = item.get("rework_used", 0)
         tail = f"  repairs {repairs}/{REPAIR_BUDGET}" if repairs else ""
+        tail += f"  reworks {rework}/{REWORK_BUDGET}" if rework else ""
         note = f"  — {item['kill_reason']}" if item.get("kill_reason") else ""
         held = claim_of(item)
         busy = f"  [in progress: {held['action']}, {claim_age(held)}]" if held else ""
@@ -690,6 +778,10 @@ def main() -> int:
     p.add_argument("--to", required=True); p.add_argument("--note")
     p.set_defaults(fn=cmd_advance)
     p = sub.add_parser("repair"); p.add_argument("slug"); p.set_defaults(fn=cmd_repair)
+    p = sub.add_parser("gate_rework"); p.add_argument("slug")
+    p.add_argument("--stage", required=True,
+                   choices=["rules_check", "lens_rules", "lens_playtest"])
+    p.add_argument("--reason", required=True); p.set_defaults(fn=cmd_gate_rework)
     p = sub.add_parser("release", help="drop a claim without moving the idea")
     p.add_argument("slug", help="the idea's slug, or 'propose'")
     p.set_defaults(fn=cmd_release)

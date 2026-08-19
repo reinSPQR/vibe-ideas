@@ -96,6 +96,19 @@ RETRY_BACKOFF = 4.0
 # thinking before it wrote a line.
 DEFAULT_MAX_TOKENS = 8192
 
+# On a reasoning-tier model, thinking is on by default (a template-level
+# `enable_thinking` on the gateway) and, without a cap, is billed against the
+# same max_tokens as the answer. Millbind showed the failure mode: a clean 200
+# SSE stream whose only block was `thinking`, which consumed every max_tokens
+# and never opened a text block, so a text-delta-only client read a perfectly
+# valid response as "(empty reply)". The fix is to bound thinking explicitly
+# so it can never eat the answer budget. 8192 for thought (the owner's call),
+# and max_tokens raised well above it so the answer keeps guaranteed room.
+THINKING_BUDGET = 8192
+# max_tokens must exceed THINKING_BUDGET by at least the answer's needs. The
+# address line (CHOICE/WHY/DECISION) is small, but give it real headroom.
+DEFAULT_MAX_TOKENS = 16000
+
 # Above roughly this many options a turn, a seat stops being able to answer at
 # all. Measured on millbind, whose midgame offers 110 placements: four
 # buffered attempts 504'd at the endpoint's 60-second ceiling and four
@@ -290,6 +303,13 @@ class Seats:
                  "content-type": "application/json"},
                 {"model": self.model, "max_tokens": self.max_tokens,
                  "stream": self.stream,
+                 # Cap thinking so it cannot consume the whole max_tokens and
+                 # leave no room for a text block. Without this, a reasoning
+                 # model returns a 200 SSE stream of `thinking` deltas that
+                 # never opens a text block, which a text-only reader sees as
+                 # an empty reply. See THINKING_BUDGET.
+                 "thinking": {"type": "enabled",
+                              "budget_tokens": THINKING_BUDGET},
                  "system": [block], "messages": messages})
 
     def _post(self, url: str, headers: dict, payload: dict) -> dict:
@@ -848,6 +868,13 @@ async def run(args: argparse.Namespace) -> int:
         return 2
     if not idea_file.is_file():
         print(f"TABLE ERROR no idea.json at {idea_file}")
+        return 2
+    if engine_path.stat().st_mtime < idea_file.stat().st_mtime:
+        print(f"TABLE ERROR {engine_path.name} is older than idea.json — the "
+              f"rules changed after this engine was written, so seating players "
+              f"on it would play rules that no longer exist. Have "
+              f"board-game-rules-engineer verify/re-stamp the engine against the "
+              f"current idea.json before running.")
         return 2
 
     eng = playtest.load_engine(engine_path)

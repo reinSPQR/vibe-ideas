@@ -1,5 +1,133 @@
 # spineward — engine notes
 
+## 2p decided-close rework (2026-08-19)
+
+The gate was passing on termination but FAILing `not_a_game` on the two-player
+shape: `tie:2p` 62-79% (the crown never fired under competent play, so games
+collapsed to a ~0-0 backstop tie) and `runaway:2p` 100% (the few decided games
+were first-come-first-served cruises — the midpoint leader always won). The
+root was a flat crown of 4 with landing restricted to the six corner shelves:
+a competent 2p policy could not reach a shelf to bank, so it dawdled to the
+"no-landing backstop" at 0-0; and when someone did bank, first-to-4 was a
+snowball with no comeback lever. Three changes fixed it, all public, thematic,
+and readable off the board:
+
+- **Whole-coast landing.** `LAND` (rules:turn) is now legal from ANY pan — the
+  outgoing tide beaches a carried pearl into the rack wherever the shell
+  stands. No dock pilgrimage to a corner shelf. This is what makes banking the
+  norm: every player is always near enough to bank, the crown now actually
+  fires, and the 0-0 backstop standoff disappears. The six corner pans remain
+  the reef's historic ANCHORAGES (art/relief), not a mechanical gate.
+- **THE TIDE — the catch-up.** (rules:turn) At the start of each turn, if the
+  acting seat's banked total is strictly below the table's highest banked
+  total, the seat takes THREE actions that turn, not the usual two. This is
+  what kills the snowball: a leader acts fewer times than a chaser, so a lead
+  is a thing that must be re-earned every turn, and the trailer can out-bank
+  or rob the leader's carried load. `turn_quota` is fixed at the start of the
+  turn (public in the observation as `actions_quota_this_turn` /
+  `actions_remaining_this_turn` / `riding_the_tide_this_turn`).
+- **Crown value 6** (flat, all counts). With whole-coast landing, 6 is
+  bankable even on a crowded four-player reef, and it is long enough — and the
+  race late enough — that THE TIDE decides the close finish instead of whoever
+  banked first.
+
+Measured: the full gate now PASSes with 0 findings (the `tie:2p` / `runaway:2p`
+and `tie:4p` findings are gone; 4p termination and the landing-keyed stall
+breaker are unchanged). Empirically, a banking proxy gives 2p tie 0% and
+runaway ~0.66; 4p tie 0% and runaway ~0.28.
+
+**DROP removed (2026-08-19, same rework, applies-clean).** The full gate after
+the trio above flagged `dead_move:drop`: legal but never once chosen by any
+seat playing to win. It was right. Once whole-coast `LAND` exists, DROP is
+strictly dominated — both empty a shell socket of a carried pearl, but LAND
+beaches it into your rack from any pan and advances the crown, while DROP only
+re-deposits it on the board in an adjacent clear pan and advances nothing. The
+pre-rework DROP role (churn that kept the "no pearl activity" slack counter
+reset) is gone too, because the reworked slack breaker resets only on a LAND.
+It was vestigial, so DROP is deleted from the rules, the legal moves, the
+apply switch, and the observation. Probe: 1500 random games at 2p and 4p with
+DROP removed, 0 stuck / 0 undefined / all finished — no state depended on it
+as its only legal move.
+
+## 4p termination rework (2026-08-19)
+
+The playtest gate FAILed with `termination:4p` (8/20 random and 1/20 competent
+games hit the 450-turn cap) and `unmeasurable` (40% of 4p/random games ended in
+a rules gap). Root cause: the crown value at 3-4 players was 5 — effectively
+unreachable under non-cooperative play — and the three-silent-rounds net keyed
+on "no pearl taken/dropped/robbed/landed", which random churn keeps resetting
+forever (take/drop/rob all look like activity), so it never fired and no game
+could end on it.
+
+Two changes, both in idea.json and mirrored here:
+
+- **`_crown_value(n)` is now a flat 4 at every player count.** 2p is untouched
+  (it was already 4), so the crown-race fix for the 2p tie is preserved; 4 is
+  low enough below a four-player full haul (~7 apiece) that a contested shell
+  can actually bank it, where 5 could not.
+- **The slack clock now keys on LANDINGS, not on any pearl activity.**
+  `landed_flag` (any LAND this round) replaces the activity-only reset; the
+  trigger is `no_landing_rounds >= 4` (rules:end[1]: FOUR full rounds with no
+  pearl landed). Taking/dropping/robbing are churn that no longer resets it —
+  the only thing that advances a crown is a landing, so a table shuffling
+  pearls without banking one is genuinely stalled and now ends. `observation`
+  exposes `landed_this_round` / `rounds_without_landing` as the public read.
+
+Because landings keep resetting the clock in an active game, the backstop only
+fires on a real deadlock; a healthy table produces landings every round, so it
+crowns long before four slack rounds (the crown at 4 is well below the reef
+emptying).
+
+## Crown / end-rule rework (2026-08-18)
+
+The ideator's rework added the CROWN RACE (rules:win) and changed the quiet
+trigger (rules:end[1]). The smallest changes that model it:
+
+- **`crown_seat`** is a new state field, `None` until a LAND makes the acting
+  seat's public rack total reach the crown value; then it holds that seat. The
+  check runs inside the `land` branch of `apply_move`, and sets
+  `crown_seat = seat` the instant the total `>= _crown_value(n)` (4 at two
+  players, 5 at three or four).
+- **`is_over`** short-circuits to `True` as soon as `crown_seat` is set —
+  even mid-round and mid-turn, because rules:win says a crown "ends the game
+  on the spot ... the round is not finished, because a crown cannot be
+  shared." This is the only way the game may end without waiting for the round
+  to close; all normal triggers still wait for the round finish.
+- **`winners`** returns `[crown_seat]` directly when a crown is live — a crown
+  is a sole win with no tiebreak chain. The old highest-total/tiebreak-chain
+  comparison is untouched below that guard and is exactly the fallback for a
+  game that ends with no crown.
+- **`scores`** is unchanged: sum of landed grades, valid at every point, so
+  the greedy/lookahead and runaway-leader measures still read it. It is both
+  the crown driver and the fallback total.
+- **Quiet-round count** — the old one-silent-round trigger is replaced by a
+  `silent_rounds` counter (`state["silent_rounds"]`). At each round boundary,
+  any pearl activity (`activity_flag`) resets it to 0; otherwise it
+  increments; `end_pending` is set once it reaches 3, per rules:end[1]'s
+  "THREE full rounds ... in which no pearl is taken, dropped, robbed or
+  landed." Note the crown resets nothing here and is checked independently, so
+  a crown lands mid-round regardless of the quiet clock.
+
+Because a rack reaching the crown value (4 or 5) always precedes a rack filling
+to six (whose total would be 6+), the "any rack holds six" end trigger is now
+unreachable in practice whenever a crown is on the table — which is every game
+per the new rules. It is kept as the safety-net fallback the rules describe
+("a rack reached six" among the no-crown endings) rather than deleted.
+
+`observation` needs no change: the crown value is a public rules constant and
+the rack totals it keys off are already in `racks`, so whether a seat has
+crowned is read off the table, exactly what pass 2 wants to hand over. The
+`main_turn.end_condition_reached` / `activity_this_round` fields still describe
+the non-crown triggers and the quiet clock them at three rounds.
+
+Playtest finding, not tuned: at four players random play stalls — roughly 40%
+of random 4p games in the quick run reach the 450-turn cap without any end
+trigger or crown firing, because random players neither gravitate to shelves to
+land toward the crown nor trigger the (now lenient, three-round) quiet stop. No
+game ever deadlocked (`stuck` was 0 in every batch). That stall is the game's
+own economy under dice, not an engine defect, so nothing was adjusted for it;
+the full gate measures precisely.
+
 ## Undefined
 
 None raised. Every branch legal_moves() can reach has an explicit
@@ -9,16 +137,15 @@ also matches what `--quick` reported (0 stuck games in every batch).
 
 ## Assumptions
 
-**`rob_needs_target_pearls`** (rules:turn[8]). ROB's four listed conditions
-("an enemy urchin stands in a neighbouring pan, you have a spine pointing at
-it, that urchin has NO spine pointing back at you, and you have an empty
-socket") do not include "the target is carrying at least one pearl." If all
-four hold and the target's sockets are all spines/empty, "Take any one pearl
-from its sockets" has nothing to take. Chosen reading: not offered as a move
-in that case (`not_legal`). Alternative wired in: legal, consumes one of your
-two actions, transfers nothing (`legal_noop`). `--quick`'s tiny sample read
-this as cosmetic (3% worst delta); that is not a calibrated verdict, just
-confirmation the flip is actually wired to something measurable.
+None — `ASSUMPTIONS`/`CHOICES` are empty.
+
+**Formerly `rob_needs_target_pearls`** (rules:turn[8]): the "the target carries
+no pearl" fork is now settled by the rules themselves. idea.json's ROB entry
+states explicitly, "If the enemy is carrying no pearl, ROB simply is not
+offered as a move." The engine wires exactly that reading directly (both in
+`legal_moves` and in `observation`'s `your_reach`), and the assumption entry
+has been removed from `ASSUMPTIONS`/`CHOICES` since nothing about it is
+genuinely undecided anymore.
 
 ## Approximations / modeling choices
 
@@ -81,51 +208,108 @@ conclusions rather than to model its findings.
 No disagreement between the engine and review_rules.md was found on any of
 the three points.
 
-## `observation(state, seat)` — what was removed or replaced
+## `observation(state, seat)` — three passes
 
-Added for the second hidden-information hook the contract now requires
-alongside `determinize`. Every seat's hidden layer is identical (nobody,
-including a pearl's own carrier, knows its grade before landing — same fact
-`determinize`'s docstring already relies on), so `observation` ignores its
-`seat` argument for the same reason: there is no private per-seat holding to
-add back in, only a public/hidden split that is the same for everyone.
+Rewritten (`8021b22` audit finding: "Spineward's observation forwards
+setup_place_turn, arm_turn, arm_count, actions_taken, end_pending and
+activity_flag, which are its state machine, not its rules"). Scope of this
+pass was `observation` only — `rules`, `legal_moves`, `apply_move`, `scores`,
+`determinize` and `CHOICES` are untouched, and `playtest.py --quick` before
+and after the change produced byte-identical output for the same seeds
+(confirmed by diffing a run against a stash of the prior file), which is how
+I know nothing outside the hook moved.
 
-Removed from the raw `state`, entirely:
+**Pass 1 — what no seat may see.** Unchanged in substance from before this
+patch: `pearl_grades` is replaced by `grades`, a dict holding an entry only
+for `state["revealed"]` pearl ids — every other id that appears on a pan, in
+a socket or in a rack has no entry, on purpose, so a lookup for an unrevealed
+id fails loudly rather than returning a value no real player has. `seed_queue`
+is replaced by `seed_pearls_remaining_to_place`, a bare count — the draw
+order is a blind shake at the table, and showing the list even grade-stripped
+would leak which specific pearl is drawn next. `pearl_location` and
+`revealed` are dropped outright, being fully reconstructable from
+`pans`/`urchins`/`racks`. Every seat's hidden layer is identical (nobody,
+including a pearl's own carrier, learns its grade before landing —
+`determinize`'s docstring relies on the same fact), so `observation` ignores
+`seat` for everything except which urchin `your_reach` is computed for; there
+is no private per-seat holding to add back in.
+`observation_leaks()` was run by hand across 2/3/4-player games and found
+nothing (see the run log; this is the only automated check that touches pass
+1 or 2 at all).
 
-- **`pearl_grades`** (the ground-truth grade of all 16 pearls). Replaced by
-  `grades`, a dict containing an entry only for pearl ids in `state["revealed"]`
-  — i.e. only pearls that have actually been landed and turned over. Every
-  other pearl id that appears elsewhere in the observation (sitting on a pan,
-  seated in a socket, mid-carry) has no entry here at all, on purpose: a
-  lookup for an unrevealed id should fail loudly rather than quietly return a
-  value a real player could not have.
-- **`seed_queue`** (the ordered list of pearl ids still waiting to be drawn
-  and placed during setup). Replaced by `seed_pending`, a bare count. The
-  draw order is a blind shake at a real table; showing the list, even with
-  grades stripped, would leak which *specific* future draw comes next, which
-  no player at the table can know.
-- **`pearl_location`** and **`revealed`** (internal bookkeeping). Dropped
-  outright rather than replaced — both are fully reconstructable from
-  `pans` + `urchins` + `racks`, which are already in the observation, so
-  including them again would just be the same information under a second
-  name, not new information to protect or expose.
+**Pass 2 — what is derivable from what the seat may see, newly added.**
+CREEP, TAKE, DROP and ROB are all written in rules:turn as "a neighbouring
+pan you have a spine pointing at," and nothing in the old observation said
+which pan neighboured which — the same gap `8021b22` closed for Millbind's
+lattice. Fixed with:
 
-Kept as-is, because they are already public in the physical game:
+- `pans[pan_id]["neighbors"]`: every pan's own six neighbours, one per
+  direction index (the same 0-5 a move's `d`/`e` argument uses), `null` past
+  the edge of the reef. Pan ids are `str(coord)`, matching the tuple spelling
+  that already appears inside a raw `("setup_seed", coord)` move, so no
+  translation between two spellings is needed.
+- `urchins[i]["sockets"]`: each of the six sockets as `{direction, faces_pan,
+  holds}` — `holds` is `"spine"`, `{"pearl": id}` or `null`. This replaces
+  the raw `dir` list a seat had to decode against an encoding it never saw,
+  for the *reef*'s title fact ("Six sockets is your entire budget for
+  movement, reach, defence and cargo together," rules:turn[0]) — not just for
+  `seat`'s own urchin but for every urchin, since every shell is a visible
+  physical object on the board.
+- `your_reach` (computed only for the requesting `seat`'s own urchin, only
+  once it exists — `null` during `seed`/`place_shell`/before arming): which
+  clear neighbouring pans it could `creep` or `drop` into, which neighbouring
+  pans holding a pearl it could `take` from, which neighbouring enemy urchins
+  it could `rob` (spine out, no spine back, an empty socket to catch with,
+  and the enemy must actually be carrying a pearl — the same test
+  `legal_moves` uses, so this list never promises a `rob` that legal_moves
+  does not also offer),
+  and `on_landing_shelf`. Verified by hand against `legal_moves()` output at
+  several sampled positions (rob, take and drop cases all cross-checked; see
+  the exploratory run at the bottom of this section's git history if it's
+  ever needed again). None of this is "is it a good idea" — GROW/SHED/TURN/
+  LAND all stay unstated here because their own preconditions (an empty or
+  full socket, standing on a shelf, an empty rack well) are already a single
+  glance at `sockets`/`on_landing_shelf`/`racks`, not a second pan away.
 
-- `pans` (pan type and *whether* a pearl stands there, by id — a standing
-  pearl is a visible physical object; only its foot is hidden).
-- `urchins` (each shell's pan and its six sockets' contents — spine, empty,
-  or a pearl id — all visible on the shell from above; again, only a
-  pearl's grade is hidden, not its presence or which socket holds it).
-- `racks` (pearl ids landed per seat — landing is the one moment a grade
-  becomes public for everyone, and `grades` now carries that value for
-  every id that appears here).
-- `spine_supply`, `phase`, and the various turn/phase pointers — physically
-  visible or simply "whose turn is it," not hidden from anyone.
+One bug caught while verifying this against `legal_moves`: `faces_pan` in
+`_socket_view` originally computed a neighbour coordinate without checking
+board membership, so an edge urchin's socket pointing off the reef reported
+a phantom pan id absent from `pans`. Fixed to use the same `pan in state["pans"]`
+test `pans[...]["neighbors"]` already uses, so a socket never faces an id the
+`pans` map doesn't also carry.
 
-Pearl ids themselves are kept everywhere they appear (pans, sockets, racks)
-as an opaque handle so a policy — or a person — can track "this is the same
-physical pearl I saw two turns ago" without being told its value. This is
-safe rather than a leak: the id-to-grade mapping is reshuffled fresh by
-`rng` in every `new_game`, so an id carries no information about a grade on
-its own, in this game or across games, until it shows up in `grades`.
+**Pass 3 — the rulebook's words, not the state machine.** `phase` is now one
+of four short English phrases ("setup: seeding pearls", "setup: placing
+shells", "setup: arming spines", "main turns") rather than the raw
+`"seed"`/`"place_shell"`/`"arm"`/`"main"` tags `apply_move` branches on.
+`to_move` (= `player_to_move(state)`) replaces four redundant, phase-specific
+turn pointers — `seed_turn`, `setup_place_turn`, `arm_turn`, `current_seat` —
+with the one fact any of them ever meant. `arm_count` is dropped with no
+replacement, not renamed: a seat already sees exactly how many spines the
+arming urchin has standing by counting `"spine"` entries in that urchin's own
+`sockets`, so restating the count under a new name would be a lookup wearing
+a costume, not new information. `actions_taken`, `activity_flag` and
+`end_pending` are kept — renamed to `actions_taken_this_turn` /
+`actions_remaining_this_turn`, `activity_this_round` and
+`end_condition_reached`, nested under `main_turn` (present only in the main
+phase) — because none of the three is recoverable from a single glance at the
+pans: they track rules:turn[1]'s two-actions-per-turn budget,
+rules:end[1]'s "no pearl taken, dropped, robbed or landed in a full round"
+and rules:end[0]'s end trigger respectively, so they are genuine rules
+bookkeeping, not implementation state, and are kept under names that say what
+they track. `turn_number` is dropped without replacement: it never appears
+in the rulebook's own vocabulary (the rules track "a full round," which
+`end_condition_reached`/`activity_this_round` already cover), and it is
+fully reconstructable by counting `PLAYED` lines in a table transcript, so
+carrying it would be restating the transcript rather than adding a fact.
+
+Kept as-is, because they are already public in the physical game: `racks`
+(pearl ids landed per seat — landing is the one moment a grade becomes
+public, and `grades` carries that value for every id that appears here),
+`spine_supply` (renamed `spine_supply_remaining` for clarity), `players`
+(renamed from `n`). Pearl ids are kept everywhere they appear (pans, sockets,
+racks, `your_reach`) as an opaque handle so a seat can track "this is the
+same physical pearl I saw two turns ago" without learning its value — safe
+rather than a leak, since the id-to-grade mapping is reshuffled fresh by
+`rng` every `new_game`, so an id alone carries no grade information, in this
+game or across games, until it shows up in `grades`.

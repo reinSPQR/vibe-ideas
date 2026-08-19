@@ -1439,6 +1439,13 @@ def main() -> int:
         print(f"PLAYTEST ERROR no engine at {engine_path} — "
               f"board-game-rules-engineer writes it")
         return 2
+    if engine_path.stat().st_mtime < idea_path.stat().st_mtime:
+        print(f"PLAYTEST ERROR {engine_path.name} is older than idea.json — the "
+              f"rules changed after this engine was written, so measuring it "
+              f"would report on rules that no longer exist. Have "
+              f"board-game-rules-engineer verify/re-stamp the engine against the "
+              f"current idea.json before running.")
+        return 2
 
     games = 20 if args.quick else args.games
     ladder_games = 8 if args.quick else args.ladder_games

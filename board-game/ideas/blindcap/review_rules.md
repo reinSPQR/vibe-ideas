@@ -1,116 +1,92 @@
 Verdict: PASS
 
-# Blindcap — rules-worth-playing review
+# Blindcap — independent rules-worth-playing review, 2026-08-18
 
-Judged from `idea.json` alone. No brief, no CAD, no component/dimension judgement.
+Fresh judgment of the CURRENT `idea.json` only, after the contested-grove scoring
+resolution. No brief, no CAD, no component/dimension judgement. The prior 2026-08-14
+PASS was not trusted; this restates the case on the delivered text.
 
-## The turn economy is the strongest thing here
+## The contested-grove resolution holds
 
-Every player gets exactly 7 turns: 6 rounds of mandatory plant + one free action, then
-one closing action. Three of those 7 actions must be crowns if you want all three crowns
-on the board, leaving at most 4 probes. At 4 players that is 4 x 4 = 16 probes against a
-16-pin supply — exactly sufficient, so the pin heap only bites when someone deliberately
-skips a crown to over-probe. That is a tight, deliberate economy and it makes the central
-tension real: information costs the same resource as commitment, and you can never have
-both on the same turn.
+The win rule now reads cleanly and I could not break it:
+
+- Grove with crowns all one owner: that owner scores n x n, once.
+- Grove with crowns of 2+ owners (contested): EACH owner scores n, once per owner.
+- inkcap / hollow grove pays double; crowned-scarce is a big swing either way.
+- A second of your own crowns in any grove is wasted — "pays once per owner"
+
+The contested case is the right incentive shape, not a degenerate one. A rival who
+contests your n=4 grove earns n=4 while denying you n^2 - n = 12: a real spoiler
+decision with a real crown cost and a real information bar (you must identify the
+grove before harvest). Against a scarce double-grove the stakes are even higher (deny
+24 from a 32), which is exactly the drama the scarce species are for. The "wasted
+second crown" rule removes any incentive to over-stuff your own grove, so every crown
+must find a new value source. No double-counting, no monotonicity break, no dominant
+"never crown" collapse.
 
 ## Dominant strategy: none found
 
-Walked openings for both 2p and 4p.
+Walked openings at 2p and 4p.
 
-- **Spread out and stay unreadable.** Plant all six stools non-adjacent. Every stool is a
-  grove of 1, worth 1 (2 if scarce). Three crowns yield 3-6 points. Self-defeating, so
-  concealment alone is not a strategy — you are forced into adjacency to score.
-- **Build your own pair.** Each player owns at most 2 of any species (2/2/1/1). So a
-  player acting alone can build a grove of at most 2 — worth 4 uncontested. Every grove of
-  size 3 or more *necessarily* mixes stools from two or more players. This is the
-  structural fact that makes the game work: you cannot score big without depending on
-  material whose identity you must buy, and buying it publicly.
-- **Chase the biggest n.** Deadhead is the most common species (4 on board at 2p, 8 at 4p)
-  so it has the highest theoretical n, and the x2 for scarce species does not compensate
-  (8 deadheads = 64 vs 4 inkcaps = 32). But an 8-deadhead orthogonal grove requires all
-  four players' deadheads to connect and only one player to crown it — unreachable in
-  practice. Realistic groves are 2-4, where the scarce x2 is competitive (an inkcap pair
-  is 8, equal to a common 3-grove's 9). The scoring curve is not degenerate at achievable
-  n.
-- **Hoard crowns to contest last.** Cannot be executed: only one action in the closing
-  round, so at most one crown can be held to the end. The other two must land in rounds
-  5-6 at the latest. The natural arc is probe-probe-probe-probe / crown / crown / crown,
-  and the last six actions of a 2p game are an alternating crown exchange A,B,A,B,A,B.
+- **Spread out / stay unreadable.** Six non-adjacent stools = six groves of 1, worth
+  1-2 each, 3-6 total with three crowns. Self-defeating; adjacency is forced to score.
+- **Solo pair only.** Each player owns at most 2 of any species (2/2/1/1 common/scarce),
+  so acting alone the ceiling is a 2-grove = 4 (8 if scarce). Any grove of size 3+
+  necessarily mixes two or more players' hidden species — you cannot score big without
+  depending on material you must buy, and buying it publicly. This structural fact is
+  what keeps the game non-degenerate: the biggest scores are exactly the ones loaded
+  with hidden information.
+- **Chase the biggest n.** Deadhead is most common (8 on board at 4p) but an orthodox
+  8-grove needs all four players' deadheads connected and one player to own every crown —
+  unreachable. Achievable groves are 2-4, where the scarce x2 is competitive (inkcap
+  pair 8 vs common 3-grove 9). Scoring curve is not degenerate at achievable n.
+- **Hoard every crown to the last round.** Unavailable: one action in the closing round,
+  so at most one crown can be held to the end; the other two must land by rounds 5-6.
+  The action economy forces commitment and prevents a pure pass-until-reveal.
 
-## Contest pressure: real counterplay, watch it in playtest
+## Real decisions per turn
 
-Contesting is cheap — a second player's crown in a grove of n drops the owner from n^2 to
-n and pays the contester n. Against a grove of 4 that is 4 points earned to deny 12. So
-any grove a rival can *identify* will be contested. Two defences exist and both are
-genuine decisions, not fake ones:
-
-1. **Crown what nobody probed.** Probes are public and permanent, so you know exactly what
-   each rival can and cannot resolve. Crowning an unprobed stool forces a rival to gamble
-   a crown on a guess (roughly 3/11 that a given neighbour matches at 2p).
-2. **Double-crown to lock.** Spending two of your three crowns on a closed 2-grove makes
-   it uncontestable (a contester needs an uncrowned same-species stool). 4 guaranteed
-   points for two crowns, or 8 for a locked scarce pair. Insurance versus a single crown
-   on a 3-grove for 9-at-risk is a real risk/reward choice.
-
-Watch item for playtest, not a failure: if defence (1) proves weak in practice, scores
-compress into the 4-12 band and the game is decided by one surviving grove. That is a
-legitimate, if low-scoring, shape — but it should be measured.
-
-## Fake decisions
-
-Real decisions per turn: which of your remaining stools to plant (up to 4 distinct
-species, and holding your scarce stool back to place it next to a rival's is a genuine
-timing play), which socket (placement both builds and denies — 18 sockets for 12 stools at
-2p, so blocking matters), and which action against which target band. That is three real
-choices a turn.
-
-One soft finding: **PASS is close to dominated at 2 players.** Because you always probe a
-*rival's* stool, and a 2p rival already knows their own stool's species, probing leaks
-nothing to the only opponent. Probing is therefore near-free at 2p and passing is almost
-never right, so the 2p turn reduces to plant + (probe early / crown late). At 3-4p pass
-earns its place, since a probe on B's stool informs C and D as well, and the player who
-probes hands first use of the result to the next seat. This asymmetry is a feature at 3-4p
-and a mild dead option at 2p.
+A turn is plant + one free action. Real choices: which stool to plant (roughly four
+distinct species, and holding your single scarce stool to place against a rival's is a
+genuine timing play), which socket (placement both builds and denies — 18 sockets for
+12 stools at 2p, so blocking matters), whether to probe which rival socket's which band
+(upper splits {bracket,hollow}|{deadhead,inkcap}, lower splits the scarce pair off, so
+one probe gives partial truth and full identity needs two scarce pins — a real probe
+budget), or crown which stool on thinnest information. Three real choices a turn, not
+fake options.
 
 ## Reaching an ending
 
-Fixed length, cannot stall: plant is mandatory while stools remain, six stools means six
-rounds, then one closing round, then harvest. No resource can run out in a way that
-prevents termination — an empty pin heap only removes the probe action, and crowning and
-passing remain legal. Scoring is total-order (highest sum, tiebreak by larger single
-uncontested grove, then later seat). Ending is guaranteed and reachable.
+Fixed six rounds + one closing round + harvest. Plant is mandatory while stools remain,
+nothing can stall termination: an empty pin heap only retires the probe action; crown
+and pass stay legal. All 12 crowns are placeable in the action budget. Total-order win
+with two tiebreaks. Ending guaranteed and reachable.
 
 ## Length
 
-2p: 14 turns. 3p: 21. 4p: 28. Plus a harvest that means laying out 12-24 stools and
-resolving connected same-species groups, which is a real 3-5 minute step at 4p. At roughly
-45-75 seconds per turn once deduction starts, 2p lands near 20 minutes and 4p near 35-40
-including harvest. `playtime_min: 30` is a fair nominal, slightly optimistic at 4p. Not
-mis-specified.
+2p = 14 turns, 3p = 21, 4p = 28, plus a harvest that is a genuine 3-5 minute group-
+resolution at 4p. At 45-75s per turn once deduction bites, 2p lands near 20 min and 4p
+near 35-40 including harvest. `playtime_min: 30` is a fair nominal, mildly optimistic at
+4p, not mis-specified.
 
 ## Player count
 
-Works at both ends, and 2p is arguably the *sharpest* configuration rather than the
-degenerate one — the usual failure mode for this genre. At 2p you know your own six
-exactly and the rival's composition is public, so the entire unknown is one player's
-assignment of {D,D,B,B,I,H} to six known positions (180 arrangements), cut down by 4
-public probes plus supply deduction. That is a clean, closed deduction puzzle. At 4p the
-puzzle is looser but the probe-leak public-goods tension replaces it.
+Works at both ends; 2p is arguably the sharpest, the reverse of the usual degenerate
+case. At 2p the entire unknown is one rival's assignment of a known composition to six
+known-owned sockets, cut down by probes plus supply deduction — a clean closed puzzle,
+and interaction is real (blocking, contesting, spoiling). At 4p the probe-leak
+public-goods tension (a probe informs every other seat) replaces the tight puzzle. Not
+solitaire at either end.
 
-Two count-dependent notes:
-- The pin supply (16) is not scarce at 2p (max 8 probes) or 3p (max 12). The "first come
-  first served, never refilled" rule is only live at 4p.
-- **Last-seat advantage.** The closing round hands the final seat the last word on the
-  final crown exchange, *and* the tiebreak also favours the later seat. That is two
-  compensations for one disadvantage (last pick of an empty 18-36 socket field, which is
-  worth little when only two thirds of sockets are used). At 2p this means seat B responds
-  to every one of A's three crowns. A's counterplay is genuine — crown stools B has not
-  probed, and crown early so your own later plants can grow the grove — but the tiebreak
-  going to the later seat on top of the last action should be re-examined during playtest.
-  Flagged, not failed.
+Count-dependent watch items, carried forward, not failures:
+
+- The 16-pin supply is only tight at 4p (max 8 probes at 2p, 12 at 3p).
+- PASS is near-dominated at 2p (probing a sole rival's stool leaks them nothing they
+  don't know), but earns its place at 3-4p where a probe informs the next seat first.
+- Last-seat gets the final closing word AND the tiebreak — two compensations for one
+  small disadvantage; worth measuring in playtest.
 
 ## Not judged here
 
-Component geometry, the pin sink/proud legibility, socket pitch and the clearance
-contract, tray sightlines. Those are the object lens and belong to a later review.
+Pin sink/proud legibility, groove depth, socket pitch, the clearance contract, tray
+sightlines, crown diameter vs pitch. Those belong to the object lens.

@@ -1,265 +1,58 @@
-Verdict: FAIL the published rules never bind-test the one move that relocates the crank, and the resulting jam ends 41-85% of scripted games in a rule that does not exist.
-Disposition: rework — `rules:turn[1]` POWER must say whether relocating the crank_gear is subject to `rules:turn[5]` TEST FOR A BIND and what happens when the crank cannot turn, and `rules:turn[7]`/`rules:end[1]` must say how a grind is paid when the granary_bin holds fewer grain_pellet than the round owes. Millbind is already published, so this is not a build decision: it is a correction to a `RULES.md` that is in buyers' hands.
+Verdict: FAIL the game is a solved parity lock — its supported two-player count collapses into a deterministic 4-4 pass-spiral and even at four seats every experienced player reports mastery exhausts it into a three-turn script.
+Disposition: kill — no rules change reaches the collapse. The relocating crank that makes deep chains pointless, the solo bonus that makes the one-gear bridge the only opening, and the "no gear placed" end condition that turns the two-player game into a pass-spiral are the game's identity (its stated novelty), and all four seats independently converged on the same verdict by the run's end. This is the same run that fixed the rules; what the rules fix exposed is that the game underneath is the problem.
 
-## What actually shipped, and where the correction has to land
+## What changed since the last gate, and why this is a hard claim and not a soft one
 
-There is no `RULES.md` file in the repo or anywhere in its history. `publish.py`
-generates it at upload time: `rules_markdown(idea)` (publish.py:177) renders
-`idea.json`'s setup/turn/end/win text verbatim into `<slug>/RULES.md` inside the
-zip, and `build_zip(..., rules=rules_markdown(idea))` (publish.py:330) is what
-went to the CDN. So the published rulebook is character-for-character the text
-reviewed below, and it covers neither gap.
+The previous review reworked `rules:turn[1]` (POWER now bind-tests before committing) and `rules:turn[7]`/`rules:turn[8]`/`rules:end[1]` (a SHORT GRANARY, the short-payout resolved). That rework worked: the machine is now clean, and — critically — it worked well enough that the table lens finally ran. The last gate had zero table evidence and explicitly flagged the two-player degeneracy as *unmeasurable*; this gate measured it, and the measurement is a collapse. The absence that used to protect this game is now the thing condemning it.
 
-Two consequences the owner has to hear, not just the ideator:
+## The two-player finding, now measured
 
-1. The correction requires a republish of the files, not just the page.
-   `publish.py --page` rewrites the product page's story blocks;
-   `--new-version` re-uploads the archive that contains `RULES.md`. Both are
-   needed. `published.json` records `history_status: "draft"`,
-   `published_at: 2026-08-14T09:41:40Z`, project
-   `6a7ede3376c66515a8c43b58/6a7ee2bc3dd218e4ef70de9a`.
-2. The product page is worse than the rulebook. Re-running `story_blocks()`
-   against the shipped `idea.json` reproduces what went up: 10 blocks, `dropped
-   = True`, and the turn walkthrough is cut after `A turn (4)`, which ends at
-   PLACE. A reader of the page never reaches TEST FOR A BIND, THE GRIND or
-   DIRECTION. The published page describes a gear-placement game with no
-   legality test and no scoring step, and hands the rest off to the file in the
-   zip. That is the truncation working as designed, but for this particular game
-   the three sections that got cut are the game.
+Both 2p games (g4, g5) end in exactly 15 decisions at 4-4, resolved by the `rules:win` final-grind tiebreak, and both end the same way: every player builds a one-gear odd chain to a parked crank and then passes to trigger `rules:end[1]`'s "no gear placed" clause. The moves are nearly identical across the two files. It is deterministic.
 
-## The machine half
+- g4 seat 0: "forcing the endgame... a mutual pass triggered a final grind that tied the score... the pass-spiral end condition feels blunt."
+- g5 seat 0: "Parity plan hit 4-0, but passing to avoid binding tied it 4-4, handing the win to seat 1 on the final-grind tiebreak... pass-ties are inevitable."
+- g5 seat 1: "Turn 13 (passing) was the only meaningful decision... I knew from turn 1 that I would replicate the winning line from games 3 and 4 exactly."
 
-`playtest.json`, 300 games per policy per seat count, seed 7, 65s wall clock,
-`pass: false`, `verdict: rules_incomplete`, 5 findings, `leaks: []`,
-`sensitivity: []`, `moves.never_legal: []`, `moves.never_chosen: []`.
+This is exactly what the previous review named as the unmeasurable risk with a measured-frequency version of it in the machine cell: 2p random ties at 53.7% here, and the model's own two 2p games tie identically. The concern is no longer that a bought pair plays a coin flip; it is that a competent pair, in the model's words, plays a pass-spiral to a tiebreak, both times, from a solved opening.
 
-| batch | natural endings | undefined |
-|---|---|---|
-| 2p random | 133/300 | 167 (56%) |
-| 2p competent (greedy) | 177/300 | 123 (41%) |
-| 4p random | 45/300 | 255 (85%) |
-| 4p competent (greedy) | 52/300 | 248 (83%) |
+## The four-player finding: same disease, slower
 
-Every one of the 793 sampled `Undefined` messages is the same one. The threshold
-is `MAX_UNDEFINED_SHARE = 0.15`; the worst cell is 85%.
+The 2p collapse is the loudest case, but every seat's RUN END answer to "did this game get smaller" — the designated measurement of the thing that kills a bought game — is "yes, drastically," and each names the same mechanism at four seats too:
 
-### Finding 1 (blocking): `rules:turn[1]` POWER moves a piece with no legality test, and `rules:turn[7]` assumes the crank always turns
+- Seat 0: "the opening line was completely solved... After that, every turn reduced to a binary check... In two-player, it collapsed further into a pass-spiral... A game that survives three sessions of actively trying to kill its own opening line deserves credit, but Millbind does not. It becomes a rote exercise in avoiding triangles and waiting for the opponent to run out of legal moves."
+- Seat 1: "Millbind is not a spatial placement game; it is a parity lock. The crank's position dictates power, so building chains away from it is pointless... The winning line is a three-turn script: place your mill, move the crank to a yard pin adjacent to yours, place a single gear to bridge them... then pass... the middle and end games evaporate... If both players know the line, the game ends before the gear pile matters."
+- Seat 2: "the real constraint is lattice parity... collapsing the opening from a spatial puzzle into a parity race... the discovery phase is over."
+- Seat 3: "it is a script... The supply pile becomes a parking lot... Thinking stopped mattering by round four."
 
-`rules:turn[5]` scopes the bind test to "Immediately after a PLACE or a SHIFT".
-POWER is the third move in the game that changes the mesh graph, it happens at
-the top of every round, and it is not named. Moving the crank_gear rewrites every
-mesh edge incident to its new pin, and once inner pins hold two mutually
-adjacent same-tier gears, dropping the full-height crank beside them closes a
-triangle. Nothing can then undo it: adding edges cannot make a non-bipartite
-graph bipartite, so every PLACE and SHIFT for the rest of the round reverts under
-`rules:turn[5]`, and `rules:turn[7]` THE GRIND asks the start player to turn a
-crank that physically cannot move. The rules end there.
+Four independent seats, four seat counts worth of horizon, one conclusion in their own words. The per-game debriefs contain several "I would play again at four seats," but those were made mid-arc before the discovery completed; the RUN END debriefs are the considered answer and they are unanimous. The role treats those four as the expensive measurement, and they are all damning.
 
-Three things sharpen this for the rework:
+## Rules questions and legibility
 
-- The gap is unique to POWER. I checked the yard-pin subgraph directly: the 18
-  yard pins form exactly an 18-cycle, every vertex degree 2, zero triangles. So
-  setup (`rules:setup[3]`, which also has no bind test) and any arrangement of
-  millstones and crank alone can never bind. The rules get away with an untested
-  setup by geometry, not by rule. Whatever `rules:turn[1]` is changed to say,
-  the same question should be asked of `rules:setup[3]` and answered explicitly
-  rather than left to the lattice.
-- Staying put is always safe. `rules:turn[1]` lets the start player leave the
-  crank where it is, and the graph was unbound when the last round ended, so a
-  player who understands the trap can always avoid it. The 41-85% figure is what
-  policies that cannot see the trap do, not a table frequency.
-- But a table hits the same gap, just half a second later. The physical object
-  tells a player the crank will not turn only after the crank is already on the
-  new pin, and `rules:turn[1]` never tells them to test before committing and
-  never says whether they may pick it back up. `notes.md` guesses "a human table
-  would almost certainly catch this by feel"; what a human catches by feel is
-  the jam, not the rule for undoing it.
+`rules_questions` is empty: 0, across 190 decisions. That is a real result, worth stating as one: the rework closed every gap a player with a plan had to guess at, and no `Undefined`, no `ASSUMPTIONS`, and no new ambiguity surfaced. `leaks` is empty. The seat survived every wide position (the 110+ legal-move openings that killed all eight prior attempts): the observation patch that hands the full 90-edge lattice topology and the board's pieces to the seat let it act on turn one of every game instead of stalling, and all five games, including the four-player openings, ran to completion against those positions. That survival is a real pipeline win and is not evidence about the game.
 
-### Finding 2 (blocking, and currently invisible): `rules:turn[7]`/`rules:end[1]`, a granary that runs short mid-payout
+## Where the machine and the table disagree
 
-THE GRIND owes one grain_pellet per clockwise millstone, or two if exactly one
-turned. `rules:end[1]` ends the game "at the end of the round in which the
-granary_bin is emptied", which only covers a payout that exactly exhausts 28
-pellets. Nothing covers a round owing 3 with 2 left.
+The machine reports PASS, clean, 0 findings, and a skill ladder that runs 240/240 and appears healthy: first-vs-random 14.6% (edge -0.17), greedy-vs-random 56.1% (edge +0.19), lookahead-vs-random 46.3% (edge +0.10), lookahead-vs-greedy 30.0% (edge -0.05). The table reports a solved game in which thinking stops by round four.
 
-The gate never once reached this in 1200 games, because Finding 1 always fires
-first. I ran my own probe (not the gate; scripted random and one-ply greedy over
-`playtest/engine.py`, with POWER restricted to non-binding pins to simulate
-Finding 1 being closed) and the granary gap becomes live immediately: 1 in 1199
-four-player random games and 2 in 398 four-player greedy games, roughly 0.5%,
-and zero at two players. So this is not a curiosity that can wait for a later
-pass. Fixing only `rules:turn[1]` republishes a rulebook that still runs out,
-just at 1 game in 200 instead of 4 in 5, which is exactly the kind of defect that
-survives a second gate and reaches a table.
+These measure different things. The machine's gradient is a gradient between *knowing the parity trick* and *not* knowing it: the naive "first" policy ignores the crank's parity and loses most games, while a single one-ply greedy — the cheapest possible competent policy — is already at the top, and adding lookahead does not help at all (lookahead *loses* to greedy). That is not the signature of a deep game; it is the signature of a shallow one whose entire depth is one rule, exactly as the players describe in the same words ("every turn reduced to a binary check"). The tie rates agree with the table, not with the PASS: 2p random 53.7%, 4p random 26.7%, 4p competent 23.7%. There is also a residual 4p competent seat-3 advantage of 0.312 (CI [0.263, 0.368], lower bound just above the 0.25 fair share) traced to `rules:setup[5]`s seat-order mill placement — small, inside the gate's tolerance, and entirely beside the point next to the collapse.
 
-### What the same probe says about the game underneath, which is why this is rework and not kill
+Where they disagree, I would not bet on the machine. The machine can only show that a gradient *exists*; it cannot distinguish "a game you get better at" from "a game the competent player solves in three turns and then is bored by." The table is the only instrument in the pipeline that measures the latter, and its answer is unanimous and specific. This is closer to a machine/table agreement than a real contradiction: the ladder's shallow, instantly-topped gradient is the mechanical echo of the collapse the players describe.
 
-With POWER restricted to non-binding pins and nothing else changed:
+## Why kill and not rework
 
-| | games | ended naturally | median turns | median branching | top score 0 | ties | seat win rates |
-|---|---|---|---|---|---|---|---|
-| 2p random | 1200 | 1200 | 30 | 49 | 49% | 53% | .503 / .497 |
-| 2p greedy | 400 | 400 | 24 | 54 | 8% | 14% | .486 / .514 |
-| 4p random | 1200 | 1199 | 50 | 36 | 9% | 25% | .241 / .235 / .272 / .251 |
-| 4p greedy | 400 | 398 | 50 | 39 | 2% | 23% | .257 / .250 / .181 / .313 |
+The rework-class defects named in this pipeline — a rules ambiguity, a seat advantage from a setup step, an ending that cannot fire, an action never once legal — do not exist anymore; the machine verified all three former gaps closed with zero `Undefined` across 1440 games. What the table found instead is that the game's *engine* is the problem. The three levers that produce the collapse are the game's own nouns:
 
-The game terminates, the seats are close to fair, the score separates under
-one-ply play. One sentence added to `rules:turn[1]` plausibly unlocks the whole
-measurement. This is a game with a hole in its rulebook, not a game whose
-problem is the game, and the components and turn order are not implicated.
+- `rules:turn[1]` POWER lets the start player relocate the crank every round, which is what makes deep chains pointless ("building chains away from it is pointless because the next start player simply moves the crank elsewhere");
+- the `rules:turn[7]` solo-bonus clause (two pellets for a lone clockwise mill) is what makes the one-gear bridge the dominant and only opening, obsoleting the supply pile;
+- `rules:end[1]`'s "no gear placed" clause is what converts the 2p game into a pass-spiral resolved by the `rules:win` tiebreak.
 
-### Findings the gate suppressed, which are not verdicts and should not be treated as any
+A rework could drop the 2p player count, or delete the pass-triggered end, or tone the solo bonus — and each is checkable against the state. But none reaches what the seats actually reported, which is that the game solves at four players too: that the opening is fixed, the middlegame evaporates, and thinking stops. Nor would any of these survive the next honest gate with the same table lens, because the experienced players would still report a parity lock. Every prior attempt to classify Millbind was blocked by the rules being broken; this is the first attempt with working rules, and working rules exposed a dead game. Sending that back as a rework would produce a different game wearing the same slug and spend another full cycle hiding that the idea was dead.
 
-`playtest.py` voids seat, tie, runaway, depth, length and dead-move checks when
-the undefined share is over 15%, so all of these are unmeasured, not measured-ok:
+## Caveat on the sample, stated plainly
 
-- **Seat order, `rules:setup[3]` + `rules:turn[2]`.** Two independent samples
-  point the same way: the gate's 4p/competent run (n=52 decided) gives seat 3
-  0.357 and seat 1 0.155, and my probe (n=398) gives seat 3 0.313 and seat 2
-  0.181. Both have the last seat best. Mills are placed in seat order in
-  `rules:setup[3]`, so the last seat sites its millstone with full information
-  and the start player then sites the crank. This is under `MAX_SEAT_EDGE = 0.10`
-  in my larger sample and I am not calling it a defect. I am saying it is the
-  first thing to look at when the gate can measure again.
-- **Two players under weak play is degenerate.** The gate's 2p/random tie rate is
-  0.68 with a mean margin of 0.81. My jam-free probe: 49% of 2p random games end
-  with every score at zero, and 53% are ties. `rules:win`'s tiebreak resolves a
-  zero-zero game by "whose millstone turned clockwise on the final grind", which
-  in a game where nothing ever ground is empty too, so the rules correctly land
-  on "they share the win", and half of those games are draws where no grain was
-  ever milled. Under greedy the same numbers are 8% and 14%. The honest reading
-  is that the payout condition in `rules:turn[7]`/`rules:turn[8]` (an odd chain
-  to a crank that relocates every round) is hard enough that the difference
-  between a table that sees it and a table that does not is the difference
-  between a game and a coin flip, and nothing in this run can say which side a
-  real pair of players falls on.
-- **The skill ladder produced nothing, for a mechanical reason.** `MIN_LADDER_GAMES`
-  is 20; the rungs completed 11, 5, 0 and 0 games out of 60 requested. Both
-  lookahead rungs completed zero. This is not "lookahead does not help": in
-  `play_one` (playtest.py:344-370) an `Undefined` raised inside a policy's own
-  speculative `apply_move` is caught by the same handler as one raised by the real
-  move, so a greedy or Monte Carlo seat marks the game undefined the moment any
-  *considered* move would reach the gap. Flat MC rolls out to the end of the game
-  from every candidate, and random rollouts hit Finding 1 in 56-85% of games, so
-  practically every MC turn aborts its own game. The greedy rung's 0.15 win rate
-  against random over 5 games is noise from the same mechanism. Millbind currently
-  has no skill measurement at all, at any rung, and it will not have one until
-  Finding 1 is closed. This is worth a note to whoever owns `playtest.py`
-  separately from the game: any engine with a reachable `Undefined` silently
-  loses its entire ladder.
-
-### Engine and declared-gap cross-check
-
-`notes.md` declares two `Undefined` raises and `ASSUMPTIONS = []`. Both raises are
-real gaps in the shipped text, correctly attributed, and both are reproduced
-above; the engine does not guess at either. `CHOICES = {}` and `sensitivity: []`
-are consistent with each other: no declared ambiguity means the flip-the-reading
-machinery had nothing to run, and the four readings `notes.md` resolves in prose
-(PLACE may use yard pins, the bind test covers every cluster, PASS is freely
-chosen, a binding move is attempted-then-reverted) each survive inspection
-against `idea.json` as single plain readings. `HIDDEN_INFO = False` matches a game
-where the yard, the supply and every spindle are open. `leaks: []`.
-
-`seed_blind` is **True** at both 2 and 4 players: `new_game` never touches the rng,
-and every game of Millbind begins from the identical empty board. That is
-legitimate (chess does it) but it constrains any future table run: three sessions
-at one seat count are one opening played three times, and whoever writes that
-report may not call them three deals.
-
-## The table half: there is none, and the reason is the finding
-
-No `playtest/table/` directory exists for this slug. Four attempts were made and
-none produced a session file, so there are zero player quotes in this report,
-zero `rules_questions`, zero `arbitrary_by_seat` series, and no answer to "did
-this game get smaller as you learned it". For an already-published game that last
-silence is the expensive one, and it is still silent.
-
-**The failure is structural, not unlucky.** Measured over 400 random games per
-seat count on the shipped engine: the median position offers 57 legal moves at
-two players and 52 at four, the 90th percentile is 112 and 103, the maximum
-observed is 118 and 110, and **400 of 400 games at both seat counts contain at
-least one position over 100 moves**. At two players a quarter of all turns are
-over 100. The first action of the game is the worst one: 37 pins less two
-millstones and a crank leaves 34 empty pins times 3 gear types, plus 15 shift
-targets, plus pass, which is 118 at two players and 110 at four. The reported
-run "stopped at the first position over about a hundred moves" because that
-position is turn one of every game. There is no seed, seat count or truncation of
-the game length that avoids it.
-
-**On the transport.** Eight interleaved attempts at one held-fixed 110-move
-position: four buffered, all HTTP 504 at the endpoint's 60s ceiling; four
-streamed, all empty body at 53-78s. Zero completions. What varied across the
-eight was the transport mode; what was held constant was the position, the
-endpoint and the model. The cause therefore does not live in the buffering mode,
-and the 504-at-exactly-60s story does not survive the streamed arm dying at 53s.
-Two further facts point away from the wire: the same transport had already
-returned completions for the six setup and power turns of that game, which offer
-14 to 18 moves, and 110 enumerated moves is only a few hundred tokens more prompt
-than 18, so a size-triggered transport fault is implausible while a time-triggered
-one requires the generation itself to be slow. I would bet on the seat, not the
-wire. I would not report it as established, because the endpoint and the provider
-were never varied either, and a provider-side gateway that kills long generations
-is consistent with all eight data points. The experiment that settles it is one
-run of the same 110-move position against a different model or provider plus the
-usage numbers for the failed calls, and it has not been run. Until it is, "the
-model spends its whole budget weighing the options and never emits a line" is a
-hypothesis with 8/8 supporting attempts and no discriminating test behind it.
-
-**On not truncating the move list: I agree with the call, and more strongly than
-the general argument requires.** The general argument (a seat choosing from a
-shortened list is playing a different game) is correct. Millbind makes it worse
-than usual, because its 110 moves differ from one another only in which pin and
-which tooth tier, and the entire game is the parity of the graph those two
-coordinates build. A random subsample deletes exactly the structure being tested,
-and a curated subsample requires an evaluation function, which is the harness
-playing the game and the seat rubber-stamping it. Either way the run would have
-produced a number that looked like a table result and was not one. Reporting
-eight clean failures is the better outcome.
-
-That said, the option set and its presentation are different things, and the
-constraint is only on the first. Whether 110 legal moves have to reach the seat as
-110 enumerated lines, or can reach it as the board plus "any empty pin, any of
-three gear types", is a `table_run.py` question with no effect on what the seat is
-allowed to do. I am not prescribing it. I am recording that this lens cannot
-produce evidence for Millbind, or for any game with three-digit branching, until
-someone answers it, and that Millbind is the second calibration case to show it.
-
-## Where the halves disagree
-
-There is no table to disagree with the machine here, so the disagreement is
-inside the machine half, and it is worth naming because the rework will be
-measured against it.
-
-The gate says the rules run out in 4 of every 5 four-player games. The physical
-object says a jammed crank is the most obvious thing that can happen on a table:
-you turn the knob and it does not move. Both are true and they measure different
-things. The scripted policies measure how often a player who cannot see the trap
-walks into it; the object measures how quickly a player finds out they did. What
-neither measures, and what `rules:turn[1]` has to answer, is what that player is
-allowed to do next. The 85% is not a prediction about a table and should not be
-quoted as one; the missing sentence is real regardless of the rate.
-
-Second disagreement, same half: 2p/random has a 68% tie rate and 49% all-zero
-games, while 2p/greedy has 14% and 8%. One ply of lookahead changes Millbind from
-a draw machine into a game. Nothing in this run can tell you which of those two a
-bought copy on a real table behaves like, and that is precisely the question the
-table lens exists to answer and could not.
+All five games are `seed_blind`: an identical empty board every time. So the two 2p games are one opening played twice, and the three 4p games are one opening played three times. This is partly what makes the 2p result so damning — the collapse reproduced identically, it is deterministic, not a fluke of two unlucky deals — but it also means this report does not and cannot claim a distribution over openings. The 2p finding is one deterministic game shown to collapse twice; the 4p finding rests on one opening and three model seeds. The unanimity of the four debriefs is real; the range of positions behind them is narrow.
 
 ## Cost
 
-- **Machine half.** 1200 batch games plus 16 completed ladder games out of 240
-  requested; 10,843 recorded decisions (10,288 in batches, 555 in the ladder);
-  65.0s wall clock, deadline 400s, not hit; seed 7, `--games 300 --ladder-games 60
-  --mc-budget 40`. Local CPU only: 0 tokens, $0.00.
-- **My own probes** (granary reachability, jam-free counterfactual, branching
-  distribution, yard-ring triangle check): ~7,700 further games, local CPU, about
-  5 minutes, 0 tokens, $0.00. Labelled as mine everywhere they appear; they are
-  not gate output and no verdict rests on them alone.
-- **Table half.** 0 games, 0 completed turns, 0 session files. 8 measured
-  attempts at one position, roughly 500s of wall clock in the measured pair of
-  arms alone, plus four aborted run attempts before it. Model at every attempted
-  seat: `minimax/minimax-m3`. Token and dollar cost of the failed calls is
-  **unknown**: a 504 and an empty stream both bill for reasoning tokens that were
-  never delivered, and nothing in this pipeline captured the usage figures. That
-  is a gap in the accounting worth closing before the next attempt, because the
-  cheapest possible reading of eight failed calls is "free", and it is not.
+- **Machine half.** 1200 batch games (300 per cell) plus 240 ladder games; `--games 300 --ladder-games 60 --mc-budget 40 --seed 7`; 223.1s wall clock, deadline 400s, not hit; local CPU, 0 tokens, $0.00, scripted policies.
+- **Table half.** 5 games, 190 decisions (g1 60, g2 40, g3 60, g4 15, g5 15), all finished, 0 `Undefined`, `leaks: []`, 0 rules questions. 9061s wall clock, model `qwen/qwen3.6-27b`, wire `anthropic/cached/stream`, 18,492,318 input / 620,775 output tokens, `cached: 0`, 220 calls, `cost_usd: 0.0`. All runs seeded, `seed_blind: true`.

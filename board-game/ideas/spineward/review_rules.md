@@ -1,105 +1,138 @@
 Verdict: PASS
 
-# Spineward - rules-worth-playing review
+# Spineward - rules-worth-playing review (fresh, 2026-08-18)
 
-Judged from `idea.json` alone. Board geometry was checked on cube coordinates:
-37 pans, 19 at radius <= 2 (the seed pans), each of the 6 corner landing
-shelves touches exactly one seed pan (the ring-2 corner), and the corner-to-
-corner diagonal runs shelf, r2, r1, centre, r1, r2, shelf. Every claim below
-uses those numbers.
+Independent judgment of the CURRENT `idea.json`, not the 2026-08-14 PASS. The
+only rules change since then is `rules:turn[8]` (ROB): it now lists a fifth
+precondition, "that enemy is carrying at least one pearl in its sockets," and
+states that if the target carries no pearl "ROB simply is not offered as a
+move - it costs you nothing, but it does nothing either." That closes the
+`rules_ambiguous` finding the playtest gate raised (the old four-condition
+text left the empty-target case undefined and the alternative reading moved
+the numbers). Nothing else in the rules changed. I judged the current text in
+full; the conclusions below apply to it as written.
+
+Geometry checked on cube coordinates: 37 pans, 19 seed pans (r0-r2), 6 corner
+landing shelves (r3), each shelf adjacent to exactly one seed pan (the r2
+corner); each of the three corner diagonals runs shelf, r2, r1, centre, r1,
+r2, shelf (7 pans).
 
 ## Dominant strategy: contested, not broken
 
-The strongest-looking opening is the straight traverse. Setup lets you place
-your two spines freely, so you aim one at the corner shelf next to your
-starting pan and one down the long diagonal that runs from that corner through
-the centre to the opposite corner. Turn 1: CREEP onto the shelf, SHED the now-
-useless spine. You are left with a single spine pointing inward and five empty
-sockets. Turns 2-6: TAKE the pearl in front, CREEP into the pan it vacated -
-two actions, one pearl, one pan, every turn. Turn 7: CREEP onto the far shelf
-and LAND all five. Five pearls (about 8.4 points at the 1.69 mean) in seven
-turns, using one spine for the whole trip, never turning, never reversing.
+The shortest credible line is the deep traverse: arm one spine down a
+diagonal, one onto the corner shelf; CREEP onto the shelf, SHED the
+shelf-spine (Turn 1), then TAKE-and-CREEP down the diagonal one pearl per turn
+(Turns 2-6), CREEP onto the far shelf and LAND all five (Turn 7). Five pearls
+at the 1.69 mean is ~8.4 points in about six genuine turns.
 
-That line is not dominant, for two reasons that are both structural rather than
-lucky.
+That line is not dominant, and the reasons are structural, not luck:
 
-First, the reef-empty trigger punishes it. Four traversers each lift roughly
-one pearl per turn from turn 2 on; 4 x 4 = 16 takes by the end of round 5, and
-the reef is bare before anyone reaches turn 7. The game stops, and pearls in
-sockets score zero. The counter-line is available from turn 1: CREEP onto the
-shelf and TAKE the ring-2 corner pearl, LAND it on turn 2. One point banked
-before the fifth turn of anyone's deep dive. So the deep traverse loses to the
-shallow shuttle whenever the table is racing, and the shallow shuttle loses to
-the traverse whenever it is not. That is the actual game, and "how deep do I go
-before I turn back" is a genuine read of the other three players.
+1. Time-value of banked versus unbanked points. A traverse scores nothing
+   until Turn 7; a boundary shuttle (park on a shelf, TAKE the one adjacent r2
+   seed pearl, LAND it next turn) banks ~1.69 points by its second turn at
+   roughly 0.85 points/your-turn against the traverse's ~1.2. Banked points
+   are immune to both the reef-empty trigger and to robbery; unbanked ones are
+   not. "How deep do I go before I turn back" is a genuine read, not a
+   calculator.
+2. Reef-empty cuts deep divers. Standing pearls leave the reef on TAKE. A
+   racing table empties the reef before a deep diver lands, and pearls still
+   in sockets score zero (rules:win). Endgame sack losses are real.
+3. A loaded urchin is maximally robbable. Five pearls + one forward spine uses
+   all six sockets, so GROW (the only way to raise a shield toward a chaser)
+   is illegal; the collector must SHED then GROW or spend TURNs to face the
+   pursuit. Robbing nets the ~1.69 mean per single action, the best rate in
+   the game, but the robber still has to walk the haul to a shelf. Worth doing
+   opportunistically, not worth building around - the right shape.
+4. The centre chokepoint. All three diagonals meet in the centre pan; whoever
+   takes it first forces GROW-and-detour on the other two lines and, at four
+   players, a collision is forced by pigeonhole.
 
-Second, the traverse build is maximally robbable. One forward spine covers one
-of six sides, and once the fifth pearl is aboard there is no empty socket, so
-GROW - the only way to raise a shield - is illegal. The loaded urchin must
-SHED then GROW (a full turn, and it loses its travel direction) or spend three
-TURNs to face backwards. A chaser sitting behind it is never facing a spine and
-robs for one action a turn. Robbing nets about 1.69 points per action, the best
-rate in the game, but the robber still has to walk its haul to a corner, which
-puts the whole loop at roughly 0.5 pearls per turn against the collector's 0.71.
-Robbing is worth doing when the opportunity comes to you and is not worth
-building around. That is the right shape.
-
-The centre pan sits on all three diagonals and is a real chokepoint - whoever
-reaches it first (about turn 4) blocks the other two lines and forces a GROW
-plus a detour. With four players over three diagonals a collision is forced by
-pigeonhole, so the traverse is contested every game at full count.
+The midgame also checks out: as the boundary seed pans near shelves empty, play
+drifts inward, which is exactly where the defence/cargo socket tension and the
+robbery risk live. The game's risk curve rises as the safe pearls are taken
+first. That is a design, not an accident.
 
 ## Real decisions per turn
 
-At least three live ones, and all eight actions have a use. Socket allocation
-(each spine is a cargo slot you gave up, each pearl is a direction you gave up)
-is a decision every single turn, not a build chosen once. TURN costs one action
-to re-aim the whole rosette against SHED+GROW's two, so it is strictly better
-for 60-degree changes and strictly worse for 180 - a real choice, not a wash.
-DROP is the only way to shed cargo away from a shelf, and dropping a pearl into
-the pan behind you walls off a chaser, since a standing pearl blocks CREEP.
-"Which pearl to rob" is deliberately blind and is the one fake decision, which
-is the point of the hidden foot.
+Three or more live ones every turn. The core is the socket budget: every spine
+is a cargo slot given up and every pearl is a direction given up, and that is
+re-allocated by GROW/SHED/TURN every single turn rather than fixed at setup.
+TURN is one action to re-aim the whole rosette against SHED+GROW's two, so it
+is strictly better for a 60-degree change and strictly worse for 180 - a real
+choice. DROP both buys a socket back mid-reef and walls off a chaser (a
+standing pearl blocks CREEP), so it is attack and defence at once. The one
+deliberately fake decision is "which pearl to rob/take" - blind by design; the
+hidden foot is the point, not a gap.
 
 ## Ending, length, player count
 
-The ending is reachable and in fact arrives briskly. Two triggers plus the
-quiet-round clause; the reef-empty one will fire in most games. No deadlock is
-possible: a player always holds at least one spine (see below), SHED always
-frees a socket, GROW only needs an empty socket, and the tray cannot be empty
-while that player holds none. Nobody can lock themselves out of the game.
+Ending is reachable and multiple-ended. Three triggers: no pearl standing on
+the reef, any rack at six, and the quiet-round clause (rules:end[1]). The
+playtest engine ran 400 random 2p and 400 random 4p games with zero stuck and
+zero undefined - no deadlock. The quiet-round trigger is a sensible safety net
+that also fires in real play if both players stall rather than contest.
 
-Length: in the shallow-shuttle equilibrium roughly one action in four is a
-TAKE, so about two pearls leave the reef per round and 16 pearls take about
-eight rounds - 32 to 40 player-turns of two simple actions each. That lands on
-the stated 40 minutes. At two players the rack cap of six ends it sooner, near
-20 to 25 turns and 25 to 30 minutes, a little short of the claim.
+Length is compatible with the 40-minute claim. Random 4p play runs long
+(turns_mean 65.8, median 52) but that is churn-heavy and unrepresentative of
+human play; the efficient shuttle/traverse equilibrium is ~0.7 to 0.9 pearls
+landed per player-turn, so a 16-pearl, ~27-point reef resolves in roughly 35
+to 45 total player-turns at four, i.e. about 40 minutes. Two players resolve
+sooner (engine median 26 turns), a little under the claim, which is typical
+and acceptable.
 
-Player count works at both ends but is not equally good. At four, six spines
-per seat and three diagonals guarantee contact. At two, 37 pans for two urchins
-means contact is optional and the game leans toward a parallel race decided by
-the random pearl draw. Robbing and the end-trigger race keep it from being pure
-solitaire, but two is the weakest seat count and the shuttle-versus-chaser
-duel is the only thing holding it together.
+## The weakest seat count is two, and the playtest now quantifies it
 
-## Findings that do not block, but should be fixed in the brief
+At two players the reef is over-supplied (37 pans, 16 pearls, two urchins) and
+contact is optional, so both players can blind-collect and land near-equal
+totals near half the 27-point pot. The engine's passive competent policy
+finished 75% of 2p games level through the full tiebreak chain (tie_rate
+0.754, margin_mean 0.32). This is genuinely the weakest count: at two the game
+leans toward a parallel race whose floor is set by the random pearl draw. Two
+cautions before over-weighting it: the competent policy never robs at 2p (no
+`rob` in its chosen kinds), so the "chaser" dynamic the rules make fully
+available - a robber taxing the leader's haul - is what a live 2p duel is
+supposed to supply, and that is an active-play tool, not a hard cap. Still,
+this is the one place the current text is fragile, and the brief should give
+2p something to force contact or sharpen the scoring tiebreak. It is a
+tuning/design note for the brief, not a mechanical break - the 2p game does
+end, every time, and it is contingent on decisions a table can make.
 
-1. The six-pearl paralysis is unreachable. TAKE, DROP and ROB all require a
-   spine, so cargo can never exceed five - the maximum load is five pearls plus
-   one spine, which still creeps in one direction and lands. The turn-section
-   line "an urchin with six pearls cannot move, cannot reach, cannot defend
-   itself and cannot even shed" describes a state the rules forbid, and the
-   novelty claim that "a fully-laden one cannot move or defend itself" is
-   overstated by exactly one socket. Good for the game (no self-elimination),
-   wrong as written.
+## The two old dead-letters survive verbatim; correct the brief's claims
 
-2. The spine supply never binds. Maximum simultaneous demand is six per seat
-   and no winning build runs more than about three, so 24 spines is never
-   short. Setup's "spines can genuinely run short" and GROW's "if the tray is
-   empty you cannot grow" are both dead letters at every player count. The real
-   constraint is the six sockets, and the text should say so.
+Re-checked against the current text, both old findings stand unchanged because
+the rework never touched them:
 
-3. Spoiler check, clean: a player who empties the reef while holding five
-   scores zero themselves and cannot win on the spine tiebreak unless every
-   opponent is also on zero, which cannot happen after round two. Denial is
-   available, kingmaking by self-destruction is not.
+1. Six-pearl paralysis is unreachable. TAKE, DROP and ROB all need a spine to
+   reach with, and a separate empty socket to receive into; once five pearls
+   and the lone spine fill all six sockets there is no direction left that is
+   both empty and not the reach-spine, so no sixth pearl can ever be acquired
+   (verified: max load is five pearls + one spine). The corollary sentence at
+   `rules:turn[10]` ("an urchin with six pearls cannot move, cannot reach,
+   cannot defend itself and cannot even shed") and the concept/novelty
+   "a fully-laden one cannot move or defend itself" both describe a state the
+   rules make impossible - a five-pearl urchin can, in fact, move and defend
+   in one direction. Fix the language so it says five, or the hero text
+   asserts something the rules forbid.
+2. The spine supply never binds. Total capacity across a full table is exactly
+   24 (four shells at six), no winning build runs more than about three, and a
+   six-spine turtle scores nothing by construction, so the shared tray is never
+   meaningfully short. Setup's "spines can genuinely run short" and GROW's
+   "if the tray is empty you cannot grow" are dead letters at every count. The
+   real budget is the six sockets per shell; the text should say that and drop
+   the supply-tension promise.
+
+## Spoiler check, still clean
+
+A player who empties the reef while holding five scores zero and cannot reach
+the spine tiebreak unless every opponent is also on zero, which cannot happen
+after round two. Denial is available; kingmaking by self-destruction is not.
+
+## Bottom line
+
+The rules are now mechanically complete (ROB fixed), the socket-tradeoff core
+has no dominant line I could find across opening, midgame and endgame, the
+ending is reachable with no deadlock, length sits on the 40-minute claim at
+four players, and the strongest count (four) is genuinely contested. Two is
+the weak count and the two dead-letter overstatements should be fixed in the
+brief, but nothing in the current text makes this game unplayable or
+automatic. It is a real game. PASS.

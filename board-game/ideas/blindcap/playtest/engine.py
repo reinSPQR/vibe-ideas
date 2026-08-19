@@ -14,24 +14,6 @@ MAX_TURNS = 120           # real games run exactly 13*n apply_move calls (max 52
 MOVE_KINDS = ("plant", "probe", "crown", "pass")
 HIDDEN_INFO = True        # each seat's own trough/planted species are secret to others
 
-ASSUMPTIONS = [
-    {"id": "contested_grove_per_crown",
-     "rule": "rules:win",
-     "question": "For an uncontested grove the win rule explicitly says a player "
-                 "scores n^2 'once, even if two of their own crowns sit in the "
-                 "same grove.' For a CONTESTED grove (two-plus owners) it only "
-                 "says 'each of those players scores only n for it,' with no "
-                 "matching once-per-player caveat. If a player has placed two of "
-                 "their own crowns in the same contested grove, do they score n "
-                 "once for the grove, or n once per crown they have in it?",
-     "chosen": "once per player, regardless of how many of their own crowns sit "
-               "in the grove — read by analogy with the uncontested case, and "
-               "because 'each of those players' names the players, not the crowns",
-     "alternative": "once per crown, so a player holding two crowns in one "
-                    "contested grove scores n twice for it"},
-]
-CHOICES = {"contested_grove_per_crown": "chosen"}
-
 
 # ---------------------------------------------------------------------------
 # Fixed facts of the game
@@ -257,13 +239,9 @@ def _grove_payout(state, grove):
     mult = 2 if grove["species"] in SCARCE_SPECIES else 1
     if len(owners) == 1:
         return {next(iter(owners)): n_size * n_size * mult}
-    if CHOICES.get("contested_grove_per_crown", "chosen") == "alternative":
-        pay: dict = {}
-        for i in grove["sockets"]:
-            c = state["sockets"][i]["crown"]
-            if c is not None:
-                pay[c] = pay.get(c, 0) + n_size * mult
-        return pay
+    # Contest: each owner scores n once for the grove, no matter how many of
+    # their own crowns sit in it (idea.json rules:win — a grove pays out once
+    # per owner; a player with two crowns in one contested grove scores n, not 2n).
     return {o: n_size * mult for o in owners}
 
 

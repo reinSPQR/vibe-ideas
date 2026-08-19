@@ -267,7 +267,7 @@
     "spineward": {
       "slug": "spineward",
       "title": "Spineward",
-      "state": "approved",
+      "state": "proposed",
       "repairs_used": 0,
       "created": "2026-08-14T05:58:41.711020+00:00",
       "log": [
@@ -300,13 +300,20 @@
           "from": "awaiting_owner",
           "to": "approved",
           "note": "owner approved the draft; 55 renders frozen"
+        },
+        {
+          "at": "2026-08-18T07:33:19.549567+00:00",
+          "from": "approved",
+          "to": "proposed",
+          "note": "rules_gate playtest FAIL rules_ambiguous (ROB with empty target sockets); idea rewound to rework rule and re-run the gate"
         }
-      ]
+      ],
+      "unmeasured": []
     },
     "blindcap": {
       "slug": "blindcap",
       "title": "Blindcap",
-      "state": "drafted",
+      "state": "proposed",
       "repairs_used": 0,
       "created": "2026-08-14T10:04:58.903705+00:00",
       "log": [
@@ -327,8 +334,15 @@
           "from": "briefed",
           "to": "drafted",
           "note": ""
+        },
+        {
+          "at": "2026-08-18T07:32:22.303397+00:00",
+          "from": "drafted",
+          "to": "proposed",
+          "note": "rules_gate playtest FAIL rules_ambiguous (contested grove scoring); idea rewound to rework rule and re-run the gate"
         }
-      ]
+      ],
+      "unmeasured": []
     }
   }
 }
