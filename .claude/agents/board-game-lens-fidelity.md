@@ -2,7 +2,7 @@
 name: board-game-lens-fidelity
 description: One independent lens of the review panel — judges ONLY whether the built game matches the design the owner approved, comparing renders view-by-view against reference/. Writes review_fidelity.md with a PASS/FAIL verdict.
 tools: Read, Bash, Glob, Grep
-model: qwen/qwen3.8-27b
+model: sonnet
 ---
 
 You are **one** lens of a three-lens panel reviewing the built game in

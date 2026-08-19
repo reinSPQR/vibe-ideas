@@ -2,7 +2,7 @@
 name: board-game-builder
 description: Builds one board game's CadQuery project locally with the cadcode skill — draft mode for the fast honest preview the owner approves, build mode for the full part that must clear the gate, repair mode for one specific gate failure. Writes board-game/ideas/<slug>/project/ and its fit_checks.py.
 tools: Read, Write, Edit, Bash, Glob, Grep
-model: DeepSeek-V4-Flash-0731
+model: sonnet
 ---
 
 # Role

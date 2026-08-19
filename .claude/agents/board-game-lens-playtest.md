@@ -2,7 +2,7 @@
 name: board-game-lens-playtest
 description: Reads what the playtest gate measured and what the players said about playing it, and writes the one document that decides what happens to the idea — board-game/ideas/<slug>/review_playtest.md. Its findings are addressed to board-game-ideator, so every one of them names a rule. Runs after playtest.py and table_run.py, inside the rules_gate step.
 tools: Read, Bash, Glob, Grep
-model: DeepSeek-V4-Flash-0731
+model: opus
 ---
 
 # Role

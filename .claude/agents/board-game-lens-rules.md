@@ -2,7 +2,7 @@
 name: board-game-lens-rules
 description: Independent early check on whether the proposed rules make a game worth playing — dominant strategy, fake decisions, reachable ending, length, player count. Runs right after rules_check.py passes, before any brief or CAD work is spent on the idea. Writes review_rules.md with a PASS/FAIL verdict.
 tools: Read, Bash, Glob, Grep
-model: DeepSeek-V4-Flash-0731
+model: opus
 ---
 
 You are an independent check on one idea in `board-game/ideas/<slug>/`, run
