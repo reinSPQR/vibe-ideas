@@ -100,13 +100,28 @@ already sent back. No separate bookkeeping needed afterward: the next
 successful `rules_gate` run below moves the idea out of `proposed` anyway,
 and a later owner rework overwrites `rework_reason` with its own new reason.
 
+Every FAIL below — mechanical, the rules lens, or the playtest lens — goes
+through the same rework budget before `board-game-ideator` is invoked again:
+
+```bash
+.venv/bin/python board-game/tools/pipeline_queue.py gate_rework <slug> \
+    --stage <rules_check|lens_rules|lens_playtest> --reason "<findings verbatim>"
+```
+
+exit 0 → the round is granted; continue exactly as below.
+exit 1 → the idea already used its three rules-gate reworks and this command
+has already moved it to `killed` for you. Do **not** invoke the ideator. Put
+the one-sentence reason in `TASTE.md` (same as a `Disposition: kill`, below)
+and `release <slug>`.
+
 Then:
 ```bash
 .venv/bin/python board-game/tools/rules_check.py board-game/ideas/<slug>/idea.json
 ```
-FAIL → invoke `board-game-ideator` in **rework** mode with the findings
-verbatim; leave the state at `proposed` so the gate runs again next step, and
-`release <slug>` so the next step can actually pick it up.
+FAIL → `gate_rework --stage rules_check`, then (on exit 0) invoke
+`board-game-ideator` in **rework** mode with the findings verbatim; leave the
+state at `proposed` so the gate runs again next step, and `release <slug>` so
+the next step can actually pick it up.
 
 PASS → before this idea costs a single hour of `brief-writer` or `builder`
 time, invoke `board-game-lens-rules` against `idea.json` — an independent
@@ -114,9 +129,10 @@ opinion on whether the game is worth playing at all (dominant strategy, fake
 decisions, reachable ending, length, player count), not just internally
 consistent.
 
-FAIL → invoke `board-game-ideator` in **rework** mode with the verdict
-verbatim; leave the state at `proposed` and `release <slug>`, exactly like a
-mechanical `rules_check.py` failure.
+FAIL → `gate_rework --stage lens_rules`, then (on exit 0) invoke
+`board-game-ideator` in **rework** mode with the verdict verbatim; leave the
+state at `proposed` and `release <slug>`, exactly like a mechanical
+`rules_check.py` failure.
 
 PASS → play it. Reading rules and playing them are different tests, and prose
 can be vague and still sound complete:
@@ -140,16 +156,28 @@ Then seat players at it:
 Adjust `--schedule` to the idea's own `players.min` and `players.max`; the
 point is to touch both ends of the range it claims to support. This needs
 `PLAYTEST_BASE_URL`, `PLAYTEST_API_KEY` and `PLAYTEST_MODEL`, which it reads
-from `.env`. If they are absent, say so and advance anyway on the machine half
-alone — a table that cannot run is a missing measurement, not a failing idea.
+from `.env`. The LLM-player table is **not optional**: the gate is not over
+when the rules check passes and a machine has played it — a game nobody has
+sat at and thought about has no player feedback, and `review_playtest.md`
+cannot be written without it. If the table cannot run (credentials absent, API
+down), report the missing measurement, `release <slug>`, and leave the idea at
+`proposed`. Do **not** advance it on the machine half alone:
+`pipeline_queue.py advance --to rules_ok` refuses without a current
+`review_playtest.md`, and it should.
 
 Then invoke `board-game-lens-playtest`, which reads both halves and writes
 `review_playtest.md`. Its verdict is the one that counts:
 
 - PASS → `pipeline_queue.py advance <slug> --to rules_ok`.
-- `Disposition: rework` → `board-game-ideator` in **rework** mode with the
-  findings verbatim; state stays `proposed`, `release <slug>`.
-- `Disposition: kill` → do **not** rework it. `pipeline_queue.py advance
+- `Disposition: rework` → `gate_rework --stage lens_playtest --reason
+  "<verdict verbatim>"`. exit 0 → `board-game-ideator` in **rework** mode
+  with the findings verbatim; state stays `proposed`, `release <slug>`. exit
+  1 → the idea is already `killed` (three rules-gate reworks spent and still
+  failing); do not invoke the ideator, put the reason in `TASTE.md` as below,
+  `release <slug>`.
+- `Disposition: kill` → do **not** rework it and do **not** call
+  `gate_rework` (that budget is for reworks that are still being tried; this
+  lens already decided one would be wasted). `pipeline_queue.py advance
   <slug> --to killed`, and put the one-sentence reason in `TASTE.md` so the
   next `propose` does not walk back into the same shape. A game whose problem
   is its own component arithmetic cannot be reworded into a good one, and
@@ -321,7 +349,7 @@ What is worth an entry, by action:
 | action | narrate |
 |---|---|
 | `propose` | what the ideator was going for, and what its novelty search actually turned up |
-| `rules_gate` | the `rules_check.py` findings verbatim, the `board-game-lens-rules` verdict line, the playtest verdict with its disposition, one quoted player line from the table, and what the rework changed (any of them triggers). On a `kill`, say what the players found and what it cost to find it — that is the only step in this pipeline that ends an idea on evidence rather than on taste |
+| `rules_gate` | the `rules_check.py` findings verbatim, the `board-game-lens-rules` verdict line, the playtest verdict with its disposition, one quoted player line from the table, and what the rework changed (any of them triggers). On a `kill` — whether `Disposition: kill` from the playtest lens or `gate_rework` exhausting its budget — say what the players found and what it cost to find it — that is the only step in this pipeline that ends an idea on evidence rather than on taste |
 | `brief` | the dimensions it chose, and every entry in `unstated_in_spec` — those are the places the spec ran out and somebody guessed |
 | `draft` | what the draft looks like and anything that surprised the builder |
 | `build` / `repair` | the gate findings verbatim (`--body-file .../gate.json`), including any `unmeasured` entries, then what the repair actually changed — not "fixed the overhang", but which number moved |
