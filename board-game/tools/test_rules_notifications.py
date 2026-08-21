@@ -16,6 +16,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import journal  # noqa: E402
+import animation_gate  # noqa: E402
 import pipeline_queue  # noqa: E402
 
 
@@ -35,6 +36,23 @@ def idea(concept: str = "Original", turn: str = "PLACE a token.") -> dict:
             "win": {"text": "Most tokens wins.", "uses": ["token"]},
         },
     }
+
+
+def approve_animation(home: Path, payload: bytes = b"video") -> Path:
+    video = home / animation_gate.VIDEO_REL
+    video.parent.mkdir(parents=True, exist_ok=True)
+    video.write_bytes(payload)
+    video_hash = animation_gate.sha256(video)
+    manifest = {
+        "idea_sha256": animation_gate.sha256(home / "idea.json"),
+        "video_sha256": video_hash,
+        "video": str(animation_gate.VIDEO_REL),
+    }
+    (home / animation_gate.MANIFEST_REL).write_text(
+        json.dumps(manifest), encoding="utf-8")
+    (home / animation_gate.REVIEW_REL).write_text(
+        f"Verdict: PASS\nVideo SHA256: {video_hash}\n", encoding="utf-8")
+    return video
 
 
 class ReworkBudgetTests(unittest.TestCase):
@@ -102,6 +120,7 @@ class RulesReadyTests(unittest.TestCase):
                 "Verdict: PASS\n", encoding="utf-8")
             (home / "playtest.json").write_text(
                 json.dumps({"pass": True}), encoding="utf-8")
+            video = approve_animation(home)
             sent: list[tuple[str, dict]] = []
 
             class FakeTelegram:
@@ -126,11 +145,20 @@ class RulesReadyTests(unittest.TestCase):
                 self.assertEqual(journal.cmd_rules_ready(args), 0)
                 first_count = len(sent)
                 self.assertGreater(first_count, 0)
-                self.assertTrue(all(
-                    kwargs == {"chat": "journal-chat", "parse_mode": "HTML"}
-                    for _, kwargs in sent))
+                self.assertEqual(sent[0][1], {
+                    "video": video,
+                    "chat": "journal-chat",
+                    "parse_mode": "HTML",
+                })
+                self.assertTrue(all(kwargs == {
+                    "chat": "journal-chat", "parse_mode": "HTML"
+                } for _, kwargs in sent[1:]))
                 self.assertEqual(journal.cmd_rules_ready(args), 0)
                 self.assertEqual(len(sent), first_count)
+
+                approve_animation(home, b"corrected video")
+                self.assertEqual(journal.cmd_rules_ready(args), 0)
+                self.assertGreater(len(sent), first_count)
 
     def test_rules_ready_refuses_an_unpassed_pre_table_gate(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -142,6 +170,28 @@ class RulesReadyTests(unittest.TestCase):
                 with self.assertRaisesRegex(SystemExit, "review_rules.md is missing"):
                     journal.cmd_rules_ready(SimpleNamespace(slug="fixture"))
 
+    def test_rules_ready_refuses_missing_animation(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            ideas = Path(raw) / "ideas"
+            home = ideas / "fixture"
+            home.mkdir(parents=True)
+            (home / "idea.json").write_text(json.dumps(idea()), encoding="utf-8")
+            (home / "review_rules.md").write_text("Verdict: PASS\n", encoding="utf-8")
+            (home / "playtest.json").write_text(
+                json.dumps({"pass": True}), encoding="utf-8")
+            with patch.object(journal, "IDEAS", ideas):
+                with self.assertRaisesRegex(SystemExit, "animation/rules.mp4 is missing"):
+                    journal.cmd_rules_ready(SimpleNamespace(slug="fixture"))
+
+    def test_animation_review_is_bound_to_video_hash(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            home = Path(raw)
+            (home / "idea.json").write_text(json.dumps(idea()), encoding="utf-8")
+            video = approve_animation(home)
+            video.write_bytes(b"changed after review")
+            failure, _ = animation_gate.evidence(home)
+            self.assertIn("manifest does not match animation/rules.mp4", failure)
+
     def test_every_rendered_message_fits_without_truncation(self) -> None:
         long_text = "<&>" * 3000
         current = idea(concept=long_text)
@@ -149,6 +199,9 @@ class RulesReadyTests(unittest.TestCase):
         self.assertTrue(all(len(chunk) <= journal.MESSAGE_LIMIT for chunk in chunks))
         self.assertEqual("".join(journal._escaped_segments(long_text)),
                          html.escape(long_text))
+        caption = journal.render_video_caption(current)
+        self.assertLessEqual(len(caption), 1000)
+        self.assertNotRegex(caption, r"&(?!amp;|lt;|gt;|quot;|#x27;)")
 
 
 if __name__ == "__main__":

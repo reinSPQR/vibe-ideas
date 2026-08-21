@@ -33,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import playtest  # noqa: E402
 import table_run  # noqa: E402
+import animation_gate  # noqa: E402
 
 MOVE_LINE = re.compile(r"^  (\d+)  ", re.M)
 
@@ -294,6 +295,19 @@ def summary_of(idea_dir: Path) -> dict:
 
 
 def run_table(idea_dir: Path, endpoint: Endpoint, extra: list) -> int:
+    idea_path = idea_dir / "idea.json"
+    if idea_path.is_file():
+        video = idea_dir / animation_gate.VIDEO_REL
+        video.parent.mkdir(parents=True, exist_ok=True)
+        video.write_bytes(b"approved fixture animation")
+        video_hash = animation_gate.sha256(video)
+        (idea_dir / animation_gate.MANIFEST_REL).write_text(json.dumps({
+            "idea_sha256": animation_gate.sha256(idea_path),
+            "video_sha256": video_hash,
+            "video": str(animation_gate.VIDEO_REL),
+        }), encoding="utf-8")
+        (idea_dir / animation_gate.REVIEW_REL).write_text(
+            f"Verdict: PASS\nVideo SHA256: {video_hash}\n", encoding="utf-8")
     os.environ["PLAYTEST_BASE_URL"] = endpoint.url()
     os.environ["PLAYTEST_API_KEY"] = "fixture"
     os.environ["PLAYTEST_MODEL"] = "fixture-model"

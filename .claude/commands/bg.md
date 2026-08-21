@@ -146,18 +146,34 @@ An engine has to exist first. If `playtest/engine.py` is missing, invoke
 itself. `PLAYTEST ERROR` means the engine is broken, which is the engineer's
 defect and not the game's — send it back in **patch** mode with the error.
 
+Then teach it. Only after the mechanical rules check, independent rules lens,
+rules engine, and scripted `playtest.py` have passed, invoke
+`board-game-rules-animator` in **build** mode. The animator writes the stable
+artifact `board-game/ideas/<slug>/animation/rules.mp4` and a manifest bound to
+the current `idea.json`.
+
+Next invoke `board-game-lens-animation` as a **separate agent**. The animator
+may not review or approve its own work. The lens must inspect the rendered
+video and write `review_animation.md` with `Verdict: PASS` plus the exact video
+SHA-256. On FAIL, invoke `board-game-rules-animator` in **repair** mode with the
+review findings verbatim, rerender, and invoke a fresh animation lens again.
+Do not continue until the independent lens passes. There is no duration target
+or duration gate; clarity and complete rule coverage determine runtime.
+
 Then seat players at it:
 
-Only after `rules_check.py`, `board-game-lens-rules`, the rules engine, and
-`playtest.py` have all passed, send the one journal Telegram notification for
-this iteration. It must happen here, immediately before the table gate:
+Only after `rules_check.py`, `board-game-lens-rules`, the rules engine,
+`playtest.py`, the rule animation, and `board-game-lens-animation` have all
+passed, send the one journal Telegram notification for this iteration. It must
+happen here, immediately before the table gate:
 
 ```bash
 .venv/bin/python board-game/tools/journal.py rules_ready <slug>
 ```
 
-The command sends the complete rule proposal and deduplicates retries of the
-same `idea.json`. `gate_rework` and owner `rework` preserve the immediately
+The command sends the approved video attached to the idea's leading journal
+message, then the complete rule proposal, and deduplicates retries of the same
+`idea.json` and video. `gate_rework` and owner `rework` preserve the immediately
 previous proposal; when that snapshot exists, the notification is labelled as
 a rework and changed rule blocks are bold. Do not send this notification for a
 failed or incomplete pre-table gate, and do not substitute any other journal
@@ -375,8 +391,9 @@ turned out wrong is the most useful line in the whole story, and nothing in
 this pipeline ever reads the journal back, so there is nobody to impress.
 
 These `append` entries are local only. They never send Telegram. The journal
-Telegram channel receives exactly one kind of message: `journal.py
-rules_ready <slug>` after all pre-table gates pass and before `table_run.py`
+Telegram channel receives exactly one kind of notification sequence:
+`journal.py rules_ready <slug>` with the approved rule video attached after
+all pre-table gates pass and before `table_run.py`
 starts. Do not send proposals, failures, state changes, builds, repairs, owner
 actions, panel results, or any other event to that channel.
 

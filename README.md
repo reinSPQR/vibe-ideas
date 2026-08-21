@@ -14,9 +14,9 @@ be driven by a cron, a `/loop`, or a person typing `/bg` when they feel like it.
         │
         ▼
  ┌────────────────────────────┐
- │ ① RULES GATE  (no LLM)     │  rules_check.py: reachable ending, real
- │ then board-game-lens-rules │  decisions, player count, length
- └────────┬───────────────────┘  the lens: is it worth playing at all?
+ │ ① RULES GATE               │  checker → rules lens → scripted playtest
+ │ play, teach, review, table │  → rule animation → independent visual lens
+ └────────┬───────────────────┘  → journal video → LLM-player table
           ▼
  ┌────────────────────────────┐
  │ ② BRIEF                    │  every dimension in mm, every interface
@@ -96,7 +96,7 @@ The two owner gates arrive as Telegram messages with buttons. Ship, and a
 | Path | What |
 |---|---|
 | `.claude/commands/bg.md` | the driver — one step per invocation |
-| `.claude/agents/` | ideator, brief-writer, builder, four lenses, auditor |
+| `.claude/agents/` | ideator, brief-writer, builders, rule animator, independent lenses, auditor |
 | `board-game/tools/` | the queue, the gates, Telegram, the journal, publish |
 | `board-game/blocks/` | reusable CAD blocks the builder composes from first |
 | `board-game/ideas/<slug>/` | one game: idea.json, brief, draft, project, verdicts |

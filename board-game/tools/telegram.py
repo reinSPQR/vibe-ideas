@@ -30,8 +30,10 @@ import argparse
 import json
 import os
 import shlex
+import shutil
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -84,7 +86,7 @@ def creds() -> tuple[str, str]:
 
 
 def split_for_caption(text: str, limit: int = 1024) -> tuple[str, str]:
-    """Split `text` so the photo caption ends on a clean boundary instead of
+    """Split `text` so a media caption ends on a clean boundary instead of
     wherever character 1024 happens to land — a hard character cut regularly
     lands mid-word (a caption ending "...w)." with the rest starting "w) — an
     open shelf") and reads as broken. Prefer a paragraph break, then a line
@@ -110,36 +112,76 @@ def _message_id(raw: str) -> int | None:
     return (data.get("result") or {}).get("message_id") if data.get("ok") else None
 
 
-def send(text: str, photo: Path | None = None, chat: str | None = None,
+def _checked(result: subprocess.CompletedProcess, method: str) -> None:
+    """Raise when Telegram or curl rejected a send; never mark failed media sent."""
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        detail = result.stderr.strip() or f"curl exit {result.returncode}"
+        raise RuntimeError(
+            f"Telegram {method} returned invalid JSON ({detail}): "
+            f"{result.stdout[:200]}") from exc
+    if result.returncode or payload.get("ok") is not True:
+        detail = payload.get("description") or result.stderr.strip() or "unknown error"
+        raise RuntimeError(f"Telegram {method} failed: {detail}")
+
+
+def send(text: str, photo: Path | None = None, video: Path | None = None,
+         chat: str | None = None,
           buttons: list[list[dict]] | None = None,
           parse_mode: str | None = None) -> int | None:
-    """`chat` overrides the destination. The rules-ready journal notice uses
+    """Send text with at most one photo or video attachment.
+
+    `chat` overrides the destination. The rules-ready journal notice uses
     this to keep the gate channel reserved for messages needing a decision.
     `buttons` is an inline-keyboard row list
     (`[[{"text": ..., "callback_data": ...}, ...]]`) — attached to the photo
     when there is one, otherwise to the text message. Returns the sent
     message's id (the button-bearing one, if there is one) so a caller can
     track it for later — see `track_message`/`disable_stale`."""
+    if photo is not None and video is not None:
+        raise ValueError("send accepts either photo or video, not both")
     token, default_chat = creds()
     chat = chat or default_chat
     if not (token and chat):
         print("--- telegram not configured; the gate is here instead ---")
         if photo:
             print(f"[render] {photo}")
+        if video:
+            print(f"[video] {video}")
         print(text)
         return None
     markup = json.dumps({"inline_keyboard": buttons}) if buttons else None
     message_id = None
-    if photo and photo.is_file():
+    media = (photo or video).resolve() if (photo or video) else None
+    if media and media.is_file():
         caption, rest = split_for_caption(text)
-        cmd = ["curl", "-s", f"https://api.telegram.org/bot{token}/sendPhoto",
-               "-F", f"chat_id={chat}", "-F", f"photo=@{photo}",
-               "-F", f"caption={caption}"]
+        method = "sendPhoto" if photo else "sendVideo"
+        field = "photo" if photo else "video"
+        staged = None
+        upload = media
+        if video:
+            with tempfile.NamedTemporaryFile(
+                    prefix="board-game-rules-", suffix=media.suffix,
+                    delete=False) as handle:
+                staged = Path(handle.name)
+            shutil.copyfile(media, staged)
+            upload = staged
+        cmd = ["curl", "-sS", f"https://api.telegram.org/bot{token}/{method}",
+               "--form-string", f"chat_id={chat}",
+               "-F", f"{field}=@{upload}",
+               "--form-string", f"caption={caption}"]
         if parse_mode:
-            cmd += ["-F", f"parse_mode={parse_mode}"]
+            cmd += ["--form-string", f"parse_mode={parse_mode}"]
         if markup:
-            cmd += ["-F", f"reply_markup={markup}"]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            cmd += ["--form-string", f"reply_markup={markup}"]
+        try:
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=120)
+        finally:
+            if staged:
+                staged.unlink(missing_ok=True)
+        _checked(result, method)
         message_id = _message_id(result.stdout)
         if rest:
             send_text_only(token, chat, rest, parse_mode=parse_mode)
@@ -148,6 +190,7 @@ def send(text: str, photo: Path | None = None, chat: str | None = None,
             token, chat, text, buttons=buttons, parse_mode=parse_mode)
     print(f"sent ({len(text)} chars"
           f"{', with render' if photo else ''}"
+          f"{', with video' if video else ''}"
           f"{', with buttons' if buttons else ''})")
     return message_id
 
@@ -158,7 +201,7 @@ def send_text_only(token: str, chat: str, text: str,
     chunks = [text[i:i + 3500] for i in range(0, len(text), 3500)] or [""]
     message_id = None
     for i, chunk in enumerate(chunks):
-        cmd = ["curl", "-s", f"https://api.telegram.org/bot{token}/sendMessage",
+        cmd = ["curl", "-sS", f"https://api.telegram.org/bot{token}/sendMessage",
                "-d", f"chat_id={chat}",
                "--data-urlencode", f"text={chunk}"]
         if parse_mode:
@@ -167,6 +210,7 @@ def send_text_only(token: str, chat: str, text: str,
             markup = json.dumps({"inline_keyboard": buttons})
             cmd += ["--data-urlencode", f"reply_markup={markup}"]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        _checked(result, "sendMessage")
         message_id = _message_id(result.stdout)
     return message_id
 

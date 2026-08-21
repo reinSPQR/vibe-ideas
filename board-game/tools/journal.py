@@ -3,8 +3,9 @@
 
 Routine events recorded with ``append`` are written only to
 ``board-game/.journal_log.jsonl`` for ``dashboard.py``. The journal Telegram
-channel receives only ``rules_ready``: a proposal that has passed every gate
-before the table gate and is about to be table-tested.
+channel receives only ``rules_ready``: an approved rule animation plus the
+proposal that passed every gate before the table gate and is about to be
+table-tested.
 
     python3 board-game/tools/journal.py append <slug> --kind gate \
         --by gate.py --summary "RULES PASS"
@@ -32,6 +33,8 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import animation_gate  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 IDEAS = REPO_ROOT / "board-game" / "ideas"
@@ -199,6 +202,29 @@ def render_rules_ready(idea: dict, previous: dict | None = None,
     return chunks
 
 
+def render_video_caption(idea: dict, previous: dict | None = None,
+                         rework_number: int | None = None) -> str:
+    """Short, balanced HTML caption for the rules video message."""
+    phase = (f"REWORK {rework_number}/10" if previous and rework_number
+             else "REWORK" if previous else "INITIAL PROPOSAL")
+    title = html.escape(_text(idea.get("title") or idea.get("slug") or "Untitled"))
+    slug = html.escape(_text(idea.get("slug") or "unknown"))
+    prefix = f"<b>RULES READY FOR TABLE</b>\n{title} ({slug})\n{phase}\n\n"
+    suffix = "\n\nRule animation attached. Full rules follow."
+    budget = max(0, 1000 - len(prefix) - len(suffix))
+    escaped = ""
+    truncated = False
+    for character in _text(idea.get("concept", "")):
+        token = html.escape(character)
+        if len(escaped) + len(token) > max(0, budget - 3):
+            truncated = True
+            break
+        escaped += token
+    if truncated:
+        escaped = escaped.rstrip() + "..."
+    return prefix + escaped + suffix
+
+
 def pretable_gate_failure(idea_dir: Path, idea: dict) -> str | None:
     """Return why this iteration is not eligible for a journal notification."""
     import rules_check
@@ -226,6 +252,9 @@ def pretable_gate_failure(idea_dir: Path, idea: dict) -> str | None:
         return "playtest.json is older than idea.json"
     if _read_json(playtest_path).get("pass") is not True:
         return "playtest.py did not pass"
+    animation_failure, _ = animation_gate.evidence(idea_dir)
+    if animation_failure:
+        return animation_failure
     return None
 
 
@@ -254,37 +283,46 @@ def cmd_rules_ready(args) -> int:
             f"refusing rules-ready Telegram for {args.slug}: {failed}")
     digest = _digest(idea_path)
     marker_path = idea_dir / NOTICE_NAME
-    if marker_path.is_file() and _read_json(marker_path).get("idea_sha256") == digest:
-        print(f"{args.slug}: rules-ready Telegram already sent for this iteration")
-        return 0
-
     snapshot_path = idea_dir / SNAPSHOT_NAME
     snapshot = _read_json(snapshot_path) if snapshot_path.is_file() else {}
     previous = snapshot.get("idea")
     rework_number = snapshot.get("rework_number")
     chunks = render_rules_ready(idea, previous, rework_number)
+    caption = render_video_caption(idea, previous, rework_number)
+    _, video = animation_gate.evidence(idea_dir)
+    video_digest = animation_gate.sha256(video)
+    if marker_path.is_file():
+        marker = _read_json(marker_path)
+        if (marker.get("idea_sha256") == digest
+                and marker.get("video_sha256") == video_digest):
+            print(f"{args.slug}: rules-ready Telegram already sent for this iteration")
+            return 0
 
     telegram.load_env()
     chat = os.environ.get("TELEGRAM_CHAT_JOURNAL", "").strip()
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     if not (token and chat):
         print("--- journal Telegram not configured; rules-ready notice is here ---")
+        print(f"[video] {video}")
+        print(caption)
         print("\n\n".join(chunks))
         return 0
+    telegram.send(caption, video=video, chat=chat, parse_mode="HTML")
     for chunk in chunks:
         telegram.send(chunk, chat=chat, parse_mode="HTML")
 
     now = datetime.now(timezone.utc)
     marker = {
         "idea_sha256": digest,
+        "video_sha256": video_digest,
         "sent_at": now.isoformat(),
-        "message_count": len(chunks),
+        "message_count": len(chunks) + 1,
     }
     marker_path.write_text(json.dumps(marker, indent=2), encoding="utf-8")
     record(args.slug, "rules_ready", "rules_gate",
            "all pre-table gates passed; rules sent to journal Telegram",
            "", idea.get("title", args.slug), now.isoformat())
-    print(f"{args.slug}: sent rules-ready Telegram ({len(chunks)} message(s))")
+    print(f"{args.slug}: sent rules-ready Telegram ({len(chunks) + 1} message(s))")
     return 0
 
 

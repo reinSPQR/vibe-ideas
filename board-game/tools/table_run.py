@@ -73,6 +73,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import playtest  # noqa: E402  (path is set immediately above)
+import animation_gate  # noqa: E402
 
 # A reply that does not parse is re-asked this many times before the run stops.
 # Two is deliberate: one retry absorbs a model that wrapped its answer in
@@ -195,8 +196,7 @@ def render_rules(idea: dict) -> str:
     out = [f"# {idea.get('title', idea.get('slug', '?'))}", "",
            idea.get("concept", ""), ""]
     players = idea.get("players") or {}
-    out.append(f"Players: {players.get('min', '?')} to {players.get('max', '?')}. "
-               f"Stated playtime: {idea.get('playtime_min', '?')} minutes.")
+    out.append(f"Players: {players.get('min', '?')} to {players.get('max', '?')}.")
     out.append("")
     out.append("## Components")
     for comp in idea.get("components") or []:
@@ -474,6 +474,50 @@ class Seats:
         usage["cost"] = raw.get("cost")
         self.history[key].append({"role": "assistant", "content": reply})
         return reply, usage
+
+
+class StdioSeats:
+    """Interactive transport for an external, isolated seat orchestrator.
+
+    The normal transport owns one HTTPS conversation per seat. Codex runs in
+    environments where those credentials may deliberately be unavailable, so
+    this transport exposes the same boundary as newline-delimited JSON:
+    ``open`` supplies a seat's immutable system prompt and ``ask`` supplies
+    only that seat's next observation. The caller must keep one independent
+    conversation per key and return exactly one JSON reply line.
+
+    Game state, legality, routing, replay files, leak checks and summaries all
+    remain inside this process. This is a transport substitution, not a policy
+    fallback and not permission to synthesize a transcript.
+    """
+
+    name = "codex-stdio"
+
+    @staticmethod
+    def _emit(event: dict) -> None:
+        print("TABLE_STDIO " + json.dumps(event, separators=(",", ":")),
+              flush=True)
+
+    async def open_seat(self, key: str, system: str) -> None:
+        self._emit({"event": "open", "key": key, "system": system})
+
+    async def ask(self, key: str, text: str) -> tuple:
+        self._emit({"event": "ask", "key": key, "text": text})
+        raw = await asyncio.to_thread(sys.stdin.readline)
+        if not raw:
+            raise RuntimeError("stdio seat orchestrator closed input")
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"stdio seat reply is not JSON: {exc}") from exc
+        if data.get("key") != key:
+            raise RuntimeError(
+                f"stdio seat reply routed to {data.get('key')!r}, expected {key!r}")
+        reply = data.get("text")
+        if not isinstance(reply, str):
+            raise RuntimeError("stdio seat reply has no string `text`")
+        return reply, {"in": 0, "out": 0, "cached": 0,
+                       "cache_write": 0, "cost": None}
 
 
 # ---------------------------------------------------------------------------
@@ -869,6 +913,11 @@ async def run(args: argparse.Namespace) -> int:
     if not idea_file.is_file():
         print(f"TABLE ERROR no idea.json at {idea_file}")
         return 2
+    animation_failure, _ = animation_gate.evidence(idea_dir)
+    if animation_failure:
+        print("TABLE ERROR rule animation gate is incomplete: "
+              + animation_failure)
+        return 2
     if engine_path.stat().st_mtime < idea_file.stat().st_mtime:
         print(f"TABLE ERROR {engine_path.name} is older than idea.json — the "
               f"rules changed after this engine was written, so seating players "
@@ -904,16 +953,21 @@ async def run(args: argparse.Namespace) -> int:
                 "genuinely mean to discard what a previous table played.")
         return 2
 
-    load_env_file(("PLAYTEST_BASE_URL", "PLAYTEST_API_KEY", "PLAYTEST_MODEL"))
-    base_url = os.environ.get("PLAYTEST_BASE_URL", "").strip()
-    api_key = os.environ.get("PLAYTEST_API_KEY", "").strip()
-    model = args.model or os.environ.get("PLAYTEST_MODEL", "").strip()
-    missing = [name for name, value in
-               (("PLAYTEST_BASE_URL", base_url), ("PLAYTEST_API_KEY", api_key),
-                ("PLAYTEST_MODEL", model)) if not value]
-    if missing:
-        print("TABLE ERROR set " + ", ".join(missing))
-        return 2
+    if args.wire == "stdio":
+        base_url = api_key = ""
+        model = args.model or "codex-agent"
+    else:
+        load_env_file(("PLAYTEST_BASE_URL", "PLAYTEST_API_KEY", "PLAYTEST_MODEL"))
+        base_url = os.environ.get("PLAYTEST_BASE_URL", "").strip()
+        api_key = os.environ.get("PLAYTEST_API_KEY", "").strip()
+        model = args.model or os.environ.get("PLAYTEST_MODEL", "").strip()
+        missing = [name for name, value in
+                   (("PLAYTEST_BASE_URL", base_url),
+                    ("PLAYTEST_API_KEY", api_key),
+                    ("PLAYTEST_MODEL", model)) if not value]
+        if missing:
+            print("TABLE ERROR set " + ", ".join(missing))
+            return 2
 
     # The machine half, if it has run, already knows how wide this game's
     # turns are. Saying so before the first request costs nothing and is
@@ -950,8 +1004,9 @@ async def run(args: argparse.Namespace) -> int:
         except (KeyError, ValueError, TypeError):
             pass
 
-    seats_client = Seats(base_url, api_key, model, args.wire,
-                         args.max_tokens, not args.no_cache, args.stream)
+    seats_client = (StdioSeats() if args.wire == "stdio" else
+                    Seats(base_url, api_key, model, args.wire,
+                          args.max_tokens, not args.no_cache, args.stream))
 
     brief = PLAYER_BRIEF.read_text(encoding="utf-8").strip()
     rules = render_rules(idea)
@@ -1040,7 +1095,7 @@ def main(argv: list | None = None) -> int:
     ap.add_argument("idea_dir", type=Path)
     ap.add_argument("--schedule", default="4:3,2:2",
                     help="games per seat count, e.g. 4:3,2:2")
-    ap.add_argument("--wire", choices=("anthropic", "openai"),
+    ap.add_argument("--wire", choices=("anthropic", "openai", "stdio"),
                     default="anthropic")
     ap.add_argument("--stream", action=argparse.BooleanOptionalAction,
                     default=True,
