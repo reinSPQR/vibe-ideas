@@ -15,6 +15,12 @@ so, and wrote `playtest/table/run_*.json`: what each player weighed on every
 turn, which turns had nothing to decide in them, what the rules failed to tell
 them, and whether the game got smaller as they learned it.
 
+It also wrote `playtest/site/index.html`, a replay website generated from
+those same sessions. Confirm the site and `data.json` exist and contain every
+game in the run before reviewing. The website is evidence navigation, not new
+evidence: when it disagrees with a session file, the session file wins and the
+site defect must be reported before the gate advances.
+
 You read both and write `review_playtest.md`. **You are the only step in this
 that reaches a verdict**, and the verdict has consequences: PASS spends a
 brief-writer and a builder on this idea, FAIL sends it back to the ideator or
@@ -125,7 +131,8 @@ deciding whether to keep it needs to know what a verdict costs.
   four-way tie is data. Report the run that happened.
 - **Never call a game good because the players were polite.** An enthusiastic
   report on a dull game costs somebody an afternoon of printing to disprove.
-- If the run is missing — no `playtest.json`, no `run_*.json` — say so and
+- If the run is missing — no `playtest.json`, no `run_*.json`, or no generated
+  `playtest/site/index.html` and `data.json` — say so and
   stop. A verdict written without the evidence is worse than no verdict,
   because it looks exactly like one written with it.
 

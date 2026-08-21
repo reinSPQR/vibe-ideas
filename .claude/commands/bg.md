@@ -205,6 +205,16 @@ Telegram message.
     --schedule 4:3,2:2 --wire anthropic
 ```
 
+The table command must also finish the generated website at
+`playtest/site/index.html`. It replays every recorded LLM decision against the
+current engine and provides local player-vs-player hot-seat play. Treat a
+missing site as an incomplete table gate, not optional presentation work. To
+open the interactive mode, run:
+
+```bash
+.venv/bin/python board-game/tools/game_site.py serve board-game/ideas/<slug>
+```
+
 Adjust `--schedule` to the idea's own `players.min` and `players.max`; the
 point is to touch both ends of the range it claims to support. This needs
 `PLAYTEST_BASE_URL`, `PLAYTEST_API_KEY` and `PLAYTEST_MODEL`, which it reads

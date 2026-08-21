@@ -54,6 +54,9 @@ Writes one session per game to <idea_dir>/playtest/table/<label>.json, in the
 same format `playtest.py table` writes, so any game replays from its seed and
 recorded choices and an engine edited mid-run is caught rather than absorbed.
 Writes the run summary to <idea_dir>/playtest/table/run_<wire>.json.
+Builds <idea_dir>/playtest/site/index.html from those sessions. Replay is
+static; player-vs-player hot-seat play is served by `game_site.py serve` so it
+uses the same engine rather than a JavaScript rewrite of the rules.
 """
 
 from __future__ import annotations
@@ -74,6 +77,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import playtest  # noqa: E402  (path is set immediately above)
 import animation_gate  # noqa: E402
+import game_site  # noqa: E402
 
 # A reply that does not parse is re-asked this many times before the run stops.
 # Two is deliberate: one retry absorbs a model that wrapped its answer in
@@ -1052,6 +1056,7 @@ async def run(args: argparse.Namespace) -> int:
     out = idea_dir / "playtest" / "table" / f"run_{slug}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    site = game_site.build_site(idea_dir)
 
     use = run_state.usage
     total_in = use["in"] + use["cached"]
@@ -1087,6 +1092,9 @@ async def run(args: argparse.Namespace) -> int:
         print("  SEED BLIND  this engine deals the same opening every time, "
               "so games at one seat count are one game repeated")
     print(f"  summary {out}")
+    print(f"  replay {site}")
+    print(f"  player vs player  python board-game/tools/game_site.py serve "
+          f"{idea_dir}")
     return 0
 
 

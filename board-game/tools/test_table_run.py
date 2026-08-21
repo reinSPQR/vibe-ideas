@@ -393,6 +393,15 @@ def check_full_run(idea_dir: Path) -> list:
         bad.append(f"only {summary['usage']['calls']} calls billed")
     if summary["usage"]["cached"] != summary["usage"]["calls"] * 7:
         bad.append("cached tokens do not add up over the calls made")
+    site = idea_dir / "playtest" / "site"
+    if not (site / "index.html").is_file():
+        bad.append("the run did not create its replay website")
+    elif not (site / "data.json").is_file():
+        bad.append("the replay website has no generated run data")
+    else:
+        replay = json.loads((site / "data.json").read_text(encoding="utf-8"))
+        if not replay.get("runs") or not replay["runs"][0].get("games"):
+            bad.append("the replay website contains no LLM games")
 
     # Every seat gets a closing question, and every seat that played a game
     # gets a debrief for it, so a seat that sat out the 2p game still has to
