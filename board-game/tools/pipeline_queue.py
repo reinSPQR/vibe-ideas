@@ -47,6 +47,7 @@ import fcntl
 import hashlib
 import json
 import os
+import re
 import socket
 import sys
 import time
@@ -157,11 +158,66 @@ def save(data: dict) -> None:
     os.replace(tmp, QUEUE)
 
 
+def rule_complexity(idea: dict) -> dict:
+    """Small, reproducible complexity receipt for each rules iteration."""
+    rules = idea.get("rules") or {}
+    texts: list[str] = []
+    steps = 0
+    for phase in ("setup", "turn", "end", "win"):
+        block = rules.get(phase)
+        blocks = block if isinstance(block, list) else ([block] if block else [])
+        for step in blocks:
+            if isinstance(step, dict):
+                text = str(step.get("text", "")).strip()
+                if text:
+                    texts.append(text)
+                    steps += 1
+    return {
+        "rule_words": sum(len(text.split()) for text in texts),
+        "rule_steps": steps,
+        "action_types": len(idea.get("action_types") or []),
+        "components": len(idea.get("components") or []),
+    }
+
+
+def table_experience(idea_path: Path) -> dict | None:
+    """Capture player-facing evidence from the current rules iteration.
+
+    It is deliberately smaller than the table summary: later players may be
+    given prior players' experience, but never the engine, scripted metrics,
+    reviewer verdict, or hidden state. A summary older than idea.json belongs
+    to a previous rules version and must not be archived as this iteration.
+    """
+    table = idea_path.parent / "playtest" / "table"
+    summaries = sorted(table.glob("run_*.json"),
+                       key=lambda path: path.stat().st_mtime)
+    if not summaries or summaries[-1].stat().st_mtime < idea_path.stat().st_mtime:
+        return None
+    source = summaries[-1]
+    try:
+        run = json.loads(source.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return {
+        "source": str(source.relative_to(idea_path.parent)),
+        "model": run.get("model"),
+        "games": [
+            {key: game.get(key) for key in
+             ("label", "seats", "scores", "winners", "finished")}
+            for game in run.get("games") or []
+        ],
+        "debriefs": run.get("debriefs") or [],
+        "rules_questions": run.get("rules_questions") or [],
+    }
+
+
 def snapshot_before_rework(slug: str, rework_number: int | None = None,
-                           disposition: str | None = None) -> None:
+                           disposition: str | None = None,
+                           request: dict | None = None) -> None:
     """Preserve the current proposal so a later rules-ready notice can show
-    exactly what changed. Each rework replaces the prior snapshot because the
-    comparison must always be against the immediately preceding iteration.
+    exactly what changed. `.idea_before_rework.json` remains the immediately
+    preceding iteration used by notifications, while an immutable copy goes
+    under `history/reworks/` so the design's evolution is never overwritten.
 
     `disposition` ("clarify" or "rework") records what kind of round this
     snapshot opens, and `mech_surface` freezes the mechanic-defining fields at
@@ -178,10 +234,99 @@ def snapshot_before_rework(slug: str, rework_number: int | None = None,
         "idea": idea,
         "disposition": disposition,
         "mech_surface": mech_surface(idea),
+        "complexity_before": rule_complexity(idea),
+        "request": request,
+        "table_experience": table_experience(idea_path),
     }
+    history = idea_path.parent / "history" / "reworks"
+    history.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    label = disposition or "owner"
+    number = rework_number if rework_number is not None else 0
+    archive_path = history / f"{stamp}-{label}-{number:02d}.json"
+    snapshot["archive_path"] = str(archive_path.relative_to(idea_path.parent))
     tmp = snapshot_path.with_suffix(snapshot_path.suffix + f".tmp.{os.getpid()}")
     tmp.write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
     os.replace(tmp, snapshot_path)
+    archive_path.write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
+
+
+def _write_rework_request(slug: str, request: dict) -> None:
+    path = IDEAS / slug / ".rework_request.json"
+    tmp = path.with_suffix(path.suffix + f".tmp.{os.getpid()}")
+    tmp.write_text(json.dumps(request, indent=2), encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def _validate_rework_plan(slug: str, snapshot: dict) -> dict:
+    """Require diagnosis and alternatives before accepting a mechanic edit."""
+    request = snapshot.get("request") or {}
+    if not request.get("problem_id"):
+        return {}  # legacy/owner snapshots predate structured rework requests
+    path = IDEAS / slug / "rework_plan.json"
+    if not path.is_file():
+        raise SystemExit(
+            f"{slug}: rework_plan.json is missing. Diagnose the recorded problem, "
+            f"compare subtract/rollback/replace options, and choose a strategy "
+            f"before this rules iteration can be accepted.")
+    try:
+        plan = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise SystemExit(f"{slug}: rework_plan.json is unreadable: {exc}")
+    required = (
+        "problem_id", "observation", "hypothesis", "test_question",
+        "confounds", "options", "chosen_strategy", "expected_experience_change",
+        "falsification_condition", "change_level", "must_preserve_checks",
+        "anti_goal_checks", "secondary_risks",
+    )
+    missing = [key for key in required if not plan.get(key)]
+    if missing:
+        raise SystemExit(f"{slug}: rework_plan.json is missing {', '.join(missing)}")
+    if plan["problem_id"] != request["problem_id"]:
+        raise SystemExit(
+            f"{slug}: rework_plan problem_id '{plan['problem_id']}' does not match "
+            f"the gate's '{request['problem_id']}'")
+    options = plan.get("options") or []
+    strategies = {str(option.get("strategy", "")) for option in options
+                  if isinstance(option, dict)}
+    if "subtract" not in strategies or not strategies.intersection(
+            {"rollback", "replace"}):
+        raise SystemExit(
+            f"{slug}: rework_plan options must include subtraction and at least "
+            f"one rollback or replacement; a patch is not a diagnosis")
+    chosen = str(plan.get("chosen_strategy", ""))
+    allowed = {"patch", "subtract", "rollback", "replace"}
+    if chosen not in allowed:
+        raise SystemExit(
+            f"{slug}: chosen_strategy must be one of {sorted(allowed)}, got '{chosen}'")
+    if request.get("required_strategy") == "structural" and chosen == "patch":
+        raise SystemExit(
+            f"{slug}: problem '{request['problem_id']}' has recurred "
+            f"{request['occurrence']} times; another additive patch is forbidden. "
+            f"Choose subtract, rollback, or replace, or kill/fork the idea.")
+    change_level = str(plan.get("change_level", ""))
+    if change_level not in {"low", "medium", "high"}:
+        raise SystemExit(
+            f"{slug}: change_level must be low, medium, or high, got "
+            f"'{change_level}'")
+    if change_level == "high":
+        raise SystemExit(
+            f"{slug}: this plan declares a high-level change. It invalidates "
+            f"the current evidence baseline and may not be accepted as another "
+            f"rework of the same game. Fork or kill the idea instead.")
+    for field in ("must_preserve_checks", "anti_goal_checks"):
+        checks = plan.get(field)
+        if not isinstance(checks, list) or not checks:
+            raise SystemExit(f"{slug}: {field} must be a non-empty list")
+        if any(not isinstance(check, dict)
+               or not str(check.get("property", "")).strip()
+               or not str(check.get("test", "")).strip()
+               for check in checks):
+            raise SystemExit(
+                f"{slug}: every {field} entry needs property and test")
+    if not isinstance(plan.get("secondary_risks"), list):
+        raise SystemExit(f"{slug}: secondary_risks must be a list")
+    return plan
 
 
 def mech_surface(idea: dict) -> str:
@@ -489,6 +634,35 @@ def _rules_ok_gate_complete(slug: str) -> str | None:
                     f"than idea.json — the rules changed after the last playtest "
                     f"and the verdict no longer judges them. Re-run the gate "
                     f"(playtest.py, table_run.py, board-game-lens-playtest).")
+        snapshot_path = IDEAS / slug / ".idea_before_rework.json"
+        if snapshot_path.is_file():
+            snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+            request = snapshot.get("request") or {}
+            if snapshot.get("disposition") == "rework" and request.get(
+                    "problem_id"):
+                verdict = review.read_text(encoding="utf-8")
+                target = re.search(
+                    r"^Target-result:\s*(fixed|not-fixed)\s*$",
+                    verdict, re.M | re.I)
+                regression = re.search(
+                    r"^Regression-result:\s*(clean|regressed)\s*$",
+                    verdict, re.M | re.I)
+                clean_games = re.search(
+                    r"^Clean-games:\s*(\d+)\s*$", verdict, re.M | re.I)
+                if not target or not regression or not clean_games:
+                    return ("refusing proposed -> rules_ok: the post-rework "
+                            "review must report Target-result, "
+                            "Regression-result, and Clean-games")
+                if target.group(1).lower() != "fixed":
+                    return ("refusing proposed -> rules_ok: the review says the "
+                            "rework target was not fixed")
+                if regression.group(1).lower() != "clean":
+                    return ("refusing proposed -> rules_ok: the review reports "
+                            "a regression; classify it through gate_rework")
+                if int(clean_games.group(1)) < 2:
+                    return ("refusing proposed -> rules_ok: a reworked candidate "
+                            "needs at least two clean table games before it "
+                            "becomes the new baseline")
     except FileNotFoundError:
         return f"refusing proposed -> rules_ok: idea.json is missing for {slug}"
     return None
@@ -510,12 +684,15 @@ def cmd_advance(args) -> int:
         frm = item["state"]
         if args.to not in PIPELINE:
             raise SystemExit(f"unknown state '{args.to}'")
-        if frm == "proposed" and args.to != "proposed":
+        if frm == "proposed" and args.to not in {"proposed", "blocked"}:
             # Leaving the rules gate settles the previous round's snapshot,
             # which is what this advance is about to replace. A clarify that
             # quietly changed a mechanic is charged here, not on the next
-            # idea's schedule.
-            _settle_clarify_round(item, args.slug)
+            # idea's schedule. `blocked` is deliberately exempt: an ideator
+            # that correctly refuses a high-level same-slug rewrite has made
+            # no candidate to settle, and blocking is how it asks for the
+            # explicit fork/kill decision.
+            _settle_open_round(item, args.slug)
         if args.to == "rules_ok":
             block = _rules_ok_gate_complete(args.slug)
             if block:
@@ -610,6 +787,50 @@ def _settle_clarify_round(item: dict, slug: str) -> None:
     log(item, item["state"], item["state"], note, kind="rework")
 
 
+def _settle_rework_round(item: dict, slug: str) -> None:
+    """Validate the design reasoning and record the actual complexity delta."""
+    snapshot_path = IDEAS / slug / ".idea_before_rework.json"
+    if not snapshot_path.is_file():
+        return
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    if snapshot.get("settled") or snapshot.get("disposition") != "rework":
+        return
+    plan = _validate_rework_plan(slug, snapshot)
+    if not plan:  # legacy snapshot with no structured request
+        return
+    idea_path = IDEAS / slug / "idea.json"
+    if not idea_path.is_file():
+        raise SystemExit(f"{slug}: idea.json is missing while settling rework")
+    current_idea = json.loads(idea_path.read_text(encoding="utf-8"))
+    before_contract = (snapshot.get("idea") or {}).get("design_contract")
+    after_contract = current_idea.get("design_contract")
+    if before_contract != after_contract and not plan.get("contract_change_reason"):
+        raise SystemExit(
+            f"{slug}: the rework changed design_contract without a non-empty "
+            f"contract_change_reason in rework_plan.json")
+    after = rule_complexity(current_idea)
+    before = snapshot.get("complexity_before") or {}
+    snapshot["complexity_after"] = after
+    snapshot["complexity_delta"] = {
+        key: int(after.get(key, 0)) - int(before.get(key, 0))
+        for key in sorted(set(before) | set(after))
+    }
+    snapshot["rework_plan"] = plan
+    snapshot["settled"] = True
+    tmp = snapshot_path.with_suffix(snapshot_path.suffix + f".tmp.{os.getpid()}")
+    tmp.write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
+    os.replace(tmp, snapshot_path)
+    relative = snapshot.get("archive_path")
+    if relative:
+        archive = IDEAS / slug / relative
+        archive.write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
+
+
+def _settle_open_round(item: dict, slug: str) -> None:
+    _settle_clarify_round(item, slug)
+    _settle_rework_round(item, slug)
+
+
 def cmd_gate_rework(args) -> int:
     """Consume one rules-gate round. The gate's Disposition decides which
     budget pays for it.
@@ -632,7 +853,7 @@ def cmd_gate_rework(args) -> int:
         # Settle the previous round before the new one overwrites its
         # snapshot: if it was a clarify that changed the mechanics, it pays
         # out of the rework budget before this round is granted.
-        _settle_clarify_round(item, args.slug)
+        _settle_open_round(item, args.slug)
         if args.disposition == "clarify":
             used, budget = int(item.get("clarify_used", 0)), CLARIFY_BUDGET
             counter, label = "clarify_used", "clarify"
@@ -651,12 +872,90 @@ def cmd_gate_rework(args) -> int:
                   f"{label} rounds spent — killed, do not send to the ideator "
                   f"again. Record the reason in TASTE.md.")
             return 1
-        snapshot_before_rework(args.slug, used + 1, disposition=label)
+        request = None
+        if label == "rework":
+            problem_id = str(getattr(args, "problem_id", "") or "").strip()
+            if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", problem_id):
+                raise SystemExit(
+                    "rework rounds require --problem-id as stable kebab-case "
+                    "diagnosis (for example opening-script or unreachable-ending)")
+            history = item.setdefault("problem_history", [])
+            previous = history[-1] if history else None
+            lineage = str(getattr(args, "lineage", "") or "").strip()
+            severity = str(getattr(args, "severity", "") or "").strip()
+            if previous and previous.get("problem_id") == problem_id:
+                lineage = "target-persisted"
+                severity = severity or "equal"
+            elif previous:
+                if lineage not in {"caused-regression", "new-independent"}:
+                    raise SystemExit(
+                        "a new Problem-ID after a rework requires --lineage "
+                        "caused-regression or --lineage new-independent; this "
+                        "prevents A -> B -> C repair chains from looking like "
+                        "unrelated first findings")
+                if severity not in {"lower", "equal", "higher", "contract"}:
+                    raise SystemExit(
+                        "a new Problem-ID after a rework requires --severity "
+                        "lower, equal, higher, or contract")
+                if lineage == "caused-regression" and severity in {
+                        "equal", "higher", "contract"}:
+                    frm = item["state"]
+                    item["state"] = "blocked"
+                    item["cascade_block"] = {
+                        "prior_problem_id": previous.get("problem_id"),
+                        "problem_id": problem_id,
+                        "severity": severity,
+                        "stage": args.stage,
+                        "reason": args.reason,
+                        "at": now(),
+                    }
+                    drop_claim(item)
+                    severity_phrase = (
+                        "a contract" if severity == "contract"
+                        else f"an {severity}")
+                    note = (
+                        f"cascade stopped: the last candidate for "
+                        f"{previous.get('problem_id')} caused {problem_id}, "
+                        f"{severity_phrase} regression. Revert that candidate or fork/"
+                        f"kill the design; do not add a compensating rule.")
+                    log(item, frm, "blocked", note, kind="rework")
+                    print(f"CASCADE STOP {args.slug}: {note}")
+                    return 2
+            else:
+                lineage = "initial"
+                severity = severity or "unknown"
+            occurrence = 1 + sum(
+                1 for previous in history
+                if previous.get("problem_id") == problem_id)
+            request = {
+                "problem_id": problem_id,
+                "occurrence": occurrence,
+                "required_strategy": "structural" if occurrence >= 2 else "any",
+                "lineage": lineage,
+                "severity": severity,
+                "prior_problem_id": previous.get("problem_id") if previous else None,
+                "stage": args.stage,
+                "reason": args.reason,
+                "at": now(),
+            }
+            history.append(request)
+            _write_rework_request(args.slug, request)
+        snapshot_before_rework(
+            args.slug, used + 1, disposition=label, request=request)
         item[counter] = used + 1
+        strategy_note = (
+            f"; recurring problem {request['problem_id']} requires "
+            f"subtract/rollback/replace"
+            if request and request["required_strategy"] == "structural" else "")
         log(item, frm, frm,
-            f"{label} round {used + 1}/{budget} ({args.stage}): {args.reason}",
+            f"{label} round {used + 1}/{budget} ({args.stage}): {args.reason}"
+            f"{strategy_note}",
             kind=label)
-    print(f"{args.slug}: {label} round {used + 1}/{budget}")
+    suffix = (
+        f" — {request['problem_id']} occurrence {request['occurrence']}; "
+        f"structural change required"
+        if request and request["required_strategy"] == "structural" else "")
+    print(f"{args.slug}: {label} round {used + 1}/{budget}{suffix}")
     return 0
 
 
@@ -955,6 +1254,17 @@ def main() -> int:
                         "spends the clarify budget (ambiguity only), rework the "
                         "rework budget (mechanic defect). Default rework, so a "
                         "gate that does not say is never free.")
+    p.add_argument("--problem-id",
+                   help="stable kebab-case diagnosis for a rework; repeated IDs "
+                        "force subtraction, rollback, or replacement")
+    p.add_argument("--lineage",
+                   choices=["caused-regression", "new-independent"],
+                   help="required when a post-rework failure has a new "
+                        "Problem-ID")
+    p.add_argument("--severity",
+                   choices=["lower", "equal", "higher", "contract"],
+                   help="required with --lineage; contract means a "
+                        "must_preserve or anti_goal regression")
     p.add_argument("--reason", required=True); p.set_defaults(fn=cmd_gate_rework)
     p = sub.add_parser("release", help="drop a claim without moving the idea")
     p.add_argument("slug", help="the idea's slug, or 'propose'")

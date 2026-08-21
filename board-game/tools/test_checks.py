@@ -45,6 +45,20 @@ def _idea(**over) -> dict:
     return idea
 
 
+def _contract(max_rule_words: int = 100, max_action_types: int = 2) -> dict:
+    return {
+        "core_experience": "Make consequential spatial choices.",
+        "core_mechanism": "Shared placement.",
+        "must_preserve": ["Direct interaction."],
+        "anti_goals": ["Scripted openings."],
+        "complexity_budget": {
+            "max_rule_words": max_rule_words,
+            "max_action_types": max_action_types,
+        },
+        "kill_criteria": ["The opening remains forced after a structural change."],
+    }
+
+
 RULES_CASES = [
     ("clean_game", _idea(), []),
     (
@@ -74,6 +88,23 @@ RULES_CASES = [
         "step_without_a_uses_list",
         _idea(rules={**_idea()["rules"], "turn": [{"text": "Do something."}]}),
         ["no `uses` list"],
+    ),
+    (
+        "schema_v2_requires_a_design_contract",
+        _idea(schema_version=2),
+        ["schema_version 2 requires a design contract"],
+    ),
+    (
+        "declared_complexity_budget_bites",
+        _idea(schema_version=2, action_types=["PLACE"],
+              design_contract=_contract(max_rule_words=5)),
+        ["rules use", "declared maximum 5"],
+    ),
+    (
+        "complete_design_contract_passes",
+        _idea(schema_version=2, action_types=["PLACE"],
+              design_contract=_contract()),
+        [],
     ),
 ]
 

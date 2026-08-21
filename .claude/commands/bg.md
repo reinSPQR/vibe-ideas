@@ -113,8 +113,32 @@ rework if it did not.
 ```bash
 .venv/bin/python board-game/tools/pipeline_queue.py gate_rework <slug> \
     --stage <rules_check|lens_rules|lens_playtest> --disposition <clarify|rework> \
+    --problem-id <stable-kebab-case-id-for-rework> \
     --reason "<findings verbatim>"
 ```
+
+`--problem-id` is required for a `rework` and omitted for a `clarify`. Read it
+from the lens's `Problem-ID:` line. It names the recurring underlying defect,
+not the current manifestation. The queue writes `.rework_request.json` and
+counts recurrence. On the second occurrence it requires a structural strategy;
+the ideator must choose subtraction, rollback, or replacement rather than
+another patch.
+
+When a rework FAIL has a different Problem-ID from the preceding round, also
+pass the lens's mandatory classification:
+
+```bash
+--lineage <caused-regression|new-independent> \
+--severity <lower|equal|higher|contract>
+```
+
+`contract` means the candidate violated a `must_preserve` or produced an
+`anti_goal`. If the preceding candidate caused an equal, higher, or contract
+regression, `gate_rework` exits 2 and moves the idea to `blocked`. Do not send
+it to the ideator. The candidate must be reverted, forked, or killed by an
+explicit decision; a compensating patch is forbidden. A lower-severity side
+effect is a secondary observation and should not become the next FAIL until
+another targeted test establishes that it is real.
 
 exit 0 → the round is granted; continue exactly as below, in the mode the
 disposition names.
@@ -123,18 +147,28 @@ rework rounds, or three clarify rounds) and this command has already moved it
 to `killed` for you. Do **not** invoke the ideator. Put the one-sentence
 reason in `TASTE.md` (same as a `Disposition: kill`, below) and
 `release <slug>`.
+exit 2 → the last candidate created an equal-or-worse regression and the idea
+is `blocked`. Do not invoke the ideator or patch the regression. Escalate the
+recorded choice between reverting the candidate, forking it as a new design,
+or killing it.
+
+If the ideator replies `BLOCKED` because the required solution is a high-level
+change or cannot preserve the contract, run `pipeline_queue.py advance <slug>
+--to blocked --note "<the BLOCKED reason verbatim>"`. Do not leave it in
+`proposed`, where the unattended loop would ask for the same impossible
+rework again.
 
 Then:
 ```bash
 .venv/bin/python board-game/tools/rules_check.py board-game/ideas/<slug>/idea.json
 ```
-FAIL → `gate_rework --stage rules_check --disposition clarify` (this checker
-always disposes its findings as clarify: every finding it can produce is a
-mismatch between what the rules say and what the box holds, and the queue's
-freeze verifies after the fact that the fix stayed in the prose), then (on
-exit 0) invoke `board-game-ideator` in **clarify** mode with the findings
-verbatim; leave the state at `proposed` so the gate runs again next step, and
-`release <slug>` so the next step can actually pick it up.
+FAIL → read `rules_check.json`'s disposition. Schema and bill/rules mismatches
+are `clarify`; a declared complexity-budget overrun is `rework` with
+Problem-ID `complexity-budget`. Call `gate_rework` with that disposition and,
+for rework, that Problem-ID. On exit 0 invoke `board-game-ideator` in the
+matching mode with the findings verbatim; leave the state at `proposed` so the
+gate runs again next step, and `release <slug>` so the next step can pick it
+up.
 
 PASS → before this idea costs a single hour of `brief-writer` or `builder`
 time, invoke `board-game-lens-rules` against `idea.json` — an independent
@@ -145,13 +179,15 @@ consistent.
 FAIL → read the `Disposition:` line in `review_rules.md` and
 `gate_rework --stage lens_rules --disposition <clarify|rework>` with the
 disposition it says (default to rework if the line is missing — a gate that
-does not say is never free), then (on exit 0) invoke `board-game-ideator` in
+does not say is never free). For a rework also pass the mandatory
+`Problem-ID:` value. Then (on exit 0) invoke `board-game-ideator` in
 **clarify** or **rework** mode to match, with the verdict verbatim; leave the
 state at `proposed` and `release <slug>`, exactly like a mechanical
 `rules_check.py` failure. If the ideator replies `CANNOT CLARIFY`, the
 finding was a mechanic defect the gate under-called: run
 `gate_rework --stage lens_rules --disposition rework --reason "<the
-CANNOT CLARIFY line>"` and invoke the ideator in **rework** mode. If that
+CANNOT CLARIFY line>" --problem-id <the lens Problem-ID>` and invoke the
+ideator in **rework** mode. If that
 also exits 1, the rework budget was exhausted by the conversion and the idea
 is already `killed`.
 
@@ -183,26 +219,9 @@ or duration gate; clarity and complete rule coverage determine runtime.
 
 Then seat players at it:
 
-Only after `rules_check.py`, `board-game-lens-rules`, the rules engine,
-`playtest.py`, the rule animation, and `board-game-lens-animation` have all
-passed, send the one journal Telegram notification for this iteration. It must
-happen here, immediately before the table gate:
-
-```bash
-.venv/bin/python board-game/tools/journal.py rules_ready <slug>
-```
-
-The command sends the approved video attached to the idea's leading journal
-message, then the complete rule proposal, and deduplicates retries of the same
-`idea.json` and video. `gate_rework` and owner `rework` preserve the immediately
-previous proposal; when that snapshot exists, the notification is labelled as
-a rework and changed rule blocks are bold. Do not send this notification for a
-failed or incomplete pre-table gate, and do not substitute any other journal
-Telegram message.
-
 ```bash
 .venv/bin/python board-game/tools/table_run.py board-game/ideas/<slug> \
-    --schedule 4:3,2:2 --wire anthropic
+    --wire anthropic
 ```
 
 The table command must also finish the generated website at
@@ -215,8 +234,26 @@ open the interactive mode, run:
 .venv/bin/python board-game/tools/game_site.py serve board-game/ideas/<slug>
 ```
 
-Adjust `--schedule` to the idea's own `players.min` and `players.max`; the
-point is to touch both ends of the range it claims to support. This needs
+Only after that website exists and contains the completed replay run, send the
+one journal Telegram notification for this iteration:
+
+```bash
+.venv/bin/python board-game/tools/journal.py rules_ready <slug>
+```
+
+The command sends exactly one post: the proposal as the video caption, the
+approved rule animation, and the local `playtest/site/index.html` file link.
+It deliberately omits the full rule blocks.
+Retries of the same `idea.json` and video are deduplicated. Do not send this
+notification for a failed or incomplete gate, and do not substitute any other
+journal Telegram message.
+
+The command always plays exactly four games at the idea's `players.max` and
+rejects schedules using another count. Game 1 uses fresh seat conversations;
+Games 2 and 3 keep only what those seats learned in the current run; before
+Game 4 the harness injects archived player-facing experience from prior rules
+iterations. The injection excludes machine statistics, reviewer verdicts,
+engine state, and hidden information. This needs
 `PLAYTEST_BASE_URL`, `PLAYTEST_API_KEY` and `PLAYTEST_MODEL`, which it reads
 from `.env`. The LLM-player table is **not optional**: the gate is not over
 when the rules check passes and a machine has played it — a game nobody has
@@ -239,7 +276,8 @@ Then invoke `board-game-lens-playtest`, which reads both halves and writes
   invoke the ideator, put the reason in `TASTE.md` as below, `release
   <slug>`.
 - `Disposition: rework` → `gate_rework --stage lens_playtest
-  --disposition rework --reason "<verdict verbatim>"`. exit 0 →
+  --disposition rework --problem-id <Problem-ID> --reason "<verdict
+  verbatim>"`. exit 0 →
   `board-game-ideator` in **rework** mode with the findings verbatim; state
   stays `proposed`, `release <slug>`. exit 1 → the idea is already `killed`
   (three rules-gate reworks spent and still failing); do not invoke the
@@ -251,6 +289,20 @@ Then invoke `board-game-lens-playtest`, which reads both halves and writes
   next `propose` does not walk back into the same shape. A game whose problem
   is its own component arithmetic cannot be reworded into a good one, and
   sending it round again spends a cycle to rediscover that.
+
+The ideator must write `rework_plan.json` before editing `idea.json`. It must
+record the observation, hypothesis, one next-test question, confounds,
+subtraction/rollback/replacement alternatives, the chosen strategy, and a
+falsification condition. It must also classify the change level and declare
+regression checks for the design contract plus secondary risks. The queue
+rejects a high-level change under the same slug, validates the plan, and
+records the actual complexity delta before granting another round or allowing
+`rules_ok`.
+
+After a structured rework, `review_playtest.md` must state
+`Target-result`, `Regression-result`, and `Clean-games`. `advance --to
+rules_ok` requires the target fixed, regression clean, and at least two clean
+table games. This is the candidate-to-baseline promotion rule.
 
 ### `brief`
 Invoke `board-game-brief-writer` in **write** mode. It writes `brief.json` +
@@ -429,11 +481,11 @@ turned out wrong is the most useful line in the whole story, and nothing in
 this pipeline ever reads the journal back, so there is nobody to impress.
 
 These `append` entries are local only. They never send Telegram. The journal
-Telegram channel receives exactly one kind of notification sequence:
-`journal.py rules_ready <slug>` with the approved rule video attached after
-all pre-table gates pass and before `table_run.py`
-starts. Do not send proposals, failures, state changes, builds, repairs, owner
-actions, panel results, or any other event to that channel.
+Telegram channel receives exactly one kind of notification:
+`journal.py rules_ready <slug>` with the proposal, approved rule video, and
+replay/playtest website link after `table_run.py` finishes. Do not send full
+rule blocks, failures, state changes, builds, repairs, owner actions, panel
+results, or any other event to that channel.
 
 Never summarise a checker's output into your own words when you could paste
 it — the owner is trying to see what the machine actually said.

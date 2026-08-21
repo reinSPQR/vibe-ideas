@@ -162,7 +162,21 @@ def build_site(path: Path) -> Path:
     }
     (output / "data.json").write_text(json.dumps(data, indent=2),
                                        encoding="utf-8")
-    return output / "index.html"
+    # Keep data.json for normal HTTP serving and diagnostics, but also embed
+    # the same payload so a file:// link can replay games without a browser
+    # blocking a local fetch. Escape closing tags before placing JSON inside a
+    # script element; game text is allowed to contain arbitrary prose.
+    index_path = output / "index.html"
+    embedded = json.dumps(data).replace("</", "<\\/")
+    index = index_path.read_text(encoding="utf-8")
+    marker = '<script src="app.js"></script>'
+    index = index.replace(
+        marker,
+        f'<script id="game-data" type="application/json">{embedded}</script>\n'
+        f'  {marker}',
+    )
+    index_path.write_text(index, encoding="utf-8")
+    return index_path
 
 
 class GameStore:

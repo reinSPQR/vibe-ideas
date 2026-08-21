@@ -67,8 +67,11 @@ Add one idea (or the number you are asked for) to the queue.
    and actually run the queries it prints through WebSearch. One confirming
    pass is the requirement, not a survey. If a shipped game already does
    exactly this, change the idea rather than the wording.
-4. **Write `board-game/ideas/<slug>/idea.json`** in the schema below.
-5. **Run the gate yourself** before you finish:
+4. **Write the design contract before the rules.** State the intended player
+   experience, core-mechanism hypothesis, anti-goals, complexity budget, and
+   evidence that would kill or fork the idea.
+5. **Write `board-game/ideas/<slug>/idea.json`** in the schema below.
+6. **Run the gate yourself** before you finish:
    `.venv/bin/python board-game/tools/rules_check.py board-game/ideas/<slug>/idea.json`
    Fix what it finds and re-run until it prints `RULES PASS`. Handing over an
    idea that fails a check you could have run yourself wastes a whole cycle
@@ -84,6 +87,34 @@ in one line what you changed.
 
 The owner's words outrank the checker's. If they conflict, do what the owner
 said and note the conflict.
+
+Preserve the design contract, not every accumulated rule. For a gate rework,
+read `.rework_request.json`, every snapshot under `history/reworks/`, and the
+current idea. Before editing `idea.json`, write `rework_plan.json` containing:
+`problem_id`, `observation`, `hypothesis`, one `test_question`, `confounds`,
+`options`, `chosen_strategy`, `change_level`, `expected_experience_change`,
+`falsification_condition`, `must_preserve_checks`, `anti_goal_checks`, and
+`secondary_risks`. Each contract check names a `property` and observable
+`test`. If the round changes `design_contract`, also add a
+non-empty `contract_change_reason`. Options must include subtraction and at least one
+rollback or replacement. `chosen_strategy` is one of `patch`, `subtract`,
+`rollback`, or `replace`.
+
+If `.rework_request.json` says `required_strategy: structural`, another patch
+is forbidden because the same problem has already survived a rework. Choose
+subtract, rollback, or replace. If none preserves the contract, reply
+`BLOCKED` and recommend fork or kill. Change only what the chosen hypothesis
+requires, and report what was removed as well as what was added.
+
+Classify the edit as `low`, `medium`, or `high`. A high-level change replaces
+a core mechanism or materially changes setup, ending, win logic, or supported
+player range. It invalidates the evidence baseline, so do not edit the same
+slug: reply `BLOCKED` and recommend a fork. Secondary risks are watch items,
+not permission to repair multiple problems in this round.
+
+If a legacy idea has no contract, establish schema version 2 during its next
+rework and explain that creation in `contract_change_reason`. Raising a budget
+to fit new rules is not an invisible fix.
 
 ### When the reason came from `review_playtest.md`
 
@@ -109,11 +140,21 @@ hides the fact that the idea was dead.
 
 ```json
 {
+  "schema_version": 2,
   "slug": "kebab-case-name",
   "title": "Short Game Name",
   "concept": "2-4 sentences: the hook, and what one turn actually feels like.",
   "players": {"min": 2, "max": 4},
   "playtime_min": 30,
+
+  "design_contract": {
+    "core_experience": "The decisions and feeling repeated play must create.",
+    "core_mechanism": "The mechanism currently believed to create it.",
+    "must_preserve": ["At most three non-negotiable properties."],
+    "anti_goals": ["Experiences the game must not produce."],
+    "complexity_budget": {"max_rule_words": 650, "max_action_types": 3},
+    "kill_criteria": ["Evidence that falsifies the core hypothesis."]
+  },
 
   "novelty": "The one genuinely new aspect in a sentence, plus the search you ran to confirm nothing shipped already does exactly this.",
 
@@ -170,6 +211,10 @@ it is looking for:
 Write rules complete enough that two people could learn and play from them
 alone. Vagueness will be resolved by somebody downstream, and they will
 resolve it worse than you would.
+
+The complexity budget is a ceiling, not a target, and `rules_check.py`
+enforces it. A budget increase is a contract change and must be justified in
+`rework_plan.json`; do not hide it inside longer prose.
 
 # Pain points
 

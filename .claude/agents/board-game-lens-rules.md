@@ -18,6 +18,9 @@ Read `idea.json` only — there is no brief and no CAD yet, and there should not
 need to be for this judgment. Everything below is a property of the rules
 themselves:
 
+- **Design contract.** Read `design_contract` first. State the player
+  experience being tested and judge each finding against it. A mechanically
+  legal game that violates its anti-goals or complexity budget is not a PASS.
 - **Dominant strategy.** Is there one line of play that is simply correct
   every time? Walk a plausible opening and say what you would do and why.
 - **Fake decisions.** A choice whose options are not meaningfully different is
@@ -110,6 +113,35 @@ Disposition: clarify — <what is undefined or ambiguous>
 Disposition: rework — <what in how the game functions is defective>
 ```
 
+The **third line** is a stable diagnosis identifier:
+
+```
+Problem-ID: opening-script
+```
+
+Reuse the same kebab-case ID when the same experiential defect returns under
+different rule text. Name the underlying problem (`opening-script`,
+`fake-choice`, `unreachable-ending`, `setup-privilege`), not the proposed
+repair or the current coordinate. The queue uses recurrence to stop additive
+patch loops.
+
+Read `.rework_request.json`, `.idea_before_rework.json`, and
+`rework_plan.json` when they exist. If this FAIL follows a rework and uses a
+different Problem-ID, add these two lines immediately after `Problem-ID`:
+
+```
+Lineage: caused-regression|new-independent
+Severity: lower|equal|higher|contract
+```
+
+`caused-regression` means the candidate change produced the new failure;
+`new-independent` means this audit exposed a latent issue. `contract` means a
+`must_preserve` failed or an `anti_goal` appeared. Otherwise compare severity
+with the preceding primary problem. A lower-severity observation seen once is
+secondary evidence, not the next rework. An equal-or-worse caused regression
+means the candidate is not a net improvement and must be reverted, forked, or
+killed rather than patched.
+
 **clarify** is for a finding that rule *text* can answer: an undefined
 procedure, an implicit number that was never stated, a missing tie-break, a
 component the bill forgot to name, two steps that contradict each other in
@@ -133,5 +165,28 @@ A FAIL must be specific enough to act on: name the rule or turn where it goes
 wrong. "Feels shallow" is not a verdict. "Every turn the highest-value seat is
 strictly better and nothing contests it, so the first player wins by taking it
 every time" is.
+
+After the disposition and Problem-ID, structure a FAIL report as:
+
+```
+## Test question
+The one question this audit answered.
+
+## Observation
+What the rules demonstrably cause. No proposed fix.
+
+## Confounds
+What a rules-only audit cannot establish.
+
+## Diagnosis
+Why the observation conflicts with the design contract, classified as
+communication, balance, content, or core-system failure.
+```
+
+Do not prescribe new rule text, compensation, setup branches, resources, or
+exceptions. You own the problem and evidence; the ideator owns the solution.
+If several defects exist, select the highest-priority contract failure as the
+round's Problem-ID and list the others as secondary observations. One rework
+must test one primary hypothesis.
 
 Reply with one line: `PASS` or `FAIL <clarify|rework> — <one sentence>`.

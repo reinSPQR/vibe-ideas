@@ -14,8 +14,8 @@ wrote `board-game/ideas/<slug>/playtest.json`: whether it ends, whether the
 first seat wins, whether looking ahead beats not looking ahead, and whether a
 declared ambiguity changes the numbers when you read it the other way.
 
-`table_run.py` seated one model per seat and played it for real, five games or
-so, and wrote `playtest/table/run_*.json`: what each player weighed on every
+`table_run.py` seated one model per seat at `players.max` and played exactly
+four games, and wrote `playtest/table/run_*.json`: what each player weighed on every
 turn, which turns had nothing to decide in them, what the rules failed to tell
 them, and whether the game got smaller as they learned it.
 
@@ -48,6 +48,9 @@ write:
   had no decisions. A player saying "I made the second one identically to
   game one by reflex" tells it why, and that sentence survives being read six
   months later by somebody who never saw the run.
+- **Judge against the design contract.** Begin with its core experience,
+  anti-goals, and kill criteria. A metric is evidence only insofar as it tests
+  that contract; passing a proxy is not the same as producing the experience.
 
 # The verdict, and the one distinction that matters
 
@@ -59,9 +62,37 @@ worst mistake available to you:
 
 ```
 Disposition: clarify — <what is undefined or ambiguous>
-Disposition: rework — <the specific rules it needs>
+Disposition: rework — <the observed functional defect and where it occurs>
 Disposition: kill — <why no rules change reaches this>
 ```
+
+On every FAIL, the following line is mandatory:
+
+```
+Problem-ID: opening-script
+```
+
+Use a stable kebab-case diagnosis for the underlying experiential defect, not
+the current manifestation or proposed repair. If learned openings return after
+setup, cap, or scoring changes, the ID remains `opening-script`. The queue
+counts recurrence and forbids another additive patch after the second finding.
+
+Read `.rework_request.json`, `.idea_before_rework.json`, and
+`rework_plan.json` when they exist. If this FAIL follows a rework and uses a
+different Problem-ID, add these two lines immediately after `Problem-ID`:
+
+```
+Lineage: caused-regression|new-independent
+Severity: lower|equal|higher|contract
+```
+
+`caused-regression` means the candidate change produced the new failure;
+`new-independent` means this test exposed a latent issue. `contract` means a
+`must_preserve` failed or an `anti_goal` appeared. Otherwise compare severity
+with the preceding primary problem. A lower-severity observation seen once is
+secondary evidence, not the next rework. An equal-or-worse caused regression
+means the candidate is not a net improvement and must be reverted, forked, or
+killed rather than patched.
 
 **clarify** is for a game the rules describe only *partially*: an undefined
 procedure, an implicit number, a step two players read two ways. The machine's
@@ -144,6 +175,45 @@ exist. A scripted policy plays every position the same way whether or not the
 position is interesting. A model at a seat plays well and then tells you it
 was bored, but only ever plays a handful of games. Where they agree, you can
 be confident. Where they do not, say which one you would not bet on.
+
+# Required research shape
+
+Every report states one primary **Test question**, then separates:
+
+- **Observation:** behavior, measurements, and player language;
+- **Confounds:** seat/faction coupling, seed reuse, sample size, engine limits,
+  and anything this cohort cannot establish;
+- **Diagnosis:** communication, balance, content, or core-system failure;
+- **Contract impact:** which core experience, anti-goal, or kill criterion the
+  evidence supports or contradicts.
+
+Do not ask one four-game run to establish balance, onboarding clarity,
+repeated-play depth, and fun simultaneously. Select the primary question and
+report the rest as secondary signals requiring targeted tests. Persistent
+model seats are evidence about learning and resistance, not independent
+outside-player taste. Scripted simulation is evidence about reachability and
+policy separation, not enjoyment.
+
+When the current rules follow a structured rework, every report also includes
+these exact machine-readable lines near the verdict:
+
+```
+Target-result: fixed|not-fixed
+Regression-result: clean|regressed
+Clean-games: <number>
+```
+
+`Target-result` answers only the prior `rework_plan.test_question`.
+`Regression-result` checks every declared `must_preserve_checks` and
+`anti_goal_checks`. `Clean-games` counts only Games 1–3 that neither reproduce
+the target nor exhibit a contract regression. Game 4 is informed by archived
+prior-iteration experience and is an adversarial regression challenge, not
+clean evidence. A candidate needs at least two clean Games 1–3 before it can
+become the new baseline. Do not count scripted simulations or Game 4.
+
+Never prescribe a rule change in the disposition or findings. The ideator
+must compare subtraction, rollback, replacement, and a local patch against the
+design contract before it edits anything.
 
 # Cost
 

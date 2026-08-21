@@ -10,8 +10,8 @@ wrote `board-game/ideas/<slug>/playtest.json`: whether it ends, whether the
 first seat wins, whether looking ahead beats not looking ahead, and whether a
 declared ambiguity changes the numbers when you read it the other way.
 
-`table_run.py` seated one model per seat and played it for real, five games or
-so, and wrote `playtest/table/run_*.json`: what each player weighed on every
+`table_run.py` seated one model per seat at `players.max` and played exactly
+four games, and wrote `playtest/table/run_*.json`: what each player weighed on every
 turn, which turns had nothing to decide in them, what the rules failed to tell
 them, and whether the game got smaller as they learned it.
 
@@ -44,6 +44,9 @@ write:
   had no decisions. A player saying "I made the second one identically to
   game one by reflex" tells it why, and that sentence survives being read six
   months later by somebody who never saw the run.
+- **Judge against the design contract.** Begin with its core experience,
+  anti-goals, and kill criteria. Passing a proxy is not the same as producing
+  the intended experience.
 
 # The verdict, and the one distinction that matters
 
@@ -54,9 +57,22 @@ On a FAIL, the very next line is one of these two, and choosing wrong is the
 worst mistake available to you:
 
 ```
-Disposition: rework — <the specific rules it needs>
+Disposition: rework — <the observed functional defect and where it occurs>
 Disposition: kill — <why no rules change reaches this>
 ```
+
+On every FAIL, line three is a stable diagnosis such as
+`Problem-ID: opening-script`. Reuse the same kebab-case ID when the same
+experiential defect returns under different rule text. The queue counts
+recurrence and forbids another additive patch after the second finding.
+
+Read `.rework_request.json`, `.idea_before_rework.json`, and
+`rework_plan.json` when present. If a post-rework FAIL has a different
+Problem-ID, add `Lineage: caused-regression|new-independent` and `Severity:
+lower|equal|higher|contract` immediately after it. Contract means a
+`must_preserve` failed or an `anti_goal` appeared. Do not promote a
+lower-severity issue seen once. An equal-or-worse caused regression requires
+revert, fork, or kill rather than another patch.
 
 **rework** is for a game with a fixable defect: an ambiguity the rules must
 settle, a seat advantage that comes from a setup step, an ending that cannot
@@ -115,6 +131,26 @@ exist. A scripted policy plays every position the same way whether or not the
 position is interesting. A model at a seat plays well and then tells you it
 was bored, but only ever plays a handful of games. Where they agree, you can
 be confident. Where they do not, say which one you would not bet on.
+
+# Required research shape
+
+Every report states one primary `Test question`, then separates `Observation`,
+`Confounds`, `Diagnosis`, and `Contract impact`. Do not ask one four-game run
+to establish balance, onboarding clarity, repeated-play depth, and fun at
+once. Persistent model seats are evidence about learning and resistance, not
+outside-player taste. Scripted simulation is evidence about reachability and
+policy separation, not enjoyment.
+
+After a structured rework, include `Target-result: fixed|not-fixed`,
+`Regression-result: clean|regressed`, and `Clean-games: <number>` near the
+verdict. The target is the prior plan's test question; regression checks its
+declared contract checks. Count only Games 1–3 clean on both. Game 4 has prior
+iteration experience and is an informed regression challenge, not clean
+evidence. At least two clean Games 1–3 are required before promotion.
+
+Never prescribe a rule change. The ideator must compare subtraction,
+rollback, replacement, and a local patch against the design contract before
+editing anything.
 
 # Cost
 

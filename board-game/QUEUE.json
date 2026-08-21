@@ -350,6 +350,23 @@
         }
       ],
       "unmeasured": []
+    },
+    "overcap-v2": {
+      "slug": "overcap-v2",
+      "title": "Overcap V2",
+      "state": "proposed",
+      "repairs_used": 0,
+      "rework_used": 0,
+      "clarify_used": 0,
+      "created": "2026-08-21T04:50:00+00:00",
+      "log": [
+        {
+          "at": "2026-08-21T04:50:00+00:00",
+          "from": "forked",
+          "to": "proposed",
+          "note": "Owner-directed fork of team-abstract Overcap rules iteration 3 into the schema-v2 board-game pipeline. All gate and rework budgets reset; no downstream evidence was copied."
+        }
+      ]
     }
   }
 }

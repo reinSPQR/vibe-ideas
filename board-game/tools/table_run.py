@@ -48,7 +48,7 @@ credential never has to be typed where something might quote it back.
 Usage:
 
     .venv/bin/python board-game/tools/table_run.py board-game/ideas/deep-claim \
-        --schedule 4:3,2:2 --wire anthropic
+        --wire anthropic
 
 Writes one session per game to <idea_dir>/playtest/table/<label>.json, in the
 same format `playtest.py table` writes, so any game replays from its seed and
@@ -63,6 +63,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import json
 import os
 import random
@@ -164,6 +165,8 @@ PROMPTS = Path(__file__).resolve().parents[1] / "prompts"
 PLAYER_BRIEF = PROMPTS / "player.md"
 BREAKER_BRIEF = PROMPTS / "breaker.md"
 
+TABLE_GAMES = 4
+
 
 # ---------------------------------------------------------------------------
 # The brief a seat is given
@@ -242,11 +245,42 @@ def seat_system_prompt(brief: str, rules: str, seat: int, seats: int,
     if breaker:
         parts.append(BREAKER_BRIEF.read_text(encoding="utf-8").strip())
     parts.append(f"# You are seat {seat} of {seats}\n\n"
-                 f"Seat numbers are stable for the whole run. When the seat "
-                 f"count changes between games you keep your seat number and "
-                 f"everything you have learned.")
+                 f"Seat numbers and the {seats}-player table are stable for "
+                 f"all four games. You keep everything you learn during this "
+                 f"run.")
     parts.append("# The rules of this game\n\n" + rules)
     return "\n\n".join(parts)
+
+
+def prior_iteration_experience(idea_dir: Path) -> dict[int, list[str]]:
+    """Return only what prior player seats said they learned.
+
+    Rework snapshots intentionally exclude machine statistics, review
+    verdicts, engines, and hidden state. Game 4 is an experienced-player
+    challenge, not permission to hand a player the harness's answer.
+    """
+    learned: dict[int, list[str]] = {}
+    history = idea_dir / "history" / "reworks"
+    for path in sorted(history.glob("*.json")):
+        try:
+            experience = (json.loads(path.read_text(encoding="utf-8"))
+                          .get("table_experience"))
+        except (OSError, ValueError):
+            continue
+        if not experience:
+            continue
+        source = str(experience.get("source") or path.name)
+        for debrief in experience.get("debriefs") or []:
+            try:
+                seat = int(debrief["seat"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            text = str(debrief.get("text") or "").strip()
+            if text:
+                learned.setdefault(seat, []).append(
+                    f"[{source} {debrief.get('game', '?')}] {text}")
+    # Keep the newest evidence when a long-lived design has many iterations.
+    return {seat: entries[-24:] for seat, entries in learned.items()}
 
 
 # ---------------------------------------------------------------------------
@@ -459,7 +493,7 @@ class Seats:
             # silent: `prompt_tokens` is the whole prompt with the cached part
             # inside it, while Anthropic's `input_tokens` counts only what was
             # not served from cache. Reported as-is they look like one wire
-            # costing twice the other for the same five games. Both are
+            # costing twice the other for the same four games. Both are
             # normalised to "in = what was not cached", so in + cached is the
             # prompt on either.
             cached = (raw.get("prompt_tokens_details")
@@ -614,6 +648,7 @@ class Run:
         self.debriefs: list = []
         self.games: list = []
         self.sent: dict = {}
+        self.experience_injections: list = []
 
     def _bill(self, usage: dict) -> None:
         # A gateway is entitled to send `null` for a counter it does not
@@ -643,6 +678,34 @@ class Run:
             self.questions.append({"game": where, "seat": seat,
                                    "turn": None, "text": text_.strip()})
         return reply
+
+    async def inject_prior_experience(self, seats: int,
+                                      learned: dict[int, list[str]]) -> None:
+        """Give prior-iteration player experience only before game four."""
+        for seat in range(seats):
+            entries = learned.get(seat) or []
+            if entries:
+                packet = "\n\n".join(entries)
+                prompt = (
+                    "PRIOR ITERATION EXPERIENCE\n"
+                    "Only now, before the fourth game, you may use the notes "
+                    "below from your own seat in earlier rules iterations. "
+                    "Those rules may be obsolete. Transfer strategic lessons, "
+                    "but judge every move against the current rulebook. Do not "
+                    "treat an old reviewer conclusion as fact.\n\n" + packet +
+                    "\n\nReply in one sentence with the single prior lesson "
+                    "you will test in game four.")
+            else:
+                prompt = (
+                    "PRIOR ITERATION EXPERIENCE\n"
+                    "No archived player experience exists for your seat. Game "
+                    "four therefore continues only with what you learned in "
+                    "games one through three. Say that plainly in one sentence.")
+            reply = await self.ask_seat(seat, prompt, "BEFORE GAME 4")
+            self.experience_injections.append({
+                "seat": seat, "available": bool(entries),
+                "sources": len(entries), "text": reply.strip(),
+            })
 
     def leaked_seats(self) -> list:
         """Was any seat ever sent a position addressed to a different seat?
@@ -680,7 +743,8 @@ class Run:
         return out
 
     async def play_game(self, seats: int, seed: int, label: str,
-                        systems: dict, game_no: int) -> dict:
+                        systems: dict, game_no: int,
+                        knowledge_mode: str) -> dict:
         eng = self.eng
         session = {
             "slug": getattr(eng, "SLUG", self.idea_dir.name),
@@ -690,6 +754,7 @@ class Run:
             "agent_turns": 0, "finish_with": "greedy",
             "seed_blind": playtest.seed_blind(eng, seats),
             "wire": self.seats.name,
+            "knowledge_mode": knowledge_mode,
             "handed_over_at": None, "moves": [],
         }
         state, rng = playtest.replay(eng, session)
@@ -818,6 +883,7 @@ class Run:
         arbitrary = sum(1 for m in session["moves"] if m["arbitrary"])
         record = {
             "label": label, "seats": seats, "seed": seed,
+            "knowledge_mode": knowledge_mode,
             "seed_blind": session["seed_blind"], "stuck": stuck,
             "finished": over, "decisions": decisions, "scores": scores,
             "winners": winners, "undefined": undefined,
@@ -899,7 +965,7 @@ class Run:
 # ---------------------------------------------------------------------------
 
 def parse_schedule(text: str) -> list:
-    """`4:3,2:2` is three games at four seats then two games at two seats."""
+    """Parse an explicit schedule; production validation permits max:4 only."""
     out = []
     for chunk in filter(None, (c.strip() for c in text.split(","))):
         seats, _, count = chunk.partition(":")
@@ -932,7 +998,22 @@ async def run(args: argparse.Namespace) -> int:
 
     eng = playtest.load_engine(engine_path)
     idea = json.loads(idea_file.read_text(encoding="utf-8"))
-    schedule = parse_schedule(args.schedule)
+    label_prefix = (args.label_prefix or
+                    f"i{hashlib.sha256(idea_file.read_bytes()).hexdigest()[:8]}-g")
+    players = idea.get("players") or {}
+    try:
+        max_players = int(players["max"])
+    except (KeyError, TypeError, ValueError):
+        print("TABLE ERROR idea.json has no valid players.max")
+        return 2
+    schedule = (parse_schedule(args.schedule) if args.schedule
+                else [(max_players, TABLE_GAMES)])
+    total_games = sum(count for _, count in schedule)
+    if total_games != TABLE_GAMES or any(
+            seats != max_players for seats, _ in schedule):
+        print(f"TABLE ERROR the table protocol is exactly {TABLE_GAMES} games "
+              f"at players.max ({max_players}); got {args.schedule!r}")
+        return 2
 
     for seats, _ in schedule:
         problems = (playtest.validate_engine(eng)
@@ -946,9 +1027,9 @@ async def run(args: argparse.Namespace) -> int:
     # the same game back. So a label that already exists stops the run before
     # a token is spent, rather than after, and stops it here rather than on
     # game four when three games have already been paid for.
-    total = sum(count for _, count in schedule)
+    total = total_games
     clashes = [p for p in
-               (idea_dir / "playtest" / "table" / f"{args.label_prefix}{i}.json"
+               (idea_dir / "playtest" / "table" / f"{label_prefix}{i}.json"
                 for i in range(1, total + 1)) if p.exists()]
     if clashes and not args.overwrite:
         print("TABLE ERROR these sessions already exist and this run would "
@@ -1021,16 +1102,23 @@ async def run(args: argparse.Namespace) -> int:
 
     started = time.monotonic()
     run_state = Run(eng, idea_dir, seats_client, args.compact)
+    prior_experience = prior_iteration_experience(idea_dir)
     seats_seen: set = set()
     game_no = 0
     for seats, count in schedule:
         for _ in range(count):
             game_no += 1
-            label = f"{args.label_prefix}{game_no}"
+            if game_no == 4:
+                await run_state.inject_prior_experience(seats, prior_experience)
+            label = f"{label_prefix}{game_no}"
             seed = args.seed + game_no * 13
             seats_seen |= set(range(seats))
+            knowledge_mode = (
+                "fresh" if game_no == 1 else
+                "current-run-experienced" if game_no in {2, 3} else
+                "current-and-prior-iteration-experienced")
             record = await run_state.play_game(seats, seed, label,
-                                               systems, game_no)
+                                               systems, game_no, knowledge_mode)
             print(f"  {label}  {seats}p seed {seed}  "
                   f"{record['decisions']} decisions  "
                   f"scores {record['scores']}  winners {record['winners']}"
@@ -1048,6 +1136,16 @@ async def run(args: argparse.Namespace) -> int:
         "games": run_state.games,
         "rules_questions": run_state.questions,
         "debriefs": run_state.debriefs,
+        "experience_injections": run_state.experience_injections,
+        "protocol": {
+            "games": TABLE_GAMES,
+            "players": max_players,
+            "game_modes": [
+                "fresh", "current-run-experienced",
+                "current-run-experienced",
+                "current-and-prior-iteration-experienced",
+            ],
+        },
     }
     # The name carries the wire and the cache setting, so running the same
     # games under both and comparing does not overwrite the first answer
@@ -1101,8 +1199,10 @@ async def run(args: argparse.Namespace) -> int:
 def main(argv: list | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("idea_dir", type=Path)
-    ap.add_argument("--schedule", default="4:3,2:2",
-                    help="games per seat count, e.g. 4:3,2:2")
+    ap.add_argument("--schedule", default="",
+                    help="override syntax retained for reproducibility; the "
+                         "only accepted production shape is four games at "
+                         "idea.json players.max")
     ap.add_argument("--wire", choices=("anthropic", "openai", "stdio"),
                     default="anthropic")
     ap.add_argument("--stream", action=argparse.BooleanOptionalAction,
@@ -1118,7 +1218,10 @@ def main(argv: list | None = None) -> int:
     ap.add_argument("--model", default="")
     ap.add_argument("--engine", type=Path, default=None)
     ap.add_argument("--seed", type=int, default=11)
-    ap.add_argument("--label-prefix", default="g")
+    ap.add_argument("--label-prefix", default="",
+                    help="session prefix; by default derived from the current "
+                         "idea.json hash so different rules iterations cannot "
+                         "overwrite one another")
     ap.add_argument("--overwrite", action="store_true",
                     help="allow this run to replace existing session files")
     ap.add_argument("--breaker-seat", type=int, default=0)

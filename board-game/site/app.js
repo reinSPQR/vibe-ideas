@@ -172,7 +172,10 @@ async function init() {
     replayControls: byId("replay-controls"), playControls: byId("play-controls"), rules: byId("rules-panel"),
     seats: byId("seat-count"), seed: byId("seed")
   });
-  data = await fetch("data.json").then(response => response.json());
+  const embedded = byId("game-data");
+  data = embedded
+    ? JSON.parse(embedded.textContent)
+    : await fetch("data.json").then(response => response.json());
   document.title = `${data.title} · table replay`;
   byId("game-title").textContent = data.title;
   byId("game-concept").textContent = data.concept;

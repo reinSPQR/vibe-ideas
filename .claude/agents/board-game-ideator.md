@@ -71,8 +71,12 @@ Add one idea (or the number you are asked for) to the queue.
    and actually run the queries it prints through WebSearch. One confirming
    pass is the requirement, not a survey. If a shipped game already does
    exactly this, change the idea rather than the wording.
-4. **Write `board-game/ideas/<slug>/idea.json`** in the schema below.
-5. **Run the gate yourself** before you finish:
+4. **Write the design contract before the rules.** State the intended player
+   experience, the mechanism believed to create it, what must survive, what the
+   game must not become, its complexity budget, and evidence that would kill or
+   fork the idea. These are hypotheses, not marketing copy.
+5. **Write `board-game/ideas/<slug>/idea.json`** in the schema below.
+6. **Run the gate yourself** before you finish:
    `.venv/bin/python board-game/tools/rules_check.py board-game/ideas/<slug>/idea.json`
    Fix what it finds and re-run until it prints `RULES PASS`. Handing over an
    idea that fails a check you could have run yourself wastes a whole cycle
@@ -122,9 +126,68 @@ say in one line what you changed.
 
 You are given a slug and a reason: `rules_check.json` findings, a
 `review_rules.md` or `review_playtest.md` verdict, or the owner's own words
-from a `/rules` reply. Change the idea to answer that specific objection,
-leave everything else alone, re-run `rules_check.py` until it passes, and say
-in one line what you changed.
+from a `/rules` reply. Preserve the design contract, not every accumulated
+rule. A rework may subtract, roll back, or replace a mechanism when that serves
+the intended experience better than another patch.
+
+For a gate rework, read `.rework_request.json`, every snapshot under
+`history/reworks/`, and the current `idea.json`. Before editing `idea.json`,
+write `rework_plan.json` with this exact substance:
+
+```json
+{
+  "problem_id": "stable-kebab-case-id-from-the-request",
+  "observation": "What actually happened, without a proposed fix.",
+  "hypothesis": "The underlying cause this iteration will test.",
+  "test_question": "The single question the next playtest must answer.",
+  "confounds": ["What the existing evidence cannot establish."],
+  "options": [
+    {"strategy": "subtract", "description": "A rule or mechanism to remove."},
+    {"strategy": "rollback", "description": "A prior recoverable version to restore."},
+    {"strategy": "replace", "description": "A different core mechanism."},
+    {"strategy": "patch", "description": "A local repair, when still allowed."}
+  ],
+  "chosen_strategy": "patch|subtract|rollback|replace",
+  "change_level": "low|medium|high",
+  "expected_experience_change": "How this serves design_contract.core_experience.",
+  "falsification_condition": "Observable evidence that would disprove the hypothesis.",
+  "must_preserve_checks": [
+    {"property": "One exact design_contract.must_preserve item", "test": "What the next gate will inspect to detect a regression."}
+  ],
+  "anti_goal_checks": [
+    {"property": "One exact design_contract.anti_goals item", "test": "What the next gate will inspect to detect a regression."}
+  ],
+  "secondary_risks": ["A plausible side effect to observe but not repair in this round."],
+  "contract_change_reason": "Required only if this round changes design_contract."
+}
+```
+
+The queue rejects a plan that omits subtraction and rollback/replacement. If
+the same `problem_id` has occurred twice, `.rework_request.json` says
+`required_strategy: structural`; another patch is forbidden. Choose subtract,
+rollback, or replace. If none preserves the contract, reply `BLOCKED` and
+recommend fork or kill instead of editing the rules.
+
+Classify the proposed edit before touching `idea.json`: **low** changes values
+or content inside an existing rule, **medium** adds/removes a rule, resource,
+or small mechanism, and **high** adds/removes/replaces a core mechanism or
+changes setup, ending, win logic, or supported player range enough to reset
+the experience being tested. A high-level proposal is not another iteration
+of this game. Reply `BLOCKED` and recommend a fork; the queue rejects a plan
+that declares `change_level: high`.
+
+Copy every applicable `must_preserve` and `anti_goals` property into the
+corresponding checks and name an observable regression test. `secondary_risks`
+are watch items, not permission to repair several things at once.
+
+After planning, change only what the chosen hypothesis requires, re-run
+`rules_check.py` until it passes, and report both what was removed and what was
+added. Do not optimize several unrelated findings in one iteration.
+
+If a legacy idea has no design contract, establish schema version 2 during its
+next rework and explain that contract creation in `contract_change_reason`.
+Changing an existing contract without that field makes the queue refuse the
+iteration; raising a budget to fit the new rules is not an invisible fix.
 
 The owner's words outrank the checker's. If they conflict, do what the owner
 said and note the conflict.
@@ -153,11 +216,24 @@ hides the fact that the idea was dead.
 
 ```json
 {
+  "schema_version": 2,
   "slug": "kebab-case-name",
   "title": "Short Game Name",
   "concept": "2-4 sentences: the hook, and what one turn actually feels like.",
   "players": {"min": 2, "max": 4},
   "playtime_min": 30,
+
+  "design_contract": {
+    "core_experience": "The decisions and feeling repeated play must create.",
+    "core_mechanism": "The one mechanism currently believed to create it.",
+    "must_preserve": ["At most three non-negotiable properties."],
+    "anti_goals": ["Experiences the game must not produce."],
+    "complexity_budget": {
+      "max_rule_words": 650,
+      "max_action_types": 3
+    },
+    "kill_criteria": ["Repeated evidence that falsifies the core hypothesis."]
+  },
 
   "novelty": "The one genuinely new aspect in a sentence, plus the search you ran to confirm nothing shipped already does exactly this.",
 
@@ -214,6 +290,11 @@ it is looking for:
 Write rules complete enough that two people could learn and play from them
 alone. Vagueness will be resolved by somebody downstream, and they will
 resolve it worse than you would.
+
+The complexity budget is a ceiling, not a target. `rules_check.py` enforces
+its numeric fields. If a rework needs more words or actions, first try
+subtraction or replacement; raising the budget is a change to the design
+contract and must be justified in `rework_plan.json`, not hidden inside prose.
 
 # Pain points
 

@@ -373,20 +373,25 @@ def check_parse() -> list:
 
 
 def check_full_run(idea_dir: Path) -> list:
-    """A whole run: two seat counts, sessions on disk, accounting, no leak."""
+    """A whole four-game max-player run, sessions, accounting, no leak."""
     endpoint = Endpoint()
     bad = []
     try:
         code = run_table(idea_dir, endpoint,
-                          ["--schedule", "4:1,2:1", "--label-prefix", "f"])
+                          ["--schedule", "4:4", "--label-prefix", "f"])
     finally:
         endpoint.stop()
     if code != 0:
         return [f"table_run exited {code}"]
 
     summary = summary_of(idea_dir)
-    if len(summary["games"]) != 2:
-        bad.append(f"{len(summary['games'])} games recorded, wanted 2")
+    if len(summary["games"]) != 4:
+        bad.append(f"{len(summary['games'])} games recorded, wanted 4")
+    modes = [game.get("knowledge_mode") for game in summary["games"]]
+    if modes != ["fresh", "current-run-experienced",
+                 "current-run-experienced",
+                 "current-and-prior-iteration-experienced"]:
+        bad.append(f"wrong four-game knowledge sequence: {modes}")
     if summary["leaks"]:
         bad.append(f"leak reported on a run that routes by code: {summary['leaks']}")
     if summary["usage"]["calls"] < 8:
@@ -399,6 +404,9 @@ def check_full_run(idea_dir: Path) -> list:
     elif not (site / "data.json").is_file():
         bad.append("the replay website has no generated run data")
     else:
+        index = (site / "index.html").read_text(encoding="utf-8")
+        if 'id="game-data"' not in index:
+            bad.append("the replay website cannot load from a local file link")
         replay = json.loads((site / "data.json").read_text(encoding="utf-8"))
         if not replay.get("runs") or not replay["runs"][0].get("games"):
             bad.append("the replay website contains no LLM games")
@@ -437,7 +445,7 @@ def check_seat_isolation(idea_dir: Path) -> list:
     endpoint = Endpoint()
     try:
         run_table(idea_dir, endpoint,
-                   ["--schedule", "4:1", "--label-prefix", "iso"])
+                   ["--schedule", "4:4", "--label-prefix", "iso"])
     finally:
         endpoint.stop()
     bad = []
@@ -445,6 +453,52 @@ def check_seat_isolation(idea_dir: Path) -> list:
         addressed = set(re.findall(r"^YOU ARE seat (\d+)", text, re.M))
         if len(addressed) > 1:
             bad.append(f"one message addressed seats {sorted(addressed)}")
+    return bad
+
+
+def check_prior_iteration_arrives_only_before_game_four(idea_dir: Path) -> list:
+    """Old playtest experience is delayed and remains seat-specific."""
+    history = idea_dir / "history" / "reworks"
+    history.mkdir(parents=True)
+    (history / "iteration-1.json").write_text(json.dumps({
+        "table_experience": {
+            "source": "old/run.json",
+            "debriefs": [
+                {"game": "old1", "seat": seat,
+                 "text": f"seat-{seat}-private-old-lesson"}
+                for seat in range(4)
+            ],
+        },
+    }), encoding="utf-8")
+    endpoint = Endpoint()
+    try:
+        code = run_table(idea_dir, endpoint,
+                         ["--schedule", "4:4", "--label-prefix", "prior"])
+    finally:
+        endpoint.stop()
+    if code != 0:
+        return [f"table_run exited {code}"]
+    bad = []
+    injections = [text for text in endpoint.seen
+                  if text.startswith("PRIOR ITERATION EXPERIENCE")]
+    if len(injections) != 4:
+        bad.append(f"{len(injections)} experience injections, wanted 4")
+    for seat in range(4):
+        lesson = f"seat-{seat}-private-old-lesson"
+        holders = [i for i, text in enumerate(injections) if lesson in text]
+        if holders != [seat]:
+            bad.append(f"{lesson} reached injection indexes {holders}")
+    first_injection = next(
+        (i for i, text in enumerate(endpoint.seen)
+         if text.startswith("PRIOR ITERATION EXPERIENCE")), None)
+    last_game_three = max(
+        (i for i, text in enumerate(endpoint.seen)
+         if "session prior3" in text), default=-1)
+    if first_injection is None or first_injection <= last_game_three:
+        bad.append("prior-iteration experience arrived before game 3 ended")
+    summary = summary_of(idea_dir)
+    if not all(item["available"] for item in summary["experience_injections"]):
+        bad.append("the run summary did not mark archived experience available")
     return bad
 
 
@@ -458,7 +512,7 @@ def check_unreadable_stops(idea_dir: Path, mode: str) -> list:
     """
     endpoint = Endpoint(mode=mode)
     try:
-        run_table(idea_dir, endpoint, ["--schedule", "2:1",
+        run_table(idea_dir, endpoint, ["--schedule", "4:4",
                                         "--label-prefix", f"{mode}_"])
     except SystemExit as exc:
         message = str(exc)
@@ -501,7 +555,7 @@ def check_a_dead_gateway_still_leaves_the_game(idea_dir: Path) -> list:
     retries, backoff = table_run.GATEWAY_RETRIES, table_run.RETRY_BACKOFF
     table_run.GATEWAY_RETRIES, table_run.RETRY_BACKOFF = 1, 0.0
     try:
-        run_table(idea_dir, endpoint, ["--schedule", "2:1",
+        run_table(idea_dir, endpoint, ["--schedule", "4:4",
                                        "--label-prefix", "dead_"])
     except SystemExit as exc:
         message = str(exc)
@@ -546,10 +600,10 @@ def check_refuses_to_overwrite(idea_dir: Path) -> list:
     endpoint = Endpoint()
     bad = []
     try:
-        if run_table(idea_dir, endpoint, ["--schedule", "2:1",
+        if run_table(idea_dir, endpoint, ["--schedule", "4:4",
                                           "--label-prefix", "dup"]) != 0:
             return ["the first run failed"]
-        if run_table(idea_dir, endpoint, ["--schedule", "2:1",
+        if run_table(idea_dir, endpoint, ["--schedule", "4:4",
                                           "--label-prefix", "dup"]) == 0:
             bad.append("a second run on the same labels was allowed")
         before = (idea_dir / "playtest" / "table" / "dup1.json").read_text(
@@ -558,7 +612,7 @@ def check_refuses_to_overwrite(idea_dir: Path) -> list:
         # With the same seed this fixture answers identically and the file
         # would come back byte for byte, which proves nothing either way.
         if run_table(idea_dir, endpoint,
-                     ["--schedule", "2:1", "--label-prefix", "dup",
+                     ["--schedule", "4:4", "--label-prefix", "dup",
                       "--seed", "99", "--overwrite"]) != 0:
             bad.append("--overwrite did not let the run through")
         after = (idea_dir / "playtest" / "table" / "dup1.json").read_text(
@@ -594,7 +648,7 @@ def check_rules_running_out(idea_dir: Path) -> list:
     bad = []
     try:
         code = run_table(idea_dir, endpoint,
-                         ["--schedule", "2:1", "--label-prefix", "gap"])
+                         ["--schedule", "4:4", "--label-prefix", "gap"])
     finally:
         endpoint.stop()
     if code != 0:
@@ -645,7 +699,7 @@ def check_both_wires_count_alike(idea_dir: Path) -> list:
         label = wire[:2] + suffix
         try:
             if run_table(idea_dir, endpoint,
-                         ["--schedule", "2:1", "--wire", wire,
+                         ["--schedule", "4:4", "--wire", wire,
                           "--label-prefix", label] + extra) != 0:
                 return [f"the {wire}{suffix} run failed"]
         finally:
@@ -667,6 +721,8 @@ CASES = [
     ("reply_parsing_is_strict", lambda d: check_parse()),
     ("a_whole_run_end_to_end", check_full_run),
     ("no_seat_sees_another_seats_position", check_seat_isolation),
+    ("prior_iteration_experience_arrives_only_before_game_four",
+     check_prior_iteration_arrives_only_before_game_four),
     ("prose_instead_of_a_choice_stops_the_run",
      lambda d: check_unreadable_stops(d, "unreadable")),
     ("an_index_past_the_end_stops_the_run",

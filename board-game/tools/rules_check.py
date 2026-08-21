@@ -39,14 +39,12 @@ invisible in prose and obvious in a list.
 
 Exit 0 = PASS, 1 = FAIL. Prints one line plus every finding.
 
-On a FAIL the report carries `Disposition: clarify`. Every finding this
-checker can produce is a mismatch between what the rules *say* and what the
-box *holds* — fixing it is a matter of making the two agree in text, and the
-queue's mechanic-surface check (see `pipeline_queue.mech_surface`) verifies
-after the fact that the fix stayed in the prose. If the honest fix turns out
-to be a new component or a different quantity, the queue converts that round
-into a paid rework automatically; this label only chooses which budget the
-round *starts* in.
+On a FAIL the report normally carries `Disposition: clarify`: bill/rules and
+design-contract schema mismatches are missing description. Exceeding a
+declared complexity ceiling carries `Disposition: rework` and Problem-ID
+`complexity-budget`, because the design must subtract, roll back, or explicitly
+reconsider its contract. The queue's mechanic-surface check verifies after the
+fact that an ordinary clarification stayed out of the mechanics.
 """
 from __future__ import annotations
 
@@ -56,6 +54,10 @@ import sys
 from pathlib import Path
 
 REQUIRED_PHASES = ("setup", "turn", "end", "win")
+CONTRACT_FIELDS = (
+    "core_experience", "core_mechanism", "must_preserve", "anti_goals",
+    "complexity_budget", "kill_criteria",
+)
 
 
 def _steps(rules: dict, phase: str) -> list:
@@ -64,6 +66,82 @@ def _steps(rules: dict, phase: str) -> list:
     if block is None:
         return []
     return block if isinstance(block, list) else [block]
+
+
+def _rule_word_count(rules: dict) -> int:
+    return sum(
+        len(str(step.get("text", "")).split())
+        for phase in REQUIRED_PHASES
+        for step in _steps(rules, phase)
+        if isinstance(step, dict)
+    )
+
+
+def _check_design_contract(idea: dict, rules: dict) -> list[str]:
+    """Schema v2 makes the intended experience and complexity falsifiable.
+
+    Legacy ideas remain readable. New proposals and reworked ideas opt into v2;
+    once they do, the contract is mechanically required and its numeric budgets
+    bite instead of serving as decorative prose.
+    """
+    try:
+        schema_version = int(idea.get("schema_version") or 1)
+    except (TypeError, ValueError):
+        return ["schema_version: must be an integer"]
+    if schema_version < 2:
+        return []
+    contract = idea.get("design_contract")
+    if not isinstance(contract, dict):
+        return ["design_contract: schema_version 2 requires a design contract"]
+    findings = []
+    for field in CONTRACT_FIELDS:
+        value = contract.get(field)
+        if value is None or value == "" or value == [] or value == {}:
+            findings.append(f"design_contract:{field}: missing or empty")
+    for field in ("must_preserve", "anti_goals", "kill_criteria"):
+        value = contract.get(field)
+        if value is not None and not isinstance(value, list):
+            findings.append(f"design_contract:{field}: must be a list")
+    budget = contract.get("complexity_budget") or {}
+    if not isinstance(budget, dict):
+        findings.append("design_contract:complexity_budget: must be an object")
+        return findings
+    limits: dict[str, int] = {}
+    for key in ("max_rule_words", "max_action_types"):
+        try:
+            limit = int(budget.get(key, 0))
+        except (TypeError, ValueError):
+            limit = 0
+        limits[key] = limit
+        if limit <= 0:
+            findings.append(
+                f"design_contract:complexity_budget:{key}: must be positive")
+    max_words = limits["max_rule_words"]
+    words = _rule_word_count(rules)
+    if max_words and words > max_words:
+        findings.append(
+            f"design_contract:complexity_budget: rules use {words} words, over "
+            f"the declared maximum {max_words}")
+    max_actions = limits["max_action_types"]
+    actions = len(idea.get("action_types") or [])
+    if max_actions and actions > max_actions:
+        findings.append(
+            f"design_contract:complexity_budget: {actions} action types exceed "
+            f"the declared maximum {max_actions}")
+    return findings
+
+
+def finding_disposition(findings: list[str]) -> tuple[str | None, str | None]:
+    """Contract overruns are design defects; schema omissions are prose."""
+    over_budget = any(
+        finding.startswith("design_contract:complexity_budget:")
+        and ("over the declared maximum" in finding
+             or "exceed the declared maximum" in finding)
+        for finding in findings
+    )
+    if over_budget:
+        return "rework", "complexity-budget"
+    return ("clarify", None) if findings else (None, None)
 
 
 def check(idea: dict) -> list:
@@ -87,6 +165,7 @@ def check(idea: dict) -> list:
         bill[name] = {**item, "qty": qty}
 
     rules = idea.get("rules") or {}
+    findings.extend(_check_design_contract(idea, rules))
     for phase in REQUIRED_PHASES:
         if not _steps(rules, phase):
             findings.append(f"rules:{phase}: missing — a game with no {phase} "
@@ -145,8 +224,9 @@ def main() -> int:
 
     idea = json.loads(args.idea.read_text(encoding="utf-8"))
     findings = check(idea)
+    disposition, problem_id = finding_disposition(findings)
     report = {"idea": str(args.idea), "pass": not findings, "findings": findings,
-              "disposition": None if report["pass"] else "clarify"}
+              "disposition": disposition, "problem_id": problem_id}
     (args.out or args.idea.parent / "rules_check.json").write_text(
         json.dumps(report, indent=2), encoding="utf-8")
 
@@ -155,7 +235,9 @@ def main() -> int:
     for f in findings:
         print("  -", f)
     if not report["pass"]:
-        print("Disposition: clarify")
+        print(f"Disposition: {disposition}")
+        if problem_id:
+            print(f"Problem-ID: {problem_id}")
     return 0 if report["pass"] else 1
 
 

@@ -3,18 +3,17 @@
 
 Routine events recorded with ``append`` are written only to
 ``board-game/.journal_log.jsonl`` for ``dashboard.py``. The journal Telegram
-channel receives only ``rules_ready``: an approved rule animation plus the
-proposal that passed every gate before the table gate and is about to be
-table-tested.
+channel receives only ``rules_ready``: the proposal, its approved rule
+animation, and a link to the completed replay/playtest website.
 
     python3 board-game/tools/journal.py append <slug> --kind gate \
         --by gate.py --summary "RULES PASS"
     python3 board-game/tools/journal.py rules_ready <slug>
 
 For a rework, ``pipeline_queue.py`` saves the immediately previous idea before
-the ideator changes it. ``rules_ready`` compares against that snapshot and
-bolds every changed rule block in the Telegram message. Repeating
-``rules_ready`` for an unchanged ``idea.json`` is deduplicated.
+the ideator changes it. ``rules_ready`` uses that snapshot to label the
+iteration. Repeating ``rules_ready`` for an unchanged ``idea.json`` is
+deduplicated.
 
 Nothing in the pipeline may read the local journal log. It has exactly one
 reader: ``dashboard.py``. This keeps narrative history from becoming another
@@ -221,13 +220,16 @@ def render_rules_ready(idea: dict, previous: dict | None = None,
 
 def render_video_caption(idea: dict, previous: dict | None = None,
                          rework_number: int | None = None,
-                         disposition: str | None = None) -> str:
-    """Short, balanced HTML caption for the rules video message."""
+                         disposition: str | None = None,
+                         site_url: str = "") -> str:
+    """Render the one Telegram post: proposal, video caption, and site link."""
     phase = _phase_label(previous is not None, rework_number, disposition)
     title = html.escape(_text(idea.get("title") or idea.get("slug") or "Untitled"))
     slug = html.escape(_text(idea.get("slug") or "unknown"))
-    prefix = f"<b>RULES READY FOR TABLE</b>\n{title} ({slug})\n{phase}\n\n"
-    suffix = "\n\nRule animation attached. Full rules follow."
+    prefix = f"<b>BOARD GAME PROPOSAL</b>\n{title} ({slug})\n{phase}\n\n"
+    escaped_url = html.escape(site_url, quote=True)
+    suffix = ("\n\nRule animation attached.\n"
+              f'<a href="{escaped_url}">Replay simulation / playtest</a>')
     budget = max(0, 1000 - len(prefix) - len(suffix))
     escaped = ""
     truncated = False
@@ -240,6 +242,11 @@ def render_video_caption(idea: dict, previous: dict | None = None,
     if truncated:
         escaped = escaped.rstrip() + "..."
     return prefix + escaped + suffix
+
+
+def playtest_site_url(idea_dir: Path) -> str:
+    """Return the generated website's absolute local file URI."""
+    return (idea_dir / "playtest" / "site" / "index.html").resolve().as_uri()
 
 
 def pretable_gate_failure(idea_dir: Path, idea: dict) -> str | None:
@@ -272,6 +279,15 @@ def pretable_gate_failure(idea_dir: Path, idea: dict) -> str | None:
     animation_failure, _ = animation_gate.evidence(idea_dir)
     if animation_failure:
         return animation_failure
+    site = idea_dir / "playtest" / "site"
+    index_path = site / "index.html"
+    data_path = site / "data.json"
+    if not index_path.is_file() or not data_path.is_file():
+        return "playtest website is missing; run table_run.py first"
+    if min(index_path.stat().st_mtime, data_path.stat().st_mtime) < idea_path.stat().st_mtime:
+        return "playtest website is older than idea.json"
+    if not (_read_json(data_path).get("runs") or []):
+        return "playtest website contains no replay runs"
     return None
 
 
@@ -305,8 +321,6 @@ def cmd_rules_ready(args) -> int:
     previous = snapshot.get("idea")
     rework_number = snapshot.get("rework_number")
     disposition = snapshot.get("disposition")
-    chunks = render_rules_ready(idea, previous, rework_number, disposition)
-    caption = render_video_caption(idea, previous, rework_number, disposition)
     _, video = animation_gate.evidence(idea_dir)
     video_digest = animation_gate.sha256(video)
     if marker_path.is_file():
@@ -317,30 +331,30 @@ def cmd_rules_ready(args) -> int:
             return 0
 
     telegram.load_env()
+    site_url = playtest_site_url(idea_dir)
+    caption = render_video_caption(
+        idea, previous, rework_number, disposition, site_url)
     chat = os.environ.get("TELEGRAM_CHAT_JOURNAL", "").strip()
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     if not (token and chat):
         print("--- journal Telegram not configured; rules-ready notice is here ---")
         print(f"[video] {video}")
         print(caption)
-        print("\n\n".join(chunks))
         return 0
     telegram.send(caption, video=video, chat=chat, parse_mode="HTML")
-    for chunk in chunks:
-        telegram.send(chunk, chat=chat, parse_mode="HTML")
 
     now = datetime.now(timezone.utc)
     marker = {
         "idea_sha256": digest,
         "video_sha256": video_digest,
         "sent_at": now.isoformat(),
-        "message_count": len(chunks) + 1,
+        "message_count": 1,
     }
     marker_path.write_text(json.dumps(marker, indent=2), encoding="utf-8")
     record(args.slug, "rules_ready", "rules_gate",
-           "all pre-table gates passed; rules sent to journal Telegram",
+           "proposal, rule animation, and playtest site sent to journal Telegram",
            "", idea.get("title", args.slug), now.isoformat())
-    print(f"{args.slug}: sent rules-ready Telegram ({len(chunks) + 1} message(s))")
+    print(f"{args.slug}: sent rules-ready Telegram (1 message)")
     return 0
 
 
