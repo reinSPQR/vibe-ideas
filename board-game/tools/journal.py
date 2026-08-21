@@ -48,6 +48,7 @@ KINDS = {
     "proposed": "the idea was invented",
     "gate": "a deterministic checker ran",
     "rework": "the idea changed in response to something",
+    "clarify": "ambiguity was removed without touching the mechanics",
     "brief": "dimensions were chosen",
     "draft": "the first real geometry",
     "build": "the full build",
@@ -131,17 +132,33 @@ def _indexed(previous: dict, section: str, index: int) -> Any:
     return values[index] if index < len(values) else None
 
 
+def _phase_label(is_rework: bool, rework_number: int | None,
+                 disposition: str | None) -> str:
+    """`INITIAL PROPOSAL`, `CLARIFY n/3`, or `REWORK n/3`.
+
+    The number is the round within its own kind of budget, so the denominator
+    follows the disposition: a clarify round is `n/CLARIFY_BUDGET`, a rework
+    round is `n/REWORK_BUDGET`. Both are imported lazily because
+    `pipeline_queue` imports this module and a top-level import back would be
+    circular.
+    """
+    if not is_rework:
+        return "INITIAL PROPOSAL"
+    from pipeline_queue import CLARIFY_BUDGET, REWORK_BUDGET
+    budget = CLARIFY_BUDGET if disposition == "clarify" else REWORK_BUDGET
+    label = "CLARIFY" if disposition == "clarify" else "REWORK"
+    suffix = f" {rework_number}/{budget}" if rework_number else ""
+    return f"{label}{suffix}"
+
+
 def render_rules_ready(idea: dict, previous: dict | None = None,
-                       rework_number: int | None = None) -> list[str]:
+                       rework_number: int | None = None,
+                       disposition: str | None = None) -> list[str]:
     """Render self-contained HTML chunks, bolding changed rework blocks."""
     is_rework = previous is not None
     title = _text(idea.get("title") or idea.get("slug") or "Untitled")
     slug = _text(idea.get("slug") or "unknown")
-    if is_rework:
-        suffix = f" {rework_number}/10" if rework_number else ""
-        phase = f"REWORK{suffix}"
-    else:
-        phase = "INITIAL PROPOSAL"
+    phase = _phase_label(is_rework, rework_number, disposition)
     blocks = [
         f"<b>RULES READY FOR TABLE</b>\n{html.escape(title)} "
         f"({html.escape(slug)})\n{phase}",
@@ -203,10 +220,10 @@ def render_rules_ready(idea: dict, previous: dict | None = None,
 
 
 def render_video_caption(idea: dict, previous: dict | None = None,
-                         rework_number: int | None = None) -> str:
+                         rework_number: int | None = None,
+                         disposition: str | None = None) -> str:
     """Short, balanced HTML caption for the rules video message."""
-    phase = (f"REWORK {rework_number}/10" if previous and rework_number
-             else "REWORK" if previous else "INITIAL PROPOSAL")
+    phase = _phase_label(previous is not None, rework_number, disposition)
     title = html.escape(_text(idea.get("title") or idea.get("slug") or "Untitled"))
     slug = html.escape(_text(idea.get("slug") or "unknown"))
     prefix = f"<b>RULES READY FOR TABLE</b>\n{title} ({slug})\n{phase}\n\n"
@@ -287,8 +304,9 @@ def cmd_rules_ready(args) -> int:
     snapshot = _read_json(snapshot_path) if snapshot_path.is_file() else {}
     previous = snapshot.get("idea")
     rework_number = snapshot.get("rework_number")
-    chunks = render_rules_ready(idea, previous, rework_number)
-    caption = render_video_caption(idea, previous, rework_number)
+    disposition = snapshot.get("disposition")
+    chunks = render_rules_ready(idea, previous, rework_number, disposition)
+    caption = render_video_caption(idea, previous, rework_number, disposition)
     _, video = animation_gate.evidence(idea_dir)
     video_digest = animation_gate.sha256(video)
     if marker_path.is_file():

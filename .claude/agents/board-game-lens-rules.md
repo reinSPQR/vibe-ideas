@@ -103,9 +103,35 @@ does — that is a separate lens, run later, once there is an object to judge.
 Write `board-game/ideas/<slug>/review_rules.md`. Its **first line** must be
 exactly `Verdict: PASS` or `Verdict: FAIL <one sentence>`, findings below.
 
+On a FAIL, the **second line** is the disposition, exactly one of:
+
+```
+Disposition: clarify — <what is undefined or ambiguous>
+Disposition: rework — <what in how the game functions is defective>
+```
+
+**clarify** is for a finding that rule *text* can answer: an undefined
+procedure, an implicit number that was never stated, a missing tie-break, a
+component the bill forgot to name, two steps that contradict each other in
+wording. The fix adds sentences; it changes no mechanic.
+
+**rework** is for a finding that only a change in how the game functions can
+answer: a dominant strategy, a fake decision, an ending ordinary play cannot
+reach, an imbalance that lives in the setup, an action that is never once
+legal.
+
+The line the two share is where the call goes wrong, so the rule for it is
+simple: **if the finding could plausibly be fixed by adding a sentence *or*
+by changing a mechanic, write `rework`.** A wrong `rework` costs one budget
+round. A wrong `clarify` costs more, because the queue's freeze only watches
+the mechanic-defining fields (`action_types`, `rules.win`, component
+`name`/`qty`) — a flaw "clarified" by rewriting a turn or end step changes
+none of them and sails through the freeze. This lens is the only check on
+that lane, so when in doubt, pay the rework.
+
 A FAIL must be specific enough to act on: name the rule or turn where it goes
 wrong. "Feels shallow" is not a verdict. "Every turn the highest-value seat is
 strictly better and nothing contests it, so the first player wins by taking it
 every time" is.
 
-Reply with one line: `PASS` or `FAIL <one sentence>`.
+Reply with one line: `PASS` or `FAIL <clarify|rework> — <one sentence>`.

@@ -56,7 +56,7 @@ def approve_animation(home: Path, payload: bytes = b"video") -> Path:
 
 
 class ReworkBudgetTests(unittest.TestCase):
-    def test_ten_reworks_are_granted_and_eleventh_failure_kills(self) -> None:
+    def test_budget_is_granted_and_next_failure_kills(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             queue = root / "QUEUE.json"
@@ -68,13 +68,14 @@ class ReworkBudgetTests(unittest.TestCase):
                 "rework_used": 0, "repairs_used": 0, "log": [],
             }}}), encoding="utf-8")
             args = SimpleNamespace(
-                slug="fixture", stage="lens_rules", reason="finding")
+                slug="fixture", stage="lens_rules", reason="finding",
+                disposition="rework")
             local_log = root / "journal.jsonl"
             with patch.object(pipeline_queue, "QUEUE", queue), \
                     patch.object(pipeline_queue, "LOCK", root / ".lock"), \
                     patch.object(pipeline_queue, "IDEAS", ideas), \
                     patch.object(journal, "JOURNAL_LOG", local_log):
-                for number in range(1, 11):
+                for number in range(1, pipeline_queue.REWORK_BUDGET + 1):
                     current = idea(concept=f"iteration {number}")
                     (home / "idea.json").write_text(
                         json.dumps(current), encoding="utf-8")
@@ -85,22 +86,182 @@ class ReworkBudgetTests(unittest.TestCase):
                     self.assertEqual(snapshot["idea"], current)
 
                 data = json.loads(queue.read_text(encoding="utf-8"))
-                self.assertEqual(data["ideas"]["fixture"]["rework_used"], 10)
+                self.assertEqual(
+                    data["ideas"]["fixture"]["rework_used"],
+                    pipeline_queue.REWORK_BUDGET)
                 self.assertEqual(data["ideas"]["fixture"]["state"], "proposed")
                 self.assertEqual(pipeline_queue.cmd_gate_rework(args), 1)
                 data = json.loads(queue.read_text(encoding="utf-8"))
                 self.assertEqual(data["ideas"]["fixture"]["state"], "killed")
 
 
+    def _clarify_args(self, stage="lens_rules"):
+        return SimpleNamespace(
+            slug="fixture", stage=stage, reason="ambiguity",
+            disposition="clarify")
+
+    def test_clarify_rounds_have_their_own_budget(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            queue = root / "QUEUE.json"
+            ideas = root / "ideas"
+            home = ideas / "fixture"
+            home.mkdir(parents=True)
+            queue.write_text(json.dumps({"ideas": {"fixture": {
+                "slug": "fixture", "title": "Fixture", "state": "proposed",
+                "rework_used": 0, "clarify_used": 0, "repairs_used": 0,
+                "log": [],
+            }}}), encoding="utf-8")
+            with patch.object(pipeline_queue, "QUEUE", queue), \
+                    patch.object(pipeline_queue, "LOCK", root / ".lock"), \
+                    patch.object(pipeline_queue, "IDEAS", ideas), \
+                    patch.object(journal, "JOURNAL_LOG", root / "journal.jsonl"):
+                # Three clarify rounds over the same mechanic surface: only
+                # the rule text moves, so each stays a clarification.
+                for number in range(1, pipeline_queue.CLARIFY_BUDGET + 1):
+                    (home / "idea.json").write_text(json.dumps(
+                        idea(turn=f"PLACE a token, step {number}.")),
+                        encoding="utf-8")
+                    self.assertEqual(
+                        pipeline_queue.cmd_gate_rework(self._clarify_args()), 0)
+                    snapshot = json.loads(
+                        (home / journal.SNAPSHOT_NAME).read_text(encoding="utf-8"))
+                    self.assertEqual(snapshot["disposition"], "clarify")
+                    self.assertEqual(snapshot["rework_number"], number)
+                    self.assertEqual(snapshot["mech_surface"],
+                                     pipeline_queue.mech_surface(idea()))
+
+                data = json.loads(queue.read_text(encoding="utf-8"))
+                self.assertEqual(
+                    data["ideas"]["fixture"]["clarify_used"],
+                    pipeline_queue.CLARIFY_BUDGET)
+                self.assertEqual(data["ideas"]["fixture"]["rework_used"], 0)
+                # The clarify budget is exhausted: the next clarify kills, and
+                # the rework budget has been left completely untouched.
+                self.assertEqual(
+                    pipeline_queue.cmd_gate_rework(self._clarify_args()), 1)
+                data = json.loads(queue.read_text(encoding="utf-8"))
+                self.assertEqual(data["ideas"]["fixture"]["state"], "killed")
+                self.assertEqual(data["ideas"]["fixture"]["rework_used"], 0)
+                self.assertIn("clarify budget exhausted",
+                              data["ideas"]["fixture"]["kill_reason"])
+
+    def test_clarify_that_changes_the_mechanic_pays_as_rework(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            queue = root / "QUEUE.json"
+            ideas = root / "ideas"
+            home = ideas / "fixture"
+            home.mkdir(parents=True)
+            queue.write_text(json.dumps({"ideas": {"fixture": {
+                "slug": "fixture", "title": "Fixture", "state": "proposed",
+                "rework_used": 0, "clarify_used": 0, "repairs_used": 0,
+                "log": [],
+            }}}), encoding="utf-8")
+            with patch.object(pipeline_queue, "QUEUE", queue), \
+                    patch.object(pipeline_queue, "LOCK", root / ".lock"), \
+                    patch.object(pipeline_queue, "IDEAS", ideas), \
+                    patch.object(journal, "JOURNAL_LOG", root / "journal.jsonl"):
+                (home / "idea.json").write_text(json.dumps(idea()),
+                                                encoding="utf-8")
+                self.assertEqual(
+                    pipeline_queue.cmd_gate_rework(self._clarify_args()), 0)
+
+                # The "clarification" rewrote the winner. The queue settles
+                # that on the next round and charges the rework budget.
+                cheated = idea()
+                cheated["rules"]["win"] = {
+                    "text": "Fewest tokens wins.", "uses": ["token"]}
+                (home / "idea.json").write_text(json.dumps(cheated),
+                                                encoding="utf-8")
+                self.assertEqual(pipeline_queue.cmd_gate_rework(
+                    SimpleNamespace(slug="fixture", stage="lens_rules",
+                                    reason="defect", disposition="rework")), 0)
+
+                data = json.loads(queue.read_text(encoding="utf-8"))
+                fixture = data["ideas"]["fixture"]
+                # The laundered round was charged as rework 1, and the honest
+                # rework just granted is rework 2: two rounds for two failed
+                # gates, nothing free.
+                self.assertEqual(fixture["rework_used"], 2)
+                self.assertEqual(fixture["clarify_used"], 0)
+                notes = [entry["note"] for entry in fixture["log"]]
+                self.assertIn(
+                    "clarify round converted to rework: the mechanic surface "
+                    f"changed during a clarification round — "
+                    f"1/{pipeline_queue.REWORK_BUDGET} reworks now spent",
+                    notes)
+                self.assertIn(f"rework round 2/{pipeline_queue.REWORK_BUDGET}"
+                              " (lens_rules): defect", notes)
+
+    def test_conversion_fires_when_leaving_the_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            queue = root / "QUEUE.json"
+            ideas = root / "ideas"
+            home = ideas / "fixture"
+            home.mkdir(parents=True)
+            queue.write_text(json.dumps({"ideas": {"fixture": {
+                "slug": "fixture", "title": "Fixture", "state": "proposed",
+                "rework_used": 0, "clarify_used": 0, "repairs_used": 0,
+                "log": [],
+            }}}), encoding="utf-8")
+            (home / "idea.json").write_text(json.dumps(idea()), encoding="utf-8")
+            (home / "review_playtest.md").write_text("Verdict: PASS\n",
+                                                     encoding="utf-8")
+            with patch.object(pipeline_queue, "QUEUE", queue), \
+                    patch.object(pipeline_queue, "LOCK", root / ".lock"), \
+                    patch.object(pipeline_queue, "IDEAS", ideas), \
+                    patch.object(journal, "JOURNAL_LOG", root / "journal.jsonl"):
+                self.assertEqual(
+                    pipeline_queue.cmd_gate_rework(self._clarify_args()), 0)
+                cheated = idea()
+                cheated["components"][0]["qty"] = 24
+                (home / "idea.json").write_text(json.dumps(cheated),
+                                                encoding="utf-8")
+                (home / "review_playtest.md").write_text("Verdict: PASS\n",
+                                                         encoding="utf-8")
+                self.assertEqual(pipeline_queue.cmd_advance(
+                    SimpleNamespace(slug="fixture", to="rules_ok", note=None)), 0)
+
+                data = json.loads(queue.read_text(encoding="utf-8"))
+                fixture = data["ideas"]["fixture"]
+                self.assertEqual(fixture["rework_used"], 1)
+                self.assertEqual(fixture["clarify_used"], 0)
+
+
 class RulesReadyTests(unittest.TestCase):
     def test_rework_bolds_changed_blocks_only(self) -> None:
         previous = idea()
         current = idea(turn="MOVE one token.")
-        rendered = "\n\n".join(journal.render_rules_ready(current, previous, 4))
-        self.assertIn("REWORK 4/10", rendered)
+        rendered = "\n\n".join(
+            journal.render_rules_ready(current, previous, 2))
+        self.assertIn(f"REWORK 2/{pipeline_queue.REWORK_BUDGET}", rendered)
         self.assertIn("<b>TURN 1\nMOVE one token.</b>", rendered)
         self.assertIn("SETUP 1\nGive each player tokens.", rendered)
         self.assertNotIn("<b>SETUP 1", rendered)
+
+    def test_phase_label_follows_the_rounds_disposition(self) -> None:
+        previous = idea()
+        current = idea(turn="PLACE a token, if you can.")
+        # A clarify round is labelled CLARIFY against the clarify budget, and
+        # a rework round REWORK against the rework budget, so the number in a
+        # notification always matches the counter it is drawing down.
+        clarify = "\n\n".join(
+            journal.render_rules_ready(current, previous, 2, "clarify"))
+        self.assertIn(f"CLARIFY 2/{pipeline_queue.CLARIFY_BUDGET}", clarify)
+        self.assertNotIn("REWORK", clarify)
+        rework = "\n\n".join(
+            journal.render_rules_ready(current, previous, 2, "rework"))
+        self.assertIn(f"REWORK 2/{pipeline_queue.REWORK_BUDGET}", rework)
+        # A snapshot from before the field existed reads as a rework round,
+        # so an old notice is never mislabelled as a clarify.
+        legacy = "\n\n".join(journal.render_rules_ready(current, previous, 2))
+        self.assertIn(f"REWORK 2/{pipeline_queue.REWORK_BUDGET}", legacy)
+
+        caption = journal.render_video_caption(
+            current, previous, 2, "clarify")
+        self.assertIn(f"CLARIFY 2/{pipeline_queue.CLARIFY_BUDGET}", caption)
 
     def test_removed_rule_is_bold(self) -> None:
         previous = idea()

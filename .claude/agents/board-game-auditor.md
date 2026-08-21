@@ -54,6 +54,20 @@ the ideas proposed after each entry. If the owner rejected a direction and the
 next three proposals went the same way, the only human signal in this pipeline
 is being ignored, which is worse than any mechanical fault here.
 
+**6. Clarify rounds that were really mechanic changes.** The queue freezes the
+mechanic-defining fields (`action_types`, `rules.win`, `players`, each
+component's `name`/`qty`/`per_player`) and converts a clarify round into a paid
+rework if any of them moved. But the freeze only sees those fields: a
+clarify that rewords a `turn` or `end` step's *effect* — what a move does —
+without touching any frozen field sails straight through it. Read the diff
+between a clarify round's snapshot (`.idea_before_rework.json`,
+`disposition: "clarify"`) and the idea.json that followed. Wording, split
+steps, stated numbers, and new tie-breaks are honest clarifications. A step
+whose *consequence* changed is a mechanic change the queue could not see, and
+it is the one laundering path the structural check misses by design. Flag each
+such round and name the step. Check that a converted round's conversion log
+entry and the rework counter match what actually happened.
+
 # Verdict
 
 Append a dated section to `board-game/INTEGRITY.md`: what you checked, what

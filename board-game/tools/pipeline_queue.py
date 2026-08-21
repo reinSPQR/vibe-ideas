@@ -9,6 +9,7 @@ happens next.
     python3 board-game/tools/pipeline_queue.py advance <slug> --to built --note "..."
     python3 board-game/tools/pipeline_queue.py repair <slug>        # consume one round
     python3 board-game/tools/pipeline_queue.py gate_rework <slug> --stage rules_check --reason "..."
+    python3 board-game/tools/pipeline_queue.py gate_rework <slug> --stage lens_rules --reason "..." --disposition clarify
     python3 board-game/tools/pipeline_queue.py release <slug>       # step ended, no move
     python3 board-game/tools/pipeline_queue.py ship <slug>          # owner: gate 2 yes
     python3 board-game/tools/pipeline_queue.py ship <slug> --accept-unmeasured "..."
@@ -43,6 +44,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import fcntl
+import hashlib
 import json
 import os
 import socket
@@ -66,9 +68,20 @@ TASTE = REPO_ROOT / "board-game" / "TASTE.md"
 REPAIR_BUDGET = 2
 
 # Rules-gate reworks permitted before the next failed gate kills the idea.
-# This budget is intentionally larger than the geometry repair budget because
-# game rules can need several distinct balancing passes before table testing.
-REWORK_BUDGET = 10
+# Three rounds: each rework gets the full rules_check, lens-rules, engine,
+# playtest and table gate again, so more rounds multiply that cost, and an
+# idea still failing after three balancing passes is a shape problem, not a
+# tuning one.
+REWORK_BUDGET = 3
+
+# Clarification rounds are granted when a gate's finding is ambiguity or
+# incompleteness rather than a defect in how the game functions: the fix is
+# rule text, not the mechanic, so it does not spend the rework budget. They are
+# bounded anyway, because an unbounded free lane is how a design flaw gets
+# laundered: a flaw "clarified" one round at a time never reaches the budget.
+# Three passes at making a game coherent is plenty; if it still cannot be
+# described unambiguously after three, the problem is the game, not the words.
+CLARIFY_BUDGET = 3
 
 # How long a claim taken by `next` stays valid without being advanced or
 # released. The whole point of a claim is that `next` stops handing the same
@@ -144,22 +157,93 @@ def save(data: dict) -> None:
     os.replace(tmp, QUEUE)
 
 
-def snapshot_before_rework(slug: str, rework_number: int | None = None) -> None:
+def snapshot_before_rework(slug: str, rework_number: int | None = None,
+                           disposition: str | None = None) -> None:
     """Preserve the current proposal so a later rules-ready notice can show
     exactly what changed. Each rework replaces the prior snapshot because the
-    comparison must always be against the immediately preceding iteration."""
+    comparison must always be against the immediately preceding iteration.
+
+    `disposition` ("clarify" or "rework") records what kind of round this
+    snapshot opens, and `mech_surface` freezes the mechanic-defining fields at
+    that moment so the queue can detect, later, if a clarify round actually
+    changed a mechanic."""
     idea_path = IDEAS / slug / "idea.json"
     if not idea_path.is_file():
         raise SystemExit(
             f"cannot snapshot {slug} before rework: {idea_path} is missing")
+    idea = json.loads(idea_path.read_text(encoding="utf-8"))
     snapshot_path = idea_path.parent / ".idea_before_rework.json"
     snapshot = {
         "rework_number": rework_number,
-        "idea": json.loads(idea_path.read_text(encoding="utf-8")),
+        "idea": idea,
+        "disposition": disposition,
+        "mech_surface": mech_surface(idea),
     }
     tmp = snapshot_path.with_suffix(snapshot_path.suffix + f".tmp.{os.getpid()}")
     tmp.write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
     os.replace(tmp, snapshot_path)
+
+
+def mech_surface(idea: dict) -> str:
+    """Fingerprint of what a game's *mechanics* are, so a clarify round can be
+    checked against it after the fact.
+
+    A clarification is only a clarification if the fix never changed how the
+    game functions. The way to test that without trusting the fixer's word for
+    it is to compare, before and after the round, the fields that *define* the
+    mechanics — and only those. The set is deliberately narrow:
+
+      * `action_types` — the player-elected action procedures. Adding a step of
+        prose is fine; adding a new kind of move is a new game.
+      * `rules.win` — who wins and how a tie resolves. Rewriting the sentence
+        is prose; changing the winner is the mechanic.
+      * `players` — the min and max of the range. A game for two-to-four is a
+        different game from one for three-to-five; the winner arithmetic, the
+        table, and the elimination math all move with it.
+      * each component's `name`, `qty`, and `per_player` — the physical shape
+        of the game and how much of it each hand gets. "Each player takes 5"
+        is a mechanic, not flavour.
+
+    What is deliberately *not* in the surface: `desc` on any component (flavour
+    text), the wording or ordering of individual rule steps (a step may be
+    clarified, split, or reworded freely), `concept`, `title`, and
+    `art_direction`. Those are exactly the fields a clarification is allowed to
+    touch, so fingerprinting them would convert every honest round into a
+    violation and the freeze would stop meaning anything.
+
+    The fingerprint is a hash, not the raw fields: it is stable to read back
+    from a saved snapshot without the snapshot's file path leaking into the
+    comparison, and a one-line diff is a far clearer violation than a page of
+    them.
+    """
+    parts: list = []
+    actions = idea.get("action_types")
+    if actions is not None:
+        parts.append("actions=" + json.dumps(sorted(str(a) for a in actions)))
+    win = (idea.get("rules") or {}).get("win")
+    if win is not None:
+        # Compare the whole win block (text plus any tie-break structure),
+        # because a change to how a tie is settled is a change to the winner.
+        parts.append("win=" + json.dumps(win, sort_keys=True))
+    players = idea.get("players")
+    if players is not None:
+        try:
+            parts.append("players=" + json.dumps(
+                [int(players.get("min")), int(players.get("max"))],
+                sort_keys=True))
+        except (TypeError, ValueError):
+            # A players block that does not parse is already a rules_check
+            # failure; the surface just must not crash while checking it.
+            parts.append("players=unparseable:" + json.dumps(players))
+    for item in idea.get("components") or []:
+        per = item.get("per_player")
+        parts.append("comp=" + json.dumps([
+            str(item.get("name", "")),
+            int(item.get("qty", item.get("quantity", 0))),
+            int(per) if per is not None else None,
+        ]))
+    canonical = "\n".join(sorted(parts))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 @contextlib.contextmanager
@@ -362,6 +446,7 @@ def cmd_add(args) -> int:
         data["ideas"][args.slug] = {
             "slug": args.slug, "title": args.title or args.slug,
             "state": "proposed", "repairs_used": 0, "rework_used": 0,
+            "clarify_used": 0,
             "created": now(), "log": [],
         }
         # The idea now exists, so the propose slot this driver was holding has
@@ -425,6 +510,12 @@ def cmd_advance(args) -> int:
         frm = item["state"]
         if args.to not in PIPELINE:
             raise SystemExit(f"unknown state '{args.to}'")
+        if frm == "proposed" and args.to != "proposed":
+            # Leaving the rules gate settles the previous round's snapshot,
+            # which is what this advance is about to replace. A clarify that
+            # quietly changed a mechanic is charged here, not on the next
+            # idea's schedule.
+            _settle_clarify_round(item, args.slug)
         if args.to == "rules_ok":
             block = _rules_ok_gate_complete(args.slug)
             if block:
@@ -469,39 +560,103 @@ def cmd_repair(args) -> int:
     return 0
 
 
+def _settle_clarify_round(item: dict, slug: str) -> None:
+    """Check, after the fact, that the round just finished kept its word.
+
+    Called from the two queue actions an idea in `proposed` can take next
+    (another round, or advance out of the gate), while the previous round's
+    snapshot is still the one on disk. A clarify round promised not to change
+    how the game functions; the mechanic surface frozen when the round was
+    granted is the receipt. If it moved, the gate's classification is void —
+    the fix *was* a mechanic change, which is a rework. Charge the rework
+    budget, refund the clarify budget, and say so in the log. The rework
+    counter now stands where an honest rework would have put it, so the next
+    failed gate kills the idea the way it would have: the laundered round is
+    not free, it is just discovered late.
+
+    This is why the disposition is the gate's to assign and the queue's to
+    enforce, not the fixer's to claim: the fixer writes the new `idea.json`
+    and cannot see this check, and the fingerprint is computed here from the
+    files, not from anything the fixer declared.
+    """
+    snapshot_path = IDEAS / slug / ".idea_before_rework.json"
+    if not snapshot_path.is_file():
+        return
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    # A snapshot is settled at most once. The idea's next action is either
+    # another round or leaving the gate, never both, so this should be
+    # redundant — but a double-charge would kill an idea over bookkeeping,
+    # and this feature exists precisely so the accounting is bulletproof.
+    if snapshot.get("settled") or snapshot.get("disposition") != "clarify":
+        return
+    frozen = snapshot.get("mech_surface")
+    idea_path = IDEAS / slug / "idea.json"
+    if not frozen or not idea_path.is_file():
+        return
+    idea = json.loads(idea_path.read_text(encoding="utf-8"))
+    if mech_surface(idea) == frozen:
+        return
+    snapshot["settled"] = True
+    tmp = snapshot_path.with_suffix(snapshot_path.suffix + f".tmp.{os.getpid()}")
+    tmp.write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
+    os.replace(tmp, snapshot_path)
+    item["clarify_used"] = max(0, int(item.get("clarify_used", 0)) - 1)
+    item["rework_used"] = int(item.get("rework_used", 0)) + 1
+    spent = item["rework_used"]
+    note = (f"clarify round converted to rework: the mechanic surface changed "
+            f"during a clarification round — {spent}/{REWORK_BUDGET} reworks "
+            f"now spent"
+            + ("; budget already exhausted" if spent >= REWORK_BUDGET else ""))
+    log(item, item["state"], item["state"], note, kind="rework")
+
+
 def cmd_gate_rework(args) -> int:
-    """Consume one rules-gate rework round. Refuses past the budget — the
-    caller is meant to kill the idea, not send it to `board-game-ideator`
-    again.
+    """Consume one rules-gate round. The gate's Disposition decides which
+    budget pays for it.
 
     This is `rules_gate`'s counterpart to `cmd_repair`: same shape, earlier
     loop. `rules_check.py`, `board-game-lens-rules`, and
     `board-game-lens-playtest` all funnel a failing idea back here before the
-    caller reworks it. Once `REWORK_BUDGET` rounds have been granted, the next
-    failed gate kills the idea instead of granting another round.
+    caller reworks it. A round dispositioned `clarify` spends the clarify
+    budget — the finding was ambiguity, and the fix is rule text; a round
+    dispositioned `rework` spends the rework budget — the finding is a defect
+    in how the game functions. Each budget, once exhausted, kills the idea on
+    the next failed gate instead of granting another round.
+
+    A clarify round's promise is checked after the fact by
+    `_settle_clarify_round`, on the idea's next queue action.
     """
     with transaction() as data:
         item = entry(data, args.slug)
         require_state(item, args.slug, "gate_rework")
-        used = int(item.get("rework_used", 0))
+        # Settle the previous round before the new one overwrites its
+        # snapshot: if it was a clarify that changed the mechanics, it pays
+        # out of the rework budget before this round is granted.
+        _settle_clarify_round(item, args.slug)
+        if args.disposition == "clarify":
+            used, budget = int(item.get("clarify_used", 0)), CLARIFY_BUDGET
+            counter, label = "clarify_used", "clarify"
+        else:
+            used, budget = int(item.get("rework_used", 0)), REWORK_BUDGET
+            counter, label = "rework_used", "rework"
         frm = item["state"]
-        if used >= REWORK_BUDGET:
+        if used >= budget:
             item["state"] = "killed"
             item["kill_reason"] = (
-                f"rework budget exhausted ({used}/{REWORK_BUDGET} rules-gate "
-                f"reworks) and still failing {args.stage}: {args.reason}")
+                f"{label} budget exhausted ({used}/{budget} {label} rounds) and "
+                f"still failing {args.stage}: {args.reason}")
             drop_claim(item)
-            log(item, frm, "killed", item["kill_reason"], kind="rework")
-            print(f"REWORK BUDGET EXHAUSTED {args.slug}: {used}/{REWORK_BUDGET} "
-                  f"rework rounds spent — killed, do not rework again. Record "
-                  f"the reason in TASTE.md.")
+            log(item, frm, "killed", item["kill_reason"], kind=label)
+            print(f"{label.upper()} BUDGET EXHAUSTED {args.slug}: {used}/{budget} "
+                  f"{label} rounds spent — killed, do not send to the ideator "
+                  f"again. Record the reason in TASTE.md.")
             return 1
-        snapshot_before_rework(args.slug, used + 1)
-        item["rework_used"] = used + 1
+        snapshot_before_rework(args.slug, used + 1, disposition=label)
+        item[counter] = used + 1
         log(item, frm, frm,
-            f"rework round {used + 1}/{REWORK_BUDGET} ({args.stage}): {args.reason}",
-            kind="rework")
-    print(f"{args.slug}: rework round {used + 1}/{REWORK_BUDGET}")
+            f"{label} round {used + 1}/{budget} ({args.stage}): {args.reason}",
+            kind=label)
+    print(f"{args.slug}: {label} round {used + 1}/{budget}")
     return 0
 
 
@@ -697,6 +852,8 @@ def cmd_next(args) -> int:
                     "repair_budget": REPAIR_BUDGET,
                     "rework_used": item.get("rework_used", 0),
                     "rework_budget": REWORK_BUDGET,
+                    "clarify_used": item.get("clarify_used", 0),
+                    "clarify_budget": CLARIFY_BUDGET,
                     "dir": str(IDEAS / slug),
                 }
                 if claim_this:
@@ -756,8 +913,10 @@ def cmd_list(args) -> int:
                              if kv[1]["state"] in PRIORITY else 99):
         repairs = item.get("repairs_used", 0)
         rework = item.get("rework_used", 0)
+        clarify = item.get("clarify_used", 0)
         tail = f"  repairs {repairs}/{REPAIR_BUDGET}" if repairs else ""
         tail += f"  reworks {rework}/{REWORK_BUDGET}" if rework else ""
+        tail += f"  clarifies {clarify}/{CLARIFY_BUDGET}" if clarify else ""
         note = f"  — {item['kill_reason']}" if item.get("kill_reason") else ""
         held = claim_of(item)
         busy = f"  [in progress: {held['action']}, {claim_age(held)}]" if held else ""
@@ -790,6 +949,12 @@ def main() -> int:
     p = sub.add_parser("gate_rework"); p.add_argument("slug")
     p.add_argument("--stage", required=True,
                    choices=["rules_check", "lens_rules", "lens_playtest"])
+    p.add_argument("--disposition", default="rework",
+                   choices=["clarify", "rework"],
+                   help="what the failing gate classified the round as: clarify "
+                        "spends the clarify budget (ambiguity only), rework the "
+                        "rework budget (mechanic defect). Default rework, so a "
+                        "gate that does not say is never free.")
     p.add_argument("--reason", required=True); p.set_defaults(fn=cmd_gate_rework)
     p = sub.add_parser("release", help="drop a claim without moving the idea")
     p.add_argument("slug", help="the idea's slug, or 'propose'")

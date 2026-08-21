@@ -38,6 +38,15 @@ that is not in the box is almost always a rule the bill forgot. Both are
 invisible in prose and obvious in a list.
 
 Exit 0 = PASS, 1 = FAIL. Prints one line plus every finding.
+
+On a FAIL the report carries `Disposition: clarify`. Every finding this
+checker can produce is a mismatch between what the rules *say* and what the
+box *holds* — fixing it is a matter of making the two agree in text, and the
+queue's mechanic-surface check (see `pipeline_queue.mech_surface`) verifies
+after the fact that the fix stayed in the prose. If the honest fix turns out
+to be a new component or a different quantity, the queue converts that round
+into a paid rework automatically; this label only chooses which budget the
+round *starts* in.
 """
 from __future__ import annotations
 
@@ -136,7 +145,8 @@ def main() -> int:
 
     idea = json.loads(args.idea.read_text(encoding="utf-8"))
     findings = check(idea)
-    report = {"idea": str(args.idea), "pass": not findings, "findings": findings}
+    report = {"idea": str(args.idea), "pass": not findings, "findings": findings,
+              "disposition": None if report["pass"] else "clarify"}
     (args.out or args.idea.parent / "rules_check.json").write_text(
         json.dumps(report, indent=2), encoding="utf-8")
 
@@ -144,6 +154,8 @@ def main() -> int:
           + f"{len(findings)} finding(s)")
     for f in findings:
         print("  -", f)
+    if not report["pass"]:
+        print("Disposition: clarify")
     return 0 if report["pass"] else 1
 
 

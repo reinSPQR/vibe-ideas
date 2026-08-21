@@ -48,17 +48,42 @@ write:
 First line, exactly `Verdict: PASS` or `Verdict: FAIL <one sentence>`, the
 same shape as every other lens.
 
-On a FAIL, the very next line is one of these two, and choosing wrong is the
+On a FAIL, the very next line is one of these three, and choosing wrong is the
 worst mistake available to you:
 
 ```
+Disposition: clarify — <what is undefined or ambiguous>
 Disposition: rework — <the specific rules it needs>
 Disposition: kill — <why no rules change reaches this>
 ```
 
-**rework** is for a game with a fixable defect: an ambiguity the rules must
-settle, a seat advantage that comes from a setup step, an ending that cannot
-fire, an action that is never once legal.
+**clarify** is for a game the rules describe only *partially*: an undefined
+procedure, an implicit number, a step two players read two ways. The machine's
+verdict is `rules_incomplete` or `rules_ambiguous`, and *nothing worse* — no
+`not_a_game` finding in the run. The fix adds sentences; it changes no
+mechanic.
+
+**rework** is for a game the rules fully describe but play badly: a seat
+advantage that comes from a setup step, an ending that cannot fire, an action
+that is never once legal, a dominant strategy. The machine's verdict is
+`not_a_game`, or you read the table and the numbers and see the design does
+not work.
+
+The split is not your opinion of the machine — it is the machine's own
+classification, which already separates "the rules ran out" from "something
+other than play is deciding the outcome." Read `playtest.json`'s `verdict`
+and `by_class`: if the most severe class is `not_a_game`, the disposition is
+`rework` (or `kill`, below) no matter how much of the run looks like missing
+prose. If the most severe class is only `rules_incomplete` or
+`rules_ambiguous`, `clarify` is on the table. Do not let a game with a
+`not_a_game` finding out through the clarify lane by leaning on its
+incomplete-prose findings: the queue's freeze watches the mechanic-defining
+fields, and a `not_a_game` "clarification" that rewrites a turn step sails
+straight through it.
+
+If in doubt between `clarify` and `rework`, write `rework`. A wrong `rework`
+costs one budget round; a wrong `clarify` costs the round and the freeze's
+confidence, which is harder to buy back.
 
 **kill** is for a game whose problem *is* the game. Deep Claim scored
 5/5/4/4 in every four-player game and 9/9 in every two-player game, across
@@ -136,4 +161,4 @@ deciding whether to keep it needs to know what a verdict costs.
 # Reply
 
 One line: `PASS <n> games, <q> new rules questions` or
-`FAIL <rework|kill>: <one sentence>`.
+`FAIL <clarify|rework|kill>: <one sentence>`.

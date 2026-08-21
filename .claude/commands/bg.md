@@ -101,27 +101,40 @@ successful `rules_gate` run below moves the idea out of `proposed` anyway,
 and a later owner rework overwrites `rework_reason` with its own new reason.
 
 Every FAIL below — mechanical, the rules lens, or the playtest lens — goes
-through the same rework budget before `board-game-ideator` is invoked again:
+through the idea's round budgets before `board-game-ideator` is invoked again.
+The failing gate's disposition decides which budget pays: `clarify` rounds
+(ambiguity, missing procedures) spend the clarify budget and send the ideator
+into **clarify** mode; `rework` rounds (a defect in how the game functions)
+spend the rework budget and send it into **rework** mode. The disposition is
+the gate's call, not the ideator's — the queue verifies after the fact that a
+clarify round stayed out of the mechanics, and converts the round into a paid
+rework if it did not.
 
 ```bash
 .venv/bin/python board-game/tools/pipeline_queue.py gate_rework <slug> \
-    --stage <rules_check|lens_rules|lens_playtest> --reason "<findings verbatim>"
+    --stage <rules_check|lens_rules|lens_playtest> --disposition <clarify|rework> \
+    --reason "<findings verbatim>"
 ```
 
-exit 0 → the round is granted; continue exactly as below.
-exit 1 → the idea already used its ten rules-gate reworks and this command
-has already moved it to `killed` for you. Do **not** invoke the ideator. Put
-the one-sentence reason in `TASTE.md` (same as a `Disposition: kill`, below)
-and `release <slug>`.
+exit 0 → the round is granted; continue exactly as below, in the mode the
+disposition names.
+exit 1 → the idea already used its budget for that kind of round (three
+rework rounds, or three clarify rounds) and this command has already moved it
+to `killed` for you. Do **not** invoke the ideator. Put the one-sentence
+reason in `TASTE.md` (same as a `Disposition: kill`, below) and
+`release <slug>`.
 
 Then:
 ```bash
 .venv/bin/python board-game/tools/rules_check.py board-game/ideas/<slug>/idea.json
 ```
-FAIL → `gate_rework --stage rules_check`, then (on exit 0) invoke
-`board-game-ideator` in **rework** mode with the findings verbatim; leave the
-state at `proposed` so the gate runs again next step, and `release <slug>` so
-the next step can actually pick it up.
+FAIL → `gate_rework --stage rules_check --disposition clarify` (this checker
+always disposes its findings as clarify: every finding it can produce is a
+mismatch between what the rules say and what the box holds, and the queue's
+freeze verifies after the fact that the fix stayed in the prose), then (on
+exit 0) invoke `board-game-ideator` in **clarify** mode with the findings
+verbatim; leave the state at `proposed` so the gate runs again next step, and
+`release <slug>` so the next step can actually pick it up.
 
 PASS → before this idea costs a single hour of `brief-writer` or `builder`
 time, invoke `board-game-lens-rules` against `idea.json` — an independent
@@ -129,10 +142,18 @@ opinion on whether the game is worth playing at all (dominant strategy, fake
 decisions, reachable ending, length, player count), not just internally
 consistent.
 
-FAIL → `gate_rework --stage lens_rules`, then (on exit 0) invoke
-`board-game-ideator` in **rework** mode with the verdict verbatim; leave the
+FAIL → read the `Disposition:` line in `review_rules.md` and
+`gate_rework --stage lens_rules --disposition <clarify|rework>` with the
+disposition it says (default to rework if the line is missing — a gate that
+does not say is never free), then (on exit 0) invoke `board-game-ideator` in
+**clarify** or **rework** mode to match, with the verdict verbatim; leave the
 state at `proposed` and `release <slug>`, exactly like a mechanical
-`rules_check.py` failure.
+`rules_check.py` failure. If the ideator replies `CANNOT CLARIFY`, the
+finding was a mechanic defect the gate under-called: run
+`gate_rework --stage lens_rules --disposition rework --reason "<the
+CANNOT CLARIFY line>"` and invoke the ideator in **rework** mode. If that
+also exits 1, the rework budget was exhausted by the conversion and the idea
+is already `killed`.
 
 PASS → play it. Reading rules and playing them are different tests, and prose
 can be vague and still sound complete:
@@ -200,12 +221,19 @@ Then invoke `board-game-lens-playtest`, which reads both halves and writes
 `review_playtest.md`. Its verdict is the one that counts:
 
 - PASS → `pipeline_queue.py advance <slug> --to rules_ok`.
-- `Disposition: rework` → `gate_rework --stage lens_playtest --reason
-  "<verdict verbatim>"`. exit 0 → `board-game-ideator` in **rework** mode
-  with the findings verbatim; state stays `proposed`, `release <slug>`. exit
-  1 → the idea is already `killed` (ten rules-gate reworks spent and still
-  failing); do not invoke the ideator, put the reason in `TASTE.md` as below,
-  `release <slug>`.
+- `Disposition: clarify` → `gate_rework --stage lens_playtest
+  --disposition clarify --reason "<verdict verbatim>"`. exit 0 →
+  `board-game-ideator` in **clarify** mode with the findings verbatim; state
+  stays `proposed`, `release <slug>`. exit 1 → the clarify budget is
+  exhausted (three clarification rounds spent and still failing); do not
+  invoke the ideator, put the reason in `TASTE.md` as below, `release
+  <slug>`.
+- `Disposition: rework` → `gate_rework --stage lens_playtest
+  --disposition rework --reason "<verdict verbatim>"`. exit 0 →
+  `board-game-ideator` in **rework** mode with the findings verbatim; state
+  stays `proposed`, `release <slug>`. exit 1 → the idea is already `killed`
+  (three rules-gate reworks spent and still failing); do not invoke the
+  ideator, put the reason in `TASTE.md` as below, `release <slug>`.
 - `Disposition: kill` → do **not** rework it and do **not** call
   `gate_rework` (that budget is for reworks that are still being tried; this
   lens already decided one would be wasted). `pipeline_queue.py advance
