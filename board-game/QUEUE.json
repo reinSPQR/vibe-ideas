@@ -146,7 +146,14 @@
           "note": "board-game-lens-rules FAIL (no reachable ending at 2p, denial layer dominated, memorisable turn) plus PLAYTEST FAIL at 192 turns against a claimed 30 min; ideator reworked the rules, so the two exhausted CAD repair rounds were spent on a design that no longer exists. Stale playtest/engine.py removed so rules_gate regenerates it."
         }
       ],
-      "unmeasured": []
+      "unmeasured": [],
+      "claim": {
+        "action": "rules_gate",
+        "state": "proposed",
+        "at": "2026-08-19T09:01:21.782348+00:00",
+        "expires": "2026-08-19T09:46:21.782442+00:00",
+        "by": "reins-MacBook-Pro.local:23257"
+      }
     },
     "deep-claim": {
       "slug": "deep-claim",
